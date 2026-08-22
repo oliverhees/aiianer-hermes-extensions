@@ -1,5 +1,5 @@
 diff --git a/apps/desktop/src/plugins/hermes-bots/plugin.js b/apps/desktop/src/plugins/hermes-bots/plugin.js
-index eed110e190..abc5d61847 100644
+index eed110e190..afd4505d70 100644
 --- a/apps/desktop/src/plugins/hermes-bots/plugin.js
 +++ b/apps/desktop/src/plugins/hermes-bots/plugin.js
 @@ -240,7 +240,9 @@ function recordGroupActivity(group, event) {
@@ -728,3 +728,11 @@ index eed110e190..abc5d61847 100644
        jsx(Button, {
          variant: 'ghost',
          size: 'sm',
+@@ -11444,6 +11918,7 @@ export default {
+                   members: Array.isArray(room.members) ? room.members : [],
+                   roomId: typeof room.roomId === 'string' && room.roomId ? room.roomId : null,
+                   image: typeof room.image === 'string' && room.image ? room.image : null,
++                  limits: durableGroupChatLimits(room.limits),
+                   syncRevision: Math.max(0, Number(room.syncRevision || 0)),
+                   epoch: 0,
+                   running: false
