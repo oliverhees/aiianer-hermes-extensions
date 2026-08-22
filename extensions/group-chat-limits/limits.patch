@@ -1,5 +1,5 @@
 diff --git a/apps/desktop/src/plugins/hermes-bots/plugin.js b/apps/desktop/src/plugins/hermes-bots/plugin.js
-index eed110e190..755090351d 100644
+index eed110e190..b975cd7950 100644
 --- a/apps/desktop/src/plugins/hermes-bots/plugin.js
 +++ b/apps/desktop/src/plugins/hermes-bots/plugin.js
 @@ -264,6 +264,16 @@ function groupActivityLabel(event) {
@@ -322,7 +322,7 @@ index eed110e190..755090351d 100644
          })
  
          // Images riding this delta (user attachments — member entries don't
-@@ -9095,6 +9288,226 @@ function GroupDialog({ bot, onClose }) {
+@@ -9095,6 +9288,229 @@ function GroupDialog({ bot, onClose }) {
   *  a live preview (image, else the organization glyph), Upload / Generate /
   *  Remove. Reuses the bot-avatar pipeline (device picker, 256px normalize,
   *  image.generate probe) so room pictures cost the same as bot avatars. */
@@ -341,7 +341,10 @@ index eed110e190..755090351d 100644
 +
 +  const numberField = (props) =>
 +    jsx(Input, {
-+      className: 'w-20 text-right',
++      // text-xs mirrors CONTROL_TEXT in src/app/settings/constants.ts; the
++      // field fills its column there rather than carrying a fixed width,
++      // which is what makes its border read at this size.
++      className: 'min-w-0 flex-1 text-xs',
 +      inputMode: 'numeric',
 +      max: ceiling,
 +      min: 1,
@@ -349,13 +352,13 @@ index eed110e190..755090351d 100644
 +      ...props
 +    })
 +
-+  const control = (children) => jsx('div', { className: 'flex items-center justify-end gap-2', children })
++  const control = (children) => jsx('div', { className: 'flex min-w-0 items-center gap-2', children })
 +
 +  return jsxs('div', {
 +    className: '@container',
 +    children: [
 +      jsxs('div', {
-+        className: 'grid gap-3 py-3 @2xl:grid-cols-[minmax(0,1fr)_minmax(15rem,22rem)] @2xl:items-center',
++        className: 'grid gap-2 py-2.5 @xs:grid-cols-[minmax(0,1fr)_11rem] @xs:items-center @xs:gap-3',
 +        children: [
 +          jsxs('div', {
 +            className: 'min-w-0',
@@ -374,7 +377,7 @@ index eed110e190..755090351d 100644
 +            ]
 +          }),
 +          jsx('div', {
-+            className: 'min-w-0 @2xl:justify-self-end',
++            className: 'min-w-0 @xs:justify-self-end',
 +            children: control([
 +              numberField({
 +                'aria-label': label,
@@ -406,7 +409,7 @@ index eed110e190..755090351d 100644
 +      off && brake
 +        ? jsxs('div', {
 +            className:
-+              'grid gap-3 border-l border-(--ui-border) pb-3 pl-3 @2xl:grid-cols-[minmax(0,1fr)_minmax(15rem,22rem)] @2xl:items-center',
++              'grid gap-2 border-l border-(--ui-border) pb-2.5 pl-3 @xs:grid-cols-[minmax(0,1fr)_11rem] @xs:items-center @xs:gap-3',
 +            children: [
 +              jsx('div', {
 +                className:
@@ -414,7 +417,7 @@ index eed110e190..755090351d 100644
 +                children: brake.value === null ? `No safety stop on ${label.toLowerCase()}` : 'Safety stop after'
 +              }),
 +              jsx('div', {
-+                className: 'min-w-0 @2xl:justify-self-end',
++                className: 'min-w-0 @xs:justify-self-end',
 +                children: control([
 +                  numberField({
 +                    'aria-label': `Safety stop for ${label.toLowerCase()}`,
@@ -549,7 +552,7 @@ index eed110e190..755090351d 100644
  function GroupImageControls({ image, onImage, seedName, seedMembers }) {
    const imagen = useValue($imagenAvailable)
    const [busy, setBusy] = useState(false)
-@@ -9179,13 +9592,16 @@ function GroupImageControls({ image, onImage, seedName, seedMembers }) {
+@@ -9179,13 +9595,16 @@ function GroupImageControls({ image, onImage, seedName, seedMembers }) {
  function GroupChatSettingsDialog({ group, members, open, onClose, onRenamed }) {
    const rooms = useValue($groupChats)
    const current = (rooms[group] || {}).image || null
@@ -566,7 +569,7 @@ index eed110e190..755090351d 100644
      }
      // eslint-disable-next-line react-hooks/exhaustive-deps
    }, [open, group])
-@@ -9201,6 +9617,8 @@ function GroupChatSettingsDialog({ group, members, open, onClose, onRenamed }) {
+@@ -9201,6 +9620,8 @@ function GroupChatSettingsDialog({ group, members, open, onClose, onRenamed }) {
        setGroupChatImage(finalName, image)
      }
  
@@ -575,7 +578,7 @@ index eed110e190..755090351d 100644
      onClose()
  
      if (finalName !== group) {
-@@ -9216,7 +9634,7 @@ function GroupChatSettingsDialog({ group, members, open, onClose, onRenamed }) {
+@@ -9216,7 +9637,7 @@ function GroupChatSettingsDialog({ group, members, open, onClose, onRenamed }) {
        }
      },
      children: jsxs(DialogContent, {
@@ -584,7 +587,7 @@ index eed110e190..755090351d 100644
        children: [
          jsxs(DialogHeader, {
            children: [
-@@ -9245,6 +9663,16 @@ function GroupChatSettingsDialog({ group, members, open, onClose, onRenamed }) {
+@@ -9245,6 +9666,16 @@ function GroupChatSettingsDialog({ group, members, open, onClose, onRenamed }) {
              onChange: event => setName(event.target.value)
            })
          }),
@@ -601,7 +604,7 @@ index eed110e190..755090351d 100644
          jsxs(DialogFooter, {
            children: [
              jsx(Button, { variant: 'secondary', onClick: onClose, children: 'Cancel' }),
-@@ -9266,6 +9694,8 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
+@@ -9266,6 +9697,8 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
    const [checked, setChecked] = useState({})
    const [name, setName] = useState('')
    const [image, setImage] = useState(null)
@@ -610,7 +613,7 @@ index eed110e190..755090351d 100644
  
    // Reset per open so a cancelled draft doesn't leak into the next one.
    useEffect(() => {
-@@ -9274,12 +9704,17 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
+@@ -9274,12 +9707,17 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
        setChecked({})
        setName('')
        setImage(null)
@@ -629,7 +632,7 @@ index eed110e190..755090351d 100644
    const placeholder = selected.length
      ? selected.map(bot => displayName(bot, botRosterMeta(bot, allMeta))).join(', ')
      : 'Group name'
-@@ -9322,6 +9757,8 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
+@@ -9322,6 +9760,8 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
      // gateway's name-keyed bot metadata to remain seated in this room.
      const roomMembers = durableGroupChatMembers(selected)
  
@@ -638,7 +641,7 @@ index eed110e190..755090351d 100644
      updateGroupChat(groupName, room => {
        room.members = roomMembers
        room.roomId = roomId
-@@ -9330,6 +9767,10 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
+@@ -9330,6 +9770,10 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
          room.image = image
        }
  
@@ -649,7 +652,7 @@ index eed110e190..755090351d 100644
        return room
      })
  
-@@ -9352,7 +9793,7 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
+@@ -9352,7 +9796,7 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
            children: [
              jsx(DialogTitle, { children: 'New Group Chat' }),
              jsx(DialogDescription, {
@@ -658,7 +661,7 @@ index eed110e190..755090351d 100644
              })
            ]
          }),
-@@ -9458,6 +9899,19 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
+@@ -9458,6 +9902,19 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
              })
            ]
          }),
@@ -678,7 +681,7 @@ index eed110e190..755090351d 100644
          jsxs(DialogFooter, {
            children: [
              jsx(Button, { variant: 'secondary', onClick: onClose, children: 'Cancel' }),
-@@ -10045,6 +10499,16 @@ function GroupChatWorkspace({ group, members, onBack, visible = true }) {
+@@ -10045,6 +10502,16 @@ function GroupChatWorkspace({ group, members, onBack, visible = true }) {
          className: 'shrink-0 text-[0.65rem] text-(--ui-text-quaternary)',
          children: `${members.length} bots`
        }),
