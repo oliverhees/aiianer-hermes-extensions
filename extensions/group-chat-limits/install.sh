@@ -40,9 +40,49 @@ if [ ! -f "$TARGET" ]; then
   exit 1
 fi
 
+# Schon installiert? Dann entscheidet der Patch-Vergleich, ob es ein Update
+# gibt. Ohne das meldet der Installer "nichts zu tun" und haelt damit eine
+# aeltere Fassung fest - genau das ist beim ersten Livetest passiert.
 if grep -q "resolveGroupChatLimits" "$TARGET"; then
-  echo "Die einstellbaren Gruppenchat-Limits sind bereits installiert - nichts zu tun."
-  exit 0
+  NEW_PATCH_SHA="$(sha256sum "$HERE/limits.patch" | cut -d' ' -f1)"
+  OLD_PATCH_SHA=""
+  [ -f "$STORE/limits.patch" ] && OLD_PATCH_SHA="$(sha256sum "$STORE/limits.patch" | cut -d' ' -f1)"
+
+  if [ "$NEW_PATCH_SHA" = "$OLD_PATCH_SHA" ]; then
+    echo "Die einstellbaren Gruppenchat-Limits sind aktuell - nichts zu tun."
+    exit 0
+  fi
+
+  echo "Eine aeltere Fassung ist installiert - aktualisiere ..."
+
+  if [ ! -f "$STORE/plugin.js.backup" ]; then
+    echo "ABBRUCH: Kein Backup der Originaldatei gefunden unter" >&2
+    echo "  $STORE/plugin.js.backup" >&2
+    echo "Ohne das koennen wir nicht sauber auf den Originalzustand zuruecksetzen." >&2
+    exit 2
+  fi
+
+  # Nur zurueckrollen, wenn die Datei noch exakt unsere eigene Fassung ist.
+  # Hat Hermes oder etwas anderes daran gearbeitet, waere ein Rollback ein
+  # stiller Datenverlust.
+  if [ -f "$STORE/installed.sha256" ]; then
+    EXPECTED="$(cat "$STORE/installed.sha256")"
+    ACTUAL="$(sha256sum "$TARGET" | cut -d' ' -f1)"
+    if [ "$EXPECTED" != "$ACTUAL" ]; then
+      echo "ABBRUCH: Die Plugin-Datei wurde seit unserer Installation veraendert." >&2
+      echo "" >&2
+      echo "Das kann ein Hermes-Update gewesen sein oder eine andere Komponente." >&2
+      echo "Wir setzen hier nichts zurueck, weil dabei fremde Aenderungen" >&2
+      echo "verloren gingen. Setze die Datei selbst auf den Originalzustand" >&2
+      echo "und starte den Installer erneut:" >&2
+      echo "  cp \"$STORE/plugin.js.backup\" \"$TARGET\"" >&2
+      exit 2
+    fi
+  fi
+
+  cp "$TARGET" "$STORE/plugin.js.previous"
+  cp "$STORE/plugin.js.backup" "$TARGET"
+  echo "Auf Originalzustand zurueckgesetzt, wende neue Fassung an ..."
 fi
 
 if grep -q "DE_MESSAGES" "$TARGET"; then
@@ -90,9 +130,12 @@ if ! apply_patch check; then
 fi
 
 mkdir -p "$STORE"
-cp "$TARGET" "$STORE/plugin.js.backup"
+# Ein vorhandenes Backup ist der ECHTE Originalzustand - nicht ueberschreiben,
+# sonst sichern wir beim Update unsere eigene alte Fassung als "Original".
+[ -f "$STORE/plugin.js.backup" ] || cp "$TARGET" "$STORE/plugin.js.backup"
 apply_patch apply
 cp "$HERE/limits.patch" "$STORE/" 2>/dev/null || true
+sha256sum "$TARGET" | cut -d' ' -f1 > "$STORE/installed.sha256"
 
 if ! grep -q "resolveGroupChatLimits" "$TARGET"; then
   echo "FEHLER: Patch lief durch, die Aenderung ist aber nicht in der Datei." >&2
