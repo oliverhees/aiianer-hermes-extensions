@@ -1,5 +1,5 @@
 diff --git a/apps/desktop/src/plugins/hermes-bots/plugin.js b/apps/desktop/src/plugins/hermes-bots/plugin.js
-index eed110e190..d8862b6eaf 100644
+index eed110e190..dfa366baac 100644
 --- a/apps/desktop/src/plugins/hermes-bots/plugin.js
 +++ b/apps/desktop/src/plugins/hermes-bots/plugin.js
 @@ -264,6 +264,14 @@ function groupActivityLabel(event) {
@@ -303,7 +303,7 @@ index eed110e190..d8862b6eaf 100644
          })
  
          // Images riding this delta (user attachments — member entries don't
-@@ -9095,6 +9269,198 @@ function GroupDialog({ bot, onClose }) {
+@@ -9095,6 +9269,223 @@ function GroupDialog({ bot, onClose }) {
   *  a live preview (image, else the organization glyph), Upload / Generate /
   *  Remove. Reuses the bot-avatar pipeline (device picker, 256px normalize,
   *  image.generate probe) so room pictures cost the same as bot avatars. */
@@ -335,7 +335,7 @@ index eed110e190..d8862b6eaf 100644
 +            inputMode: 'numeric',
 +            max: ceiling,
 +            min: 1,
-+            placeholder: String(fallback),
++            placeholder: off ? '\u221e' : String(fallback),
 +            type: 'number',
 +            value: shown,
 +            onChange: event => {
@@ -348,13 +348,26 @@ index eed110e190..d8862b6eaf 100644
 +              onChange(Number.isFinite(n) && n > 0 ? Math.min(n, ceiling) : undefined)
 +            }
 +          }),
-+          jsx(Tip, {
-+            label: off ? `No limit on ${label.toLowerCase()}` : `Limit ${label.toLowerCase()}`,
-+            children: jsx(Switch, {
-+              'aria-label': `Limit ${label.toLowerCase()}`,
-+              checked: !off,
-+              onCheckedChange: on => onChange(on ? fallback : null)
-+            })
++          // The switch alone is not readable in the dark theme: "on" is a
++          // slightly different dark track. Name the state next to it.
++          jsxs('div', {
++            className: 'flex shrink-0 items-center gap-1.5',
++            children: [
++              jsx('span', {
++                className: off
++                  ? 'w-12 text-right text-[0.65rem] text-(--ui-warning,#d68b00)'
++                  : 'w-12 text-right text-[0.65rem] text-(--ui-text-tertiary)',
++                children: off ? 'no limit' : 'limit'
++              }),
++              jsx(Tip, {
++                label: off ? `No limit on ${label.toLowerCase()}` : `Limit ${label.toLowerCase()}`,
++                children: jsx(Switch, {
++                  'aria-label': `Limit ${label.toLowerCase()}`,
++                  checked: !off,
++                  onCheckedChange: on => onChange(on ? fallback : null)
++                })
++              })
++            ]
 +          })
 +        ]
 +      }),
@@ -386,13 +399,25 @@ index eed110e190..d8862b6eaf 100644
 +                  brake.onChange(Number.isFinite(n) && n > 0 ? Math.min(n, ceiling) : undefined)
 +                }
 +              }),
-+              jsx(Tip, {
-+                label: brake.value === null ? 'No safety stop at all' : 'Stop the room after this many',
-+                children: jsx(Switch, {
-+                  'aria-label': `Safety stop for ${label.toLowerCase()}`,
-+                  checked: brake.value !== null,
-+                  onCheckedChange: on => brake.onChange(on ? brake.fallback : null)
-+                })
++              jsxs('div', {
++                className: 'flex shrink-0 items-center gap-1.5',
++                children: [
++                  jsx('span', {
++                    className:
++                      brake.value === null
++                        ? 'w-12 text-right text-[0.65rem] text-(--ui-warning,#d68b00)'
++                        : 'w-12 text-right text-[0.65rem] text-(--ui-text-tertiary)',
++                    children: brake.value === null ? 'none' : 'brake'
++                  }),
++                  jsx(Tip, {
++                    label: brake.value === null ? 'No safety stop at all' : 'Stop the room after this many',
++                    children: jsx(Switch, {
++                      'aria-label': `Safety stop for ${label.toLowerCase()}`,
++                      checked: brake.value !== null,
++                      onCheckedChange: on => brake.onChange(on ? brake.fallback : null)
++                    })
++                  })
++                ]
 +              })
 +            ]
 +          })
@@ -502,7 +527,7 @@ index eed110e190..d8862b6eaf 100644
  function GroupImageControls({ image, onImage, seedName, seedMembers }) {
    const imagen = useValue($imagenAvailable)
    const [busy, setBusy] = useState(false)
-@@ -9179,13 +9545,16 @@ function GroupImageControls({ image, onImage, seedName, seedMembers }) {
+@@ -9179,13 +9570,16 @@ function GroupImageControls({ image, onImage, seedName, seedMembers }) {
  function GroupChatSettingsDialog({ group, members, open, onClose, onRenamed }) {
    const rooms = useValue($groupChats)
    const current = (rooms[group] || {}).image || null
@@ -519,7 +544,7 @@ index eed110e190..d8862b6eaf 100644
      }
      // eslint-disable-next-line react-hooks/exhaustive-deps
    }, [open, group])
-@@ -9201,6 +9570,8 @@ function GroupChatSettingsDialog({ group, members, open, onClose, onRenamed }) {
+@@ -9201,6 +9595,8 @@ function GroupChatSettingsDialog({ group, members, open, onClose, onRenamed }) {
        setGroupChatImage(finalName, image)
      }
  
@@ -528,7 +553,7 @@ index eed110e190..d8862b6eaf 100644
      onClose()
  
      if (finalName !== group) {
-@@ -9216,7 +9587,7 @@ function GroupChatSettingsDialog({ group, members, open, onClose, onRenamed }) {
+@@ -9216,7 +9612,7 @@ function GroupChatSettingsDialog({ group, members, open, onClose, onRenamed }) {
        }
      },
      children: jsxs(DialogContent, {
@@ -537,7 +562,7 @@ index eed110e190..d8862b6eaf 100644
        children: [
          jsxs(DialogHeader, {
            children: [
-@@ -9245,6 +9616,16 @@ function GroupChatSettingsDialog({ group, members, open, onClose, onRenamed }) {
+@@ -9245,6 +9641,16 @@ function GroupChatSettingsDialog({ group, members, open, onClose, onRenamed }) {
              onChange: event => setName(event.target.value)
            })
          }),
@@ -554,7 +579,7 @@ index eed110e190..d8862b6eaf 100644
          jsxs(DialogFooter, {
            children: [
              jsx(Button, { variant: 'secondary', onClick: onClose, children: 'Cancel' }),
-@@ -9266,6 +9647,8 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
+@@ -9266,6 +9672,8 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
    const [checked, setChecked] = useState({})
    const [name, setName] = useState('')
    const [image, setImage] = useState(null)
@@ -563,7 +588,7 @@ index eed110e190..d8862b6eaf 100644
  
    // Reset per open so a cancelled draft doesn't leak into the next one.
    useEffect(() => {
-@@ -9274,12 +9657,17 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
+@@ -9274,12 +9682,17 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
        setChecked({})
        setName('')
        setImage(null)
@@ -582,7 +607,7 @@ index eed110e190..d8862b6eaf 100644
    const placeholder = selected.length
      ? selected.map(bot => displayName(bot, botRosterMeta(bot, allMeta))).join(', ')
      : 'Group name'
-@@ -9322,6 +9710,8 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
+@@ -9322,6 +9735,8 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
      // gateway's name-keyed bot metadata to remain seated in this room.
      const roomMembers = durableGroupChatMembers(selected)
  
@@ -591,7 +616,7 @@ index eed110e190..d8862b6eaf 100644
      updateGroupChat(groupName, room => {
        room.members = roomMembers
        room.roomId = roomId
-@@ -9330,6 +9720,10 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
+@@ -9330,6 +9745,10 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
          room.image = image
        }
  
@@ -602,7 +627,7 @@ index eed110e190..d8862b6eaf 100644
        return room
      })
  
-@@ -9352,7 +9746,7 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
+@@ -9352,7 +9771,7 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
            children: [
              jsx(DialogTitle, { children: 'New Group Chat' }),
              jsx(DialogDescription, {
@@ -611,7 +636,7 @@ index eed110e190..d8862b6eaf 100644
              })
            ]
          }),
-@@ -9458,6 +9852,19 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
+@@ -9458,6 +9877,19 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
              })
            ]
          }),
@@ -631,7 +656,7 @@ index eed110e190..d8862b6eaf 100644
          jsxs(DialogFooter, {
            children: [
              jsx(Button, { variant: 'secondary', onClick: onClose, children: 'Cancel' }),
-@@ -10045,6 +10452,16 @@ function GroupChatWorkspace({ group, members, onBack, visible = true }) {
+@@ -10045,6 +10477,16 @@ function GroupChatWorkspace({ group, members, onBack, visible = true }) {
          className: 'shrink-0 text-[0.65rem] text-(--ui-text-quaternary)',
          children: `${members.length} bots`
        }),
