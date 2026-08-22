@@ -1,8 +1,19 @@
 diff --git a/apps/desktop/src/plugins/hermes-bots/plugin.js b/apps/desktop/src/plugins/hermes-bots/plugin.js
-index eed110e190..42f3c0e222 100644
+index eed110e190..abc5d61847 100644
 --- a/apps/desktop/src/plugins/hermes-bots/plugin.js
 +++ b/apps/desktop/src/plugins/hermes-bots/plugin.js
-@@ -264,6 +264,16 @@ function groupActivityLabel(event) {
+@@ -240,7 +240,9 @@ function recordGroupActivity(group, event) {
+   }
+ 
+   const current = $groupActivity.get()[group] || { events: [] }
+-  const entry = { at: Date.now(), epoch: room.epoch || 0, ...event }
++  // Spread first: `at` and `epoch` belong to the record, not to the caller. A
++  // caller that shipped its own `at` once rendered an event as decades old.
++  const entry = { ...event, at: Date.now(), epoch: room.epoch || 0 }
+   const events = [...current.events, entry].slice(-GROUP_ACTIVITY_LIMIT)
+   $groupActivity.set({ ...$groupActivity.get(), [group]: { ...current, events } })
+ 
+@@ -264,6 +266,16 @@ function groupActivityLabel(event) {
      return base
    }
  
@@ -10,16 +21,16 @@ index eed110e190..42f3c0e222 100644
 +  // statement rather than "<bot> hit the safety stop".
 +  if (kind === 'safety' || kind === 'capped') {
 +    const what = event?.detail === 'messages' ? 'messages' : 'rounds'
-+    const at = event?.at ?? '?'
++    const count = event?.count ?? '?'
 +    return kind === 'safety'
-+      ? `safety stop: ${at} ${what} reached`
-+      : `stopped at the ${what} limit (${at}), raise it in the room budget`
++      ? `safety stop: ${count} ${what} reached`
++      : `stopped at the ${what} limit (${count}), raise it in the room budget`
 +  }
 +
    const who = event?.member === 'You' ? 'You' : groupSpeakerLabel(event?.member || 'A bot')
  
    return `${who} ${base}`
-@@ -278,7 +288,9 @@ const GROUP_ACTIVITY_LABELS = {
+@@ -278,7 +290,9 @@ const GROUP_ACTIVITY_LABELS = {
    failed: 'hit an error',
    cancelled: 'turn interrupted by a newer message',
    settled: 'turn settled',
@@ -30,7 +41,7 @@ index eed110e190..42f3c0e222 100644
  }
  
  const GROUP_ACTIVITY_GLYPHS = {
-@@ -290,7 +302,9 @@ const GROUP_ACTIVITY_GLYPHS = {
+@@ -290,7 +304,9 @@ const GROUP_ACTIVITY_GLYPHS = {
    failed: 'error',
    cancelled: 'close',
    settled: 'check-all',
@@ -41,7 +52,7 @@ index eed110e190..42f3c0e222 100644
  }
  
  /** Text tone for an activity row: quiet for pass/cancel/settle, accent for
-@@ -300,6 +314,12 @@ function groupActivityTone(kind) {
+@@ -300,6 +316,12 @@ function groupActivityTone(kind) {
      return 'text-destructive'
    }
  
@@ -54,7 +65,7 @@ index eed110e190..42f3c0e222 100644
    if (kind === 'working' || kind === 'replied' || kind === 'delivered') {
      return 'text-(--ui-accent,#4f9cf9)'
    }
-@@ -429,12 +449,18 @@ function groupChatSyncSnapshot(all = $groupChats.get(), deleted = {}) {
+@@ -429,12 +451,18 @@ function groupChatSyncSnapshot(all = $groupChats.get(), deleted = {}) {
        at: Number(entry?.at || 0),
        ...(entry?.thread ? { thread: String(entry.thread).slice(0, 128) } : {})
      }))
@@ -74,7 +85,7 @@ index eed110e190..42f3c0e222 100644
          name: String(member?.name || '').slice(0, 128),
          ...(member?.handle ? { handle: String(member.handle).slice(0, 128) } : {}),
          ...(member?.connectionId ? { connectionId: String(member.connectionId).slice(0, 128) } : {}),
-@@ -444,7 +470,10 @@ function groupChatSyncSnapshot(all = $groupChats.get(), deleted = {}) {
+@@ -444,7 +472,10 @@ function groupChatSyncSnapshot(all = $groupChats.get(), deleted = {}) {
        })),
        ...(typeof room?.image === 'string' && room.image.length <= GROUP_CHAT_SYNC_IMAGE_CHARS
          ? { image: room.image }
@@ -86,7 +97,7 @@ index eed110e190..42f3c0e222 100644
      }
  
      const key = groupChatRoomKey(name, room)
-@@ -761,6 +790,13 @@ function mergeRemoteGroupChatSnapshotIntoRooms(
+@@ -761,6 +792,13 @@ function mergeRemoteGroupChatSnapshotIntoRooms(
          : remoteRevision >= localRevision && Object.prototype.hasOwnProperty.call(projected, 'image')
            ? projected.image || null
            : existing.image || null,
@@ -100,7 +111,7 @@ index eed110e190..42f3c0e222 100644
        syncRevision: isPreserved ? localRevision : Math.max(remoteRevision, localRevision),
        epoch: Number(existing.epoch || 0),
        running: Boolean(existing.running)
-@@ -793,6 +829,36 @@ function mergeRemoteGroupChatSnapshotIntoRooms(
+@@ -793,6 +831,36 @@ function mergeRemoteGroupChatSnapshotIntoRooms(
    return rooms
  }
  
@@ -137,7 +148,7 @@ index eed110e190..42f3c0e222 100644
  function durableGroupChatRooms(all = $groupChats.get()) {
    const durable = {}
  
-@@ -820,6 +886,7 @@ function durableGroupChatRooms(all = $groupChats.get()) {
+@@ -820,6 +888,7 @@ function durableGroupChatRooms(all = $groupChats.get()) {
        // already carries.
        roomId: typeof room.roomId === 'string' && room.roomId ? room.roomId : null,
        image: room.image || null,
@@ -145,7 +156,7 @@ index eed110e190..42f3c0e222 100644
        syncRevision: Math.max(0, Number(room.syncRevision || 0))
      }
    }
-@@ -4478,11 +4545,99 @@ function knownGroups(metaByName) {
+@@ -4478,11 +4547,99 @@ function knownGroups(metaByName) {
  // turn in its OWN persistent per-group Hermes session and is fed only the
  // room messages that are NEW since it last saw the room.
  
@@ -245,7 +256,7 @@ index eed110e190..42f3c0e222 100644
  /** "(pass)" (loosely: pass / (pass) / pass.) or empty = the member stayed silent. */
  function isGroupPassText(text) {
    const trimmed = String(text || '').trim()
-@@ -4825,6 +4980,16 @@ function setGroupChatImage(group, image) {
+@@ -4825,6 +4982,16 @@ function setGroupChatImage(group, image) {
    })
  }
  
@@ -262,7 +273,7 @@ index eed110e190..42f3c0e222 100644
  /** Rename a group chat. The group's NAME is its identity everywhere — the
   *  room-map key, each local member's ui_meta membership list, and derived
   *  state — so a rename re-keys all of them. Member gateway sessions are kept
-@@ -5433,10 +5598,19 @@ async function harvestStrandedGroupReply(group, member) {
+@@ -5433,10 +5600,19 @@ async function harvestStrandedGroupReply(group, member) {
  async function runGroupChatRounds(group, members, thread) {
    const startEpoch = ($groupChats.get()[group] || {}).epoch || 0
    const isCurrent = () => (($groupChats.get()[group] || {}).epoch || 0) === startEpoch
@@ -283,7 +294,7 @@ index eed110e190..42f3c0e222 100644
        // Deliver any replies that finished after their turn timed out —
        // every member, not just this round's responders, so long work is
        // late, never lost.
-@@ -5468,9 +5642,11 @@ async function runGroupChatRounds(group, members, thread) {
+@@ -5468,9 +5644,11 @@ async function runGroupChatRounds(group, members, thread) {
        let spokeThisRound = 0
  
        for (const member of responders) {
@@ -296,7 +307,7 @@ index eed110e190..42f3c0e222 100644
            }
            return
          }
-@@ -5491,7 +5667,9 @@ async function runGroupChatRounds(group, members, thread) {
+@@ -5491,7 +5669,9 @@ async function runGroupChatRounds(group, members, thread) {
            groupName: group,
            members,
            viewer: member,
@@ -307,7 +318,7 @@ index eed110e190..42f3c0e222 100644
          })
  
          // Images riding this delta (user attachments — member entries don't
-@@ -5541,12 +5719,28 @@ async function runGroupChatRounds(group, members, thread) {
+@@ -5541,12 +5721,32 @@ async function runGroupChatRounds(group, members, thread) {
        }
  
        if (spokeThisRound === 0) {
@@ -330,14 +341,18 @@ index eed110e190..42f3c0e222 100644
 +              member: null,
 +              thread,
 +              detail: stoppedBy,
-+              at: stoppedBy === 'rounds' ? caps.rounds : caps.messages
++              // NOT `at`: recordGroupActivity stamps that with Date.now(), and
++              // spreading the event over it turned "1 round" into a timestamp
++              // of 1ms past the epoch, which the room rendered as "20688 days
++              // ago".
++              count: stoppedBy === 'rounds' ? caps.rounds : caps.messages
 +            }
 +          : { kind: 'settled', member: null, thread }
 +      )
        updateGroupChat(group, r => {
          r.running = false
          r.turn = null
-@@ -9095,6 +9289,229 @@ function GroupDialog({ bot, onClose }) {
+@@ -9095,6 +9295,229 @@ function GroupDialog({ bot, onClose }) {
   *  a live preview (image, else the organization glyph), Upload / Generate /
   *  Remove. Reuses the bot-avatar pipeline (device picker, 256px normalize,
   *  image.generate probe) so room pictures cost the same as bot avatars. */
@@ -567,7 +582,7 @@ index eed110e190..42f3c0e222 100644
  function GroupImageControls({ image, onImage, seedName, seedMembers }) {
    const imagen = useValue($imagenAvailable)
    const [busy, setBusy] = useState(false)
-@@ -9179,13 +9596,16 @@ function GroupImageControls({ image, onImage, seedName, seedMembers }) {
+@@ -9179,13 +9602,16 @@ function GroupImageControls({ image, onImage, seedName, seedMembers }) {
  function GroupChatSettingsDialog({ group, members, open, onClose, onRenamed }) {
    const rooms = useValue($groupChats)
    const current = (rooms[group] || {}).image || null
@@ -584,7 +599,7 @@ index eed110e190..42f3c0e222 100644
      }
      // eslint-disable-next-line react-hooks/exhaustive-deps
    }, [open, group])
-@@ -9201,6 +9621,8 @@ function GroupChatSettingsDialog({ group, members, open, onClose, onRenamed }) {
+@@ -9201,6 +9627,8 @@ function GroupChatSettingsDialog({ group, members, open, onClose, onRenamed }) {
        setGroupChatImage(finalName, image)
      }
  
@@ -593,7 +608,7 @@ index eed110e190..42f3c0e222 100644
      onClose()
  
      if (finalName !== group) {
-@@ -9216,7 +9638,7 @@ function GroupChatSettingsDialog({ group, members, open, onClose, onRenamed }) {
+@@ -9216,7 +9644,7 @@ function GroupChatSettingsDialog({ group, members, open, onClose, onRenamed }) {
        }
      },
      children: jsxs(DialogContent, {
@@ -602,7 +617,7 @@ index eed110e190..42f3c0e222 100644
        children: [
          jsxs(DialogHeader, {
            children: [
-@@ -9245,6 +9667,16 @@ function GroupChatSettingsDialog({ group, members, open, onClose, onRenamed }) {
+@@ -9245,6 +9673,16 @@ function GroupChatSettingsDialog({ group, members, open, onClose, onRenamed }) {
              onChange: event => setName(event.target.value)
            })
          }),
@@ -619,7 +634,7 @@ index eed110e190..42f3c0e222 100644
          jsxs(DialogFooter, {
            children: [
              jsx(Button, { variant: 'secondary', onClick: onClose, children: 'Cancel' }),
-@@ -9266,6 +9698,8 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
+@@ -9266,6 +9704,8 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
    const [checked, setChecked] = useState({})
    const [name, setName] = useState('')
    const [image, setImage] = useState(null)
@@ -628,7 +643,7 @@ index eed110e190..42f3c0e222 100644
  
    // Reset per open so a cancelled draft doesn't leak into the next one.
    useEffect(() => {
-@@ -9274,12 +9708,17 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
+@@ -9274,12 +9714,17 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
        setChecked({})
        setName('')
        setImage(null)
@@ -647,7 +662,7 @@ index eed110e190..42f3c0e222 100644
    const placeholder = selected.length
      ? selected.map(bot => displayName(bot, botRosterMeta(bot, allMeta))).join(', ')
      : 'Group name'
-@@ -9322,6 +9761,8 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
+@@ -9322,6 +9767,8 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
      // gateway's name-keyed bot metadata to remain seated in this room.
      const roomMembers = durableGroupChatMembers(selected)
  
@@ -656,7 +671,7 @@ index eed110e190..42f3c0e222 100644
      updateGroupChat(groupName, room => {
        room.members = roomMembers
        room.roomId = roomId
-@@ -9330,6 +9771,10 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
+@@ -9330,6 +9777,10 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
          room.image = image
        }
  
@@ -667,7 +682,7 @@ index eed110e190..42f3c0e222 100644
        return room
      })
  
-@@ -9352,7 +9797,7 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
+@@ -9352,7 +9803,7 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
            children: [
              jsx(DialogTitle, { children: 'New Group Chat' }),
              jsx(DialogDescription, {
@@ -676,7 +691,7 @@ index eed110e190..42f3c0e222 100644
              })
            ]
          }),
-@@ -9458,6 +9903,19 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
+@@ -9458,6 +9909,19 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
              })
            ]
          }),
@@ -696,7 +711,7 @@ index eed110e190..42f3c0e222 100644
          jsxs(DialogFooter, {
            children: [
              jsx(Button, { variant: 'secondary', onClick: onClose, children: 'Cancel' }),
-@@ -10045,6 +10503,16 @@ function GroupChatWorkspace({ group, members, onBack, visible = true }) {
+@@ -10045,6 +10509,16 @@ function GroupChatWorkspace({ group, members, onBack, visible = true }) {
          className: 'shrink-0 text-[0.65rem] text-(--ui-text-quaternary)',
          children: `${members.length} bots`
        }),
