@@ -34,6 +34,8 @@ und stehen in keiner offiziellen Verbindung zu Nous Research.
 | **german-language** | Deutsche Sprachdatei für Hermes Desktop (Interims-Installer, bis Upstream-PR [#51762](https://github.com/NousResearch/hermes-agent/pull/51762) gemerged ist) | [PROMPT.md](extensions/german-language/PROMPT.md) |
 | **bot-mode-german** | Deutsche Übersetzung für **Bot Mode** (das Plugin hatte upstream gar keine i18n — 195 Texte neu über `ctx.i18n` verdrahtet). Interims-Installer mit Checksummen-Schutz, bis der Upstream-PR gemerged ist | [PROMPT.md](extensions/bot-mode-german/PROMPT.md) |
 
+| **group-chat-limits** | Runden-, Nachrichten-, Mitglieder- und Verlaufsgrenzen für Bot-Mode-Gruppenchats pro Raum einstellbar, inklusive „aus“ mit abschaltbarer Notbremse. Upstream deckelt hart bei 3 Runden / 10 Nachrichten, wobei die Zehn bei 6 Bots immer zuerst greift | [PROMPT.md](extensions/group-chat-limits/PROMPT.md) |
+
 Weitere Komponenten folgen — jede nach demselben Muster: `install.sh` + `PROMPT.md`.
 
 ## Installation
