@@ -35,6 +35,18 @@ already = ("'de'" in types_s.split("\n", 40)[0:40] and False) or False
 m_union = re.search(r"^export type Locale = (.+)$", types_s, re.M)
 if not m_union:
     fail("Anker 'export type Locale =' in types.ts nicht gefunden (Upstream-Drift) - bitte in der AIIANER Community melden")
+def _verdrahtet(name: str, inhalt: str) -> bool:
+    """Traegt diese Datei die Deutsch-Verdrahtung? Pro Datei ihr eigener Anker."""
+    if name == "types.ts":
+        m = re.search(r"^export type Locale = (.+)$", inhalt, re.M)
+        return bool(m and "'de'" in m.group(1))
+    if name == "catalog.ts":
+        return "./de'" in inhalt
+    if name == "languages.ts":
+        return "id: 'de'" in inhalt
+    return False
+
+
 wired = "'de'" in m_union.group(1) and "./de'" in catalog_s and "id: 'de'" in langs_s
 
 if not wired:
@@ -78,6 +90,32 @@ if not wired:
 
     # Alles-oder-nichts: Backups, schreiben, verifizieren, sonst Restore
     targets = [("types.ts", types_n), ("catalog.ts", catalog_n), ("languages.ts", langs_n)]
+
+    # ZWEI Arten von Sicherung, und der Unterschied ist wichtig:
+    #
+    #   .aiianer-orig  Erstzustand VOR der allerersten Verdrahtung. Wird nie
+    #                  ueberschrieben. Nur daraus darf deinstalliert werden.
+    #   .aiianer-bak   Rollback fuer GENAU diesen Lauf. Wird jedes Mal neu
+    #                  geschrieben.
+    #
+    # Warum getrennt: 'wired' verlangt alle drei Anker gleichzeitig. Kippt nach
+    # einem Hermes-Update nur EINER, laeuft dieser Block erneut - und die
+    # beiden noch gepatchten Dateien wuerden ihre eigene Verdrahtung als
+    # "Original" sichern. Beim spaeteren Deinstallieren kaeme dann ein
+    # catalog.ts mit "import { de } from './de'" zurueck, waehrend de.ts
+    # geloescht wird. Hermes baut danach nicht mehr.
+    for name, _ in targets:
+        orig = I18N / (name + ".aiianer-orig")
+        if not orig.exists():
+            alt_bak = I18N / (name + ".aiianer-bak")
+            quelle = I18N / name
+            # Migration fuer Installationen von vor dieser Trennung: ein
+            # vorhandenes .aiianer-bak zaehlt nur, wenn es nachweislich
+            # unverdrahtet ist.
+            if alt_bak.is_file() and not _verdrahtet(name, alt_bak.read_text()):
+                quelle = alt_bak
+            if not _verdrahtet(name, quelle.read_text()):
+                shutil.copy2(quelle, orig)
     for name, _ in targets:
         shutil.copy2(I18N / name, I18N / (name + ".aiianer-bak"))
     try:

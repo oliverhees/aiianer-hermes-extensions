@@ -12,6 +12,7 @@ des Dashboards.
 from __future__ import annotations
 
 import json
+import re
 import os
 import shutil
 import subprocess
@@ -248,7 +249,10 @@ def _restore(quelle: Path, ziel: Path, protokoll: list) -> bool:
     return True
 
 
-def _drop(pfad: Path, protokoll: list) -> None:
+def _drop(pfad: Path, protokoll: list) -> bool:
+    """Gibt zurueck, ob danach wirklich nichts mehr da liegt. Der Aufrufer
+    MUSS das auswerten - ein Rueckbau, der still scheitert und trotzdem
+    ok: true meldet, ist schlimmer als einer, der abbricht."""
     try:
         if pfad.is_dir():
             shutil.rmtree(pfad)
@@ -256,38 +260,116 @@ def _drop(pfad: Path, protokoll: list) -> None:
         elif pfad.exists():
             pfad.unlink()
             protokoll.append(f"entfernt: {pfad.name}")
+        return not pfad.exists()
     except Exception as exc:
-        protokoll.append(f"konnte {pfad} nicht entfernen: {exc}")
+        protokoll.append(f"KONNTE NICHT ENTFERNEN: {pfad} ({exc})")
+        return False
+
+
+def _verdrahtet(name: str, inhalt: str) -> bool:
+    """Traegt die Datei noch die Deutsch-Verdrahtung? Pro Datei ihr Anker."""
+    if name == "types.ts":
+        m = re.search(r"^export type Locale = (.+)$", inhalt, re.M)
+        return bool(m and "'de'" in m.group(1))
+    if name == "catalog.ts":
+        return "./de'" in inhalt
+    if name == "languages.ts":
+        return "id: 'de'" in inhalt
+    return False
+
+
+def _sicherung_fuer(name: str) -> Path | None:
+    """Nur eine nachweislich UNVERDRAHTETE Sicherung taugt zum Rueckbau.
+
+    apply-de.py legt .aiianer-orig einmalig an und ruehrt es nie wieder an.
+    .aiianer-bak wird bei jedem Lauf ueberschrieben und kann deshalb bereits
+    die Verdrahtung enthalten - wer daraus wiederherstellt und danach de.ts
+    loescht, hinterlaesst ein Hermes, das nicht mehr baut."""
+    for endung in (".aiianer-orig", ".aiianer-bak"):
+        kandidat = I18N_DIR / (name + endung)
+        if not kandidat.is_file():
+            continue
+        try:
+            if not _verdrahtet(name, kandidat.read_text()):
+                return kandidat
+        except Exception:
+            continue
+    return None
 
 
 def _uninstall_german(protokoll: list) -> None:
-    """apply-de.py sichert types.ts/catalog.ts/languages.ts als *.aiianer-bak."""
     namen = ("types.ts", "catalog.ts", "languages.ts")
 
     # ERST pruefen, DANN schreiben. Andersherum waere der Rueckbau nicht
-    # atomar: fehlt nur eine der drei Sicherungen, waeren die anderen Dateien
+    # atomar: fehlt nur eine brauchbare Sicherung, waeren die anderen Dateien
     # bereits ueberschrieben und die Meldung "nichts veraendert" gelogen.
-    fehlend = [n for n in namen if not (I18N_DIR / (n + ".aiianer-bak")).is_file()]
+    quellen = {n: _sicherung_fuer(n) for n in namen}
+    fehlend = [n for n, q in quellen.items() if q is None]
     if fehlend:
         raise HTTPException(
             status_code=409,
             detail=(
-                "Rueckbau abgebrochen, es fehlen Sicherungen fuer: "
+                "Rueckbau abgebrochen. Fuer diese Dateien gibt es keine "
+                "brauchbare Sicherung des Originalzustands: "
                 + ", ".join(fehlend)
-                + ". Ohne sie laesst sich der Originalzustand nicht sauber "
-                "herstellen. Es wurde nichts veraendert."
+                + ". Entweder fehlt sie, oder sie enthaelt selbst schon die "
+                "deutsche Verdrahtung. Wuerde ich sie trotzdem einspielen und "
+                "de.ts loeschen, wuerde Hermes danach nicht mehr bauen. Es "
+                "wurde nichts veraendert."
             ),
         )
+
     for name in namen:
-        _restore(I18N_DIR / (name + ".aiianer-bak"), I18N_DIR / name, protokoll)
+        _restore(quellen[name], I18N_DIR / name, protokoll)
+
+    # Gegenprobe am Ergebnis, nicht an der Absicht.
+    reste = [n for n in namen if _verdrahtet(n, (I18N_DIR / n).read_text())]
+    if reste:
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "Rueckbau unvollstaendig: nach dem Wiederherstellen tragen "
+                + ", ".join(reste)
+                + " immer noch die deutsche Verdrahtung. de.ts wurde deshalb "
+                "NICHT geloescht, damit Hermes weiter baut. Bitte in der "
+                "AIIANER Community melden."
+            ),
+        )
+
+    # de.ts erst jetzt, und vorher zur Sicherheit weglegen statt vernichten.
+    quelle_de = I18N_DIR / "de.ts"
+    if quelle_de.is_file():
+        try:
+            (EXT_STORE / "german-language").mkdir(parents=True, exist_ok=True)
+            shutil.copy2(quelle_de, EXT_STORE / "german-language" / "de.ts.entfernt")
+            protokoll.append("de.ts vor dem Entfernen weggelegt")
+        except Exception as exc:
+            protokoll.append(f"de.ts konnte nicht weggelegt werden: {exc}")
+    _drop(quelle_de, protokoll)
+
     for name in namen:
         _drop(I18N_DIR / (name + ".aiianer-bak"), protokoll)
-    _drop(I18N_DIR / "de.ts", protokoll)
+        _drop(I18N_DIR / (name + ".aiianer-orig"), protokoll)
+
     # Quellen des Waechters mit entfernen, sonst spielt er beim naechsten
-    # Gateway-Start alles wieder ein.
-    _drop(STATE_DIR / "de.ts", protokoll)
-    _drop(STATE_DIR / "apply-de.py", protokoll)
-    _drop(EXT_STORE / "german-language", protokoll)
+    # Gateway-Start alles wieder ein. Schlaegt das fehl, ist das KEINE
+    # Nebensache - der Aufrufer muss es erfahren.
+    kritisch = []
+    for pfad in (STATE_DIR / "de.ts", STATE_DIR / "apply-de.py"):
+        _drop(pfad, protokoll)
+        if pfad.exists():
+            kritisch.append(str(pfad))
+    if kritisch:
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "Die Dateien wurden zurueckgesetzt, aber diese Quellen des "
+                "Waechters liessen sich nicht entfernen: "
+                + ", ".join(kritisch)
+                + ". Er wuerde Deutsch beim naechsten Start erneut einspielen. "
+                "Bitte die Dateien von Hand loeschen."
+            ),
+        )
 
 
 def _uninstall_bots(comp_id: str, sicherungsname: str, protokoll: list) -> None:
@@ -346,12 +428,19 @@ async def uninstall(body: dict) -> dict:
 
     cat = _load_catalog()
     entry = next((c for c in cat.get("components", []) if c["id"] == comp_id), None)
+    # Nicht blind ok melden: was sich nicht entfernen liess, gehoert vor die
+    # Augen des Nutzers, nicht nur ins Protokoll.
+    warnungen = [z for z in protokoll if z.startswith("KONNTE NICHT ENTFERNEN")]
     return {
         "ok": True,
         "id": comp_id,
         "action": "uninstall",
         "log": protokoll,
-        "nextSteps": _steps(comp_id, "uninstall", entry),
+        "warnings": warnungen,
+        "nextSteps": _steps(comp_id, "uninstall", entry) + (
+            ["Achtung, Reste sind liegengeblieben: " + "; ".join(warnungen)]
+            if warnungen else []
+        ),
     }
 
 
