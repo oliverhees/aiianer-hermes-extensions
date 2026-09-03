@@ -106,6 +106,19 @@
 
         // Nach der Aktion: was der Nutzer jetzt tun muss. Ohne das erwartet er,
         // dass die Oberflaeche sofort deutsch ist, und das ist sie nicht.
+        res && res.ok && (res.warnings || []).length
+          ? h(
+              "div",
+              { className: "mt-3 rounded border border-amber-600/60 bg-amber-950/20 p-2" },
+              h("p", { className: "text-sm font-medium" }, "Diese Reste liessen sich nicht entfernen:"),
+              h(
+                "ul",
+                { className: "text-sm text-muted-foreground list-disc pl-5 mt-1" },
+                res.warnings.map(function (z, i) { return h("li", { key: i }, z); })
+              )
+            )
+          : null,
+
         res && res.ok && !(res.nextSteps || []).length
           ? h(
               "p",
@@ -208,7 +221,7 @@
         .then(function (antwort) {
           setErgebnis(function (v) {
             var n = {}; for (var k in v) n[k] = v[k];
-            n[id] = { ok: true, nextSteps: (antwort && antwort.nextSteps) || [] };
+            n[id] = { ok: true, nextSteps: (antwort && antwort.nextSteps) || [], warnings: (antwort && antwort.warnings) || [] };
             return n;
           });
           // Auf den frischen Katalog WARTEN, sonst gibt der Knopf zu frueh

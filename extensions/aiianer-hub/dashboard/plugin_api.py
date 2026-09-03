@@ -532,10 +532,10 @@ async def uninstall(body: dict) -> dict:
         "action": "uninstall",
         "log": protokoll,
         "warnings": warnungen,
-        "nextSteps": _steps(comp_id, "uninstall", entry) + (
-            ["Achtung, Reste sind liegengeblieben: " + "; ".join(warnungen)]
-            if warnungen else []
-        ),
+        # Warnungen gehoeren NICHT in die Schritteliste - dort stehen Dinge,
+        # die der Nutzer tun soll, nicht Dinge, die schiefgingen. Beide
+        # Oberflaechen rendern "warnings" in einem eigenen Kasten.
+        "nextSteps": _steps(comp_id, "uninstall", entry),
     }
 
 

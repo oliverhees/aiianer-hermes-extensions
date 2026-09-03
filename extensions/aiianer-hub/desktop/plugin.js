@@ -145,6 +145,21 @@ function makePane(useCatalog, aktionen) {
         : (aktiv ? [] : (c.status === 'missing' ? (c.nextSteps || []) : []))
 
       const hinweis = []
+      // Liegengebliebene Reste zuerst, und in Gelb: sie sind weder Erfolg
+      // noch Fehlschlag, aber der Nutzer muss sie sehen. Ohne diesen Zweig
+      // waere das Feld warnings totes Gewicht in der Antwort.
+      if (res && res.ok && (res.warnings || []).length) {
+        hinweis.push(jsxs('div', {
+          className: 'rounded border border-amber-600/60 bg-amber-950/20 p-2 space-y-1',
+          children: [
+            jsx('p', { className: 'text-xs font-medium', children: t('warnTitle') }, 'wt'),
+            jsxs('ul', {
+              className: 'text-xs opacity-80 list-disc pl-4 space-y-0.5',
+              children: res.warnings.map((z, i) => jsx('li', { children: z }, 'w' + i))
+            }, 'ul')
+          ]
+        }, 'warn'))
+      }
       if (res && res.ok && !schritte.length) {
         // Ohne diesen Zweig faellt eine erfolgreiche Aktion ohne hinterlegte
         // Schritte durch alle Faelle: der Knopf wird wieder normal und
@@ -220,6 +235,7 @@ export default {
         uninstalling: 'Removing...',
         doneTitle: 'Done. What to do next:',
         doneBare: 'Done. Restart Hermes to apply it.',
+        warnTitle: 'Some leftovers could not be removed:',
         failTitle: 'That did not work:',
         afterwards: 'Afterwards:',
         empty: 'Catalog is empty',
@@ -243,6 +259,7 @@ export default {
         uninstalling: 'Wird entfernt ...',
         doneTitle: 'Fertig. Das ist jetzt zu tun:',
         doneBare: 'Fertig. Hermes neu starten, damit es greift.',
+        warnTitle: 'Diese Reste liessen sich nicht entfernen:',
         failTitle: 'Das hat nicht geklappt:',
         afterwards: 'Danach nötig:',
         empty: 'Der Katalog ist leer',
