@@ -111,7 +111,7 @@ function makePane(useCatalog, aktionen) {
         children: [
           jsx('span', { className: 'font-medium text-sm', children: c.name }, 'n'),
           jsx(Badge, { children: 'v' + c.version }, 'v'),
-          jsx(Badge, { children: t('status.' + c.status) }, 's'),
+          jsx(Badge, { children: c.available === false ? t('status.unavailable') : t('status.' + c.status) }, 's'),
           c.installed && c.installed !== c.version
             ? jsx('span', {
                 className: 'text-xs opacity-60',
@@ -121,9 +121,14 @@ function makePane(useCatalog, aktionen) {
         ]
       }, 'h')
 
-      // Knopfreihe: was moeglich ist, haengt am Status.
+      // Knopfreihe: was moeglich ist, haengt am Status - und zuerst daran,
+      // ob die Komponente auf diesem Rechner ueberhaupt installierbar ist.
+      // Ein Knopf, der zuverlaessig in einen Fehler laeuft, ist schlimmer als
+      // gar kein Knopf.
       const reihe = []
-      if (aktiv) {
+      if (c.available === false) {
+        // kein Knopf, die Begruendung steht unten
+      } else if (aktiv) {
         reihe.push(knopf('busy', aktiv === 'uninstall' ? t('uninstalling') : t('installing'), { aus: true }))
       } else if (c.status === 'missing') {
         reihe.push(knopf('inst', t('install'), { aus: gesperrt, onClick: () => ausfuehren(c.id, 'install') }))
@@ -145,6 +150,15 @@ function makePane(useCatalog, aktionen) {
         : (aktiv ? [] : (c.status === 'missing' ? (c.nextSteps || []) : []))
 
       const hinweis = []
+      if (c.available === false) {
+        hinweis.push(jsxs('div', {
+          className: 'rounded border border-neutral-600/60 bg-neutral-900/40 p-2 space-y-1',
+          children: [
+            jsx('p', { className: 'text-xs font-medium', children: t('unavailTitle') }, 'ut'),
+            jsx('p', { className: 'text-xs opacity-70', children: c.unavailableReason }, 'ur')
+          ]
+        }, 'unavail'))
+      }
       // Liegengebliebene Reste zuerst, und in Gelb: sie sind weder Erfolg
       // noch Fehlschlag, aber der Nutzer muss sie sehen. Ohne diesen Zweig
       // waere das Feld warnings totes Gewicht in der Antwort.
@@ -245,7 +259,8 @@ export default {
         // Baum. Ein flacher Schluessel 'status.missing' wird nie gefunden und
         // translateFrom gibt dann den Schluessel selbst zurueck - im Badge
         // stand woertlich "status.missing".
-        status: { current: 'current', outdated: 'update available', missing: 'not installed' }
+        status: { current: 'current', outdated: 'update available', missing: 'not installed', unavailable: 'not available' },
+        unavailTitle: 'Cannot be installed right now:'
       },
       de: {
         title: 'AIIANER Erweiterungen',
@@ -264,7 +279,8 @@ export default {
         afterwards: 'Danach nötig:',
         empty: 'Der Katalog ist leer',
         errTitle: 'Katalog konnte nicht geladen werden',
-        status: { current: 'aktuell', outdated: 'Update verfügbar', missing: 'nicht installiert' }
+        status: { current: 'aktuell', outdated: 'Update verfügbar', missing: 'nicht installiert', unavailable: 'zurzeit nicht möglich' },
+        unavailTitle: 'Lässt sich gerade nicht installieren:'
       }
     })
 

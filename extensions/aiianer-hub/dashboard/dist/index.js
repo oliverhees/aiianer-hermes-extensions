@@ -40,7 +40,7 @@
         h(
           "div",
           { className: "flex flex-wrap items-center gap-2 mt-1" },
-          h(C.Badge, null, LABEL[c.status] || c.status),
+          h(C.Badge, null, c.available === false ? "zurzeit nicht möglich" : (LABEL[c.status] || c.status)),
           h(C.Badge, null, "v" + c.version),
           c.installed && c.installed !== c.version
             ? h(C.Badge, null, "installiert: v" + c.installed)
@@ -71,7 +71,9 @@
         h(
           "div",
           { className: "mt-3 flex flex-wrap gap-2" },
-          laufend
+          c.available === false
+            ? null
+            : laufend
             ? h(
                 C.Button,
                 { disabled: true },
@@ -106,6 +108,15 @@
 
         // Nach der Aktion: was der Nutzer jetzt tun muss. Ohne das erwartet er,
         // dass die Oberflaeche sofort deutsch ist, und das ist sie nicht.
+        c.available === false
+          ? h(
+              "div",
+              { className: "mt-3 rounded border border-neutral-600/60 bg-neutral-900/40 p-2" },
+              h("p", { className: "text-sm font-medium" }, "Lässt sich gerade nicht installieren:"),
+              h("p", { className: "text-sm text-muted-foreground mt-1" }, c.unavailableReason)
+            )
+          : null,
+
         res && res.ok && (res.warnings || []).length
           ? h(
               "div",

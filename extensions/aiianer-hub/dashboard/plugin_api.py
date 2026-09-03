@@ -112,6 +112,40 @@ NEXT_STEPS = {
 }
 
 
+def _verfuegbar(comp_id: str) -> tuple:
+    """Kann diese Komponente auf DIESEM Rechner ueberhaupt installiert werden?
+
+    Wird vor dem Anbieten geprueft, nicht erst beim Klick. Ein Knopf, der
+    zuverlaessig in einen 500er laeuft, ist schlimmer als gar kein Knopf: der
+    Nutzer haelt sein System fuer kaputt statt die Komponente fuer veraltet.
+
+    Absichtlich hier im lokalen Code und nicht im Katalog aus dem Netz - die
+    Pruefung entscheidet, was auf fremden Rechnern ausgefuehrt werden darf."""
+    if comp_id in ("bot-mode-german", "group-chat-limits"):
+        # BOTS_PLUGIN, nicht _bots_ziel(): der Rueckbau darf tolerant sein und
+        # nehmen, was da ist. Die Installer schreiben aber hart nach
+        # plugin.js - fehlt genau die, ist die Komponente nicht installierbar,
+        # auch wenn daneben eine plugin.tsx liegt.
+        if not BOTS_PLUGIN.is_file():
+            return (
+                False,
+                "Diese Komponente aendert die Bot-Modus-Datei von Hermes. "
+                "Hermes hat den Bot-Modus zwischenzeitlich von einer einzelnen "
+                "Datei auf viele Module umgestellt, damit passt unsere Fassung "
+                "nicht mehr. Sie wird nachgezogen - bis dahin waere ein "
+                "Installieren ein Schuss ins Leere.",
+            )
+    if comp_id == "german-language":
+        if not (I18N_DIR / "types.ts").is_file():
+            return (
+                False,
+                "Der Hermes-Quellordner liegt nicht an der erwarteten Stelle "
+                f"({I18N_DIR}). Ohne ihn laesst sich die Sprache nicht "
+                "einspielen.",
+            )
+    return (True, "")
+
+
 def _steps(comp_id: str, aktion: str, entry: dict | None = None) -> list:
     """Katalog darf ueberschreiben, sonst der lokale Standard."""
     vom_katalog = (entry or {}).get("nextSteps", {}).get(aktion)
@@ -191,6 +225,8 @@ async def catalog() -> dict:
                 "installedAt": local.get("at"),
                 "nextSteps": _steps(c["id"], "install", c),
                 "uninstallSteps": _steps(c["id"], "uninstall", c),
+                "available": _verfuegbar(c["id"])[0],
+                "unavailableReason": _verfuegbar(c["id"])[1],
                 "status": (
                     "missing"
                     if not installed
@@ -226,6 +262,11 @@ async def install(body: dict) -> dict:
     entry = next((c for c in cat.get("components", []) if c["id"] == comp_id), None)
     if entry is None:
         raise HTTPException(status_code=404, detail=f"Unbekannte Komponente: {comp_id}")
+
+    # Auch der direkte Aufruf wird abgefangen, nicht nur der Knopf.
+    ok, grund = _verfuegbar(comp_id)
+    if not ok:
+        raise HTTPException(status_code=409, detail=grund)
 
     with tempfile.TemporaryDirectory() as tmp:
         root = _download(tmp)
