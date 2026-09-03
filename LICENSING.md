@@ -2,10 +2,10 @@
 
 AIIANER Hermes Extensions ist **dual lizenziert**. Du wählst eine der beiden Optionen:
 
-## Option 1 — AGPL-3.0 (Open Source, kostenlos)
+## Option 1: AGPL-3.0 (Open Source, kostenlos)
 
-Du darfst AIIANER Hermes Extensions frei nutzen, verändern und weitergeben — auch
-kommerziell — **solange** du die Bedingungen der AGPL-3.0 erfüllst.
+Du darfst AIIANER Hermes Extensions frei nutzen, verändern und weitergeben, auch
+kommerziell, **solange** du die Bedingungen der AGPL-3.0 erfüllst.
 Die wichtigste davon: Wenn du AIIANER Hermes Extensions (auch verändert) verbreitest
 oder als Netzwerkdienst für Dritte betreibst, musst du deinen vollständigen
 Quellcode unter AGPL-3.0 offenlegen.
@@ -15,7 +15,7 @@ Open-Source-Projekte.
 
 Voller Lizenztext: [LICENSE](LICENSE)
 
-## Option 2 — Kommerzielle Lizenz
+## Option 2: Kommerzielle Lizenz
 
 Du willst AIIANER Hermes Extensions in einem geschlossenen Produkt oder Dienst einsetzen,
 ohne deinen Quellcode offenzulegen? Dann brauchst du eine kommerzielle Lizenz.
@@ -24,7 +24,7 @@ Typische Nutzer dieser Option: Agenturen, SaaS-Anbieter, Unternehmen, die
 AIIANER Hermes Extensions in eigene Angebote einbauen.
 
 **Anfrage:** über die [AIIANER Community](https://aiianer.de)
-oder per E-Mail an **support@aiianer.de** — kurz beschreiben, was du vorhast,
+oder per E-Mail an **support@aiianer.de**. Beschreib kurz, was du vorhast,
 und du bekommst ein faires Angebot.
 
 ## Support, Wartung & Setup-Service
@@ -32,7 +32,7 @@ und du bekommst ein faires Angebot.
 Unabhängig von der Lizenz-Option gibt es **Wartungs- und Supportverträge**:
 Updates eingespielt, Anpassungen umgesetzt, Prioritäts-Support direkt vom
 Entwickler. Und wer AIIANER Hermes Extensions nicht selbst aufsetzen kann oder will:
-**Wir übernehmen das komplette Setup** — Server aufsetzen, Installation,
+**Wir übernehmen das komplette Setup**: Server aufsetzen, Installation,
 Konfiguration, einsatzbereit übergeben.
 
 Anfrage an **support@aiianer.de** oder über die
@@ -42,7 +42,7 @@ Community-Support (Fragen, Tutorials, KI-Coach) ist für Mitglieder inklusive.
 ## Häufige Fragen
 
 **Darf ich AIIANER Hermes Extensions intern in meiner Firma nutzen?**
-Ja — rein interne Nutzung ohne Weitergabe und ohne Bereitstellung an Dritte
+Ja. Rein interne Nutzung ohne Weitergabe und ohne Bereitstellung an Dritte
 ist unter AGPL-3.0 zulässig, ohne dass du Code offenlegen musst.
 
 **Darf ich AIIANER Hermes Extensions für Kunden hosten?**

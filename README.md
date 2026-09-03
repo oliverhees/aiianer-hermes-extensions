@@ -1,6 +1,6 @@
 <h1 align="center">AIIANER Hermes Extensions</h1>
 
-<p align="center"><strong>Alle AIIANER-Erweiterungen für Hermes Desktop — installierbar mit je einem Satz an deinen Hermes.</strong></p>
+<p align="center"><strong>Alle AIIANER-Erweiterungen für Hermes Desktop. Eine installierst du mit einem Satz an deinen Hermes.</strong></p>
 
 <p align="center">
   <a href="#lizenz"><img src="https://img.shields.io/badge/Lizenz-AGPL--3.0%20%2B%20Kommerziell-red" alt="Lizenz" /></a>
@@ -14,7 +14,7 @@
 
 Das zentrale Repo für alle Erweiterungen, die wir bei [AIIANER](https://aiianer.de)
 für Hermes Desktop bauen: Provider-Plugins, Sprachdateien, Werkzeuge. Jede
-Komponente bringt ihren eigenen Installer mit und — das Besondere — ihren
+Komponente bringt ihren eigenen Installer mit, und dazu ihren
 **Installations-Satz**: eine Nachricht, die du einfach in deinen Hermes-Chat
 kopierst. Hermes ist ein Agent mit Terminal-Zugriff und installiert die
 Komponente dann selbst, prüft das Ergebnis und sagt dir, was noch zu tun ist.
@@ -23,7 +23,7 @@ Kein git, kein Terminal-Wissen nötig.
 **Teil des AIIANER-Ökosystems:** Bei [AIIANER](https://aiianer.de) bauen wir
 ein KI-Betriebssystem, das [Hermes Desktop](https://github.com/NousResearch/hermes-agent)
 als Grundlage nutzt. Hermes selbst ist ein Open-Source-Projekt von
-**Nous Research** — die Erweiterungen hier sind unabhängige Community-Projekte
+**Nous Research**. Die Erweiterungen hier sind unabhängige Community-Projekte
 und stehen in keiner offiziellen Verbindung zu Nous Research.
 
 ## Komponenten
@@ -32,12 +32,12 @@ und stehen in keiner offiziellen Verbindung zu Nous Research.
 | --- | --- | --- |
 | **aiianer-hub** | **Der Marktplatz.** Ein Reiter in Hermes, aus dem du alle Komponenten unten installierst und aktuell hältst. Bringt einen Wächter mit, der nach jedem Hermes-Update prüft, ob noch alles sitzt, und Fehlendes selbst nachlegt. [Anleitung](extensions/aiianer-hub/README.md) | [PROMPT.md](extensions/aiianer-hub/PROMPT.md) |
 | **eurouter-provider** | EU Router (eurouter.ai) als Provider: EU-Compliance-Routen statt roher Modelle im Picker, DSGVO-konformes Routing. Eigenes Repo: [hermes-eurouter-plugin](https://github.com/oliverhees/hermes-eurouter-plugin) | [PROMPT.md](extensions/eurouter-provider/PROMPT.md) |
-| **german-language** | Deutsche Sprachdatei für Hermes Desktop (Interims-Installer, bis Upstream-PR [#51762](https://github.com/NousResearch/hermes-agent/pull/51762) gemerged ist) | [PROMPT.md](extensions/german-language/PROMPT.md) |
-| **bot-mode-german** | Deutsche Übersetzung für **Bot Mode** (das Plugin hatte upstream gar keine i18n — 195 Texte neu über `ctx.i18n` verdrahtet). Interims-Installer mit Checksummen-Schutz, bis der Upstream-PR gemerged ist | [PROMPT.md](extensions/bot-mode-german/PROMPT.md) |
+| **german-language** | Deutsche Sprachdatei für Hermes Desktop (eigenständiger Installer, trägt Deutsch als Sprache in Hermes ein) | [PROMPT.md](extensions/german-language/PROMPT.md) |
+| **bot-mode-german** | Deutsche Texte für **Bot Mode**: Liste, Gruppenchats, Avatare, Zeitpläne. 194 Bausteine, eingetragen in den plugin-eigenen Nachrichtenkatalog von Bot Mode. Setzt `german-language` voraus | [PROMPT.md](extensions/bot-mode-german/PROMPT.md) |
 
-| **group-chat-limits** | Runden-, Nachrichten-, Mitglieder- und Verlaufsgrenzen für Bot-Mode-Gruppenchats pro Raum einstellbar, inklusive „aus“ mit abschaltbarer Notbremse. Upstream deckelt hart bei 3 Runden / 10 Nachrichten, wobei die Zehn bei 6 Bots immer zuerst greift | [PROMPT.md](extensions/group-chat-limits/PROMPT.md) |
+| **group-chat-limits** | *Zurzeit außer Betrieb, wird neu geschrieben.* Runden-, Nachrichten-, Mitglieder- und Verlaufsgrenzen für Bot-Mode-Gruppenchats pro Raum einstellbar, inklusive „aus“ mit abschaltbarer Notbremse. Upstream deckelt hart bei 3 Runden / 10 Nachrichten, wobei die Zehn bei 6 Bots immer zuerst greift | [PROMPT.md](extensions/group-chat-limits/PROMPT.md) |
 
-Weitere Komponenten folgen — jede nach demselben Muster: `install.sh` + `PROMPT.md`.
+Weitere Komponenten folgen, jede nach demselben Muster: `install.sh` plus `PROMPT.md`.
 
 ## Installation
 
@@ -75,7 +75,7 @@ Ohne Argument listet der Installer alle verfügbaren Komponenten:
 curl -sL https://raw.githubusercontent.com/oliverhees/aiianer-hermes-extensions/main/install.sh | bash
 ```
 
-## Update-Sicherheit — das Designprinzip
+## Update-Sicherheit, das Designprinzip
 
 Hermes aktualisiert sich täglich und räumt dabei alles weg, was im
 Programm-Checkout liegt. Deshalb gilt hier:
@@ -83,30 +83,30 @@ Programm-Checkout liegt. Deshalb gilt hier:
 1. **Komponenten installieren an update-sichere Orte** (z. B.
    `~/.hermes/plugins/model-providers/`), wo immer Hermes das offiziell vorsieht.
 2. **Muss eine Komponente in den Checkout** (wie die Sprachdatei), arbeitet der
-   Installer mit gezielten, idempotenten Einfügungen an stabilen Ankern —
+   Installer mit gezielten, wiederholbaren Einfügungen an stabilen Ankern:
    alles-oder-nichts mit Backup, laute Fehlermeldung statt halbem Zustand.
    Nach einem Update, das die Änderung entfernt: denselben Satz einfach nochmal
    an Hermes schicken.
-3. **Der Königsweg bleibt Upstream:** Wo es sinnvoll ist, stellen wir PRs an
-   Nous Research (die Sprachdatei läuft bereits als
-   [#51762](https://github.com/NousResearch/hermes-agent/pull/51762)) — sobald
-   gemerged, fliegt der jeweilige Interims-Installer hier raus.
+3. **Nimm den offiziellen Weg, wo es einen gibt.** Bot Mode zum Beispiel
+   bringt seit dem Umbau einen eigenen Nachrichtenkatalog mit. Da tragen wir
+   nur noch ein deutsches Bündel ein, statt Dateien zu ersetzen. Solche Türen
+   halten, weil sie dafür gedacht sind.
 
-> 🎓 **Tutorials, Setups und Support** gibt es in der
-> [AIIANER Community](https://aiianer.de) — inklusive KI-Coach.
+> Tutorials, Setups und Support gibt es in der
+> [AIIANER Community](https://aiianer.de), inklusive KI-Coach.
 > Fragen zu einer Komponente? Log-Zeilen mitschicken, dann schauen wir gemeinsam drauf.
 
 ## Lizenz
 
 AIIANER Hermes Extensions ist **dual lizenziert**: **AGPL-3.0** (siehe
 [LICENSE](LICENSE)) für private Nutzung, Selbsthoster, Forschung und
-Copyleft-Projekte — oder **kommerzielle Lizenz** für den Einsatz in
+Copyleft-Projekte. Alternativ eine **kommerzielle Lizenz** für den Einsatz in
 geschlossenen Produkten, Details in [LICENSING.md](LICENSING.md), Anfragen an
 **support@aiianer.de** oder über die [AIIANER Community](https://aiianer.de).
 
 ## Sicherheit
 
-Sicherheitslücken bitte **nicht** als öffentliches Issue melden — siehe
+Sicherheitslücken bitte **nicht** als öffentliches Issue melden, siehe
 [SECURITY.md](SECURITY.md).
 
 ## Marken
@@ -127,5 +127,5 @@ Verbindung zu Nous Research oder eurouter.ai.
 <p align="center">
   © 2026 <strong>Oliver Hees aka Aiianer</strong> ·
   <a href="https://aiianer.de">aiianer.de</a> ·
-  Made with 🖤 im AIIANER-Universum
+  Gebaut im AIIANER-Universum
 </p>
