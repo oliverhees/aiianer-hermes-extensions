@@ -1,0 +1,13 @@
+{
+  "name": "aiianer-hub",
+  "label": "AIIANER",
+  "description": "Deutsche Erweiterungen installieren und aktuell halten",
+  "icon": "Package",
+  "version": "1.0.0",
+  "tab": {
+    "path": "/aiianer",
+    "position": "after:skills"
+  },
+  "entry": "dist/index.js",
+  "api": "plugin_api.py"
+}

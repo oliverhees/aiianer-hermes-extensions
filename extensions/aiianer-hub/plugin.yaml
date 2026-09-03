@@ -1,0 +1,7 @@
+name: aiianer-hub
+version: 1.0.0
+description: >
+  AIIANER Marktplatz. Installiert und aktualisiert die deutschen
+  Hermes-Erweiterungen und haelt die Sprachdatei nach jedem Update aktuell.
+author: Oliver Hees aka Aiianer
+homepage: https://github.com/oliverhees/aiianer-hermes-extensions

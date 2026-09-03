@@ -1,0 +1,551 @@
+<meta charset="utf-8">
+<title>AIIANER Marktplatz für Hermes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+  :root {
+    --ground:#0A0A0A; --surface:#141416; --surface-2:#1C1C1F;
+    --ink:#F2F0EE; --ink-2:#C3BFBB; --muted:#8E8A87;
+    --line:#2A2A2D; --line-soft:#202023;
+    --accent:#E53E3E; --accent-deep:#7A2320; --accent-wash:rgba(229,62,62,0.10);
+    --ok:#4F9D69; --warn:#C9842A;
+    --f-display:'Archivo','Helvetica Neue',Arial,sans-serif;
+    --f-body:'IBM Plex Sans',system-ui,-apple-system,sans-serif;
+    --f-mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+    --measure:66ch; --pad:clamp(1.25rem,4vw,3rem);
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --ground:#FAF8F6; --surface:#FFFFFF; --surface-2:#F1EEEB;
+      --ink:#17161A; --ink-2:#3C3936; --muted:#6B6663;
+      --line:#DED8D3; --line-soft:#EAE5E0;
+      --accent:#C4302F; --accent-deep:#E8C9C7; --accent-wash:rgba(196,48,47,0.07);
+      --ok:#3F7F55; --warn:#9A6415;
+    }
+  }
+  :root[data-theme="light"] {
+    --ground:#FAF8F6; --surface:#FFFFFF; --surface-2:#F1EEEB;
+    --ink:#17161A; --ink-2:#3C3936; --muted:#6B6663;
+    --line:#DED8D3; --line-soft:#EAE5E0;
+    --accent:#C4302F; --accent-deep:#E8C9C7; --accent-wash:rgba(196,48,47,0.07);
+    --ok:#3F7F55; --warn:#9A6415;
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--f-body);
+    font-size:17px;line-height:1.68;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 var(--pad) 6rem}
+  .col{max-width:var(--measure)}
+
+  header.hero{border-bottom:1px solid var(--line);padding:clamp(3rem,9vw,5.5rem) 0 clamp(2rem,5vw,3.5rem)}
+  .eyebrow{font-family:var(--f-mono);font-size:.75rem;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent);margin:0 0 1.3rem}
+  h1{font-family:var(--f-display);font-weight:800;font-size:clamp(2.3rem,6.5vw,4rem);line-height:1.03;
+    letter-spacing:-.026em;margin:0 0 1.3rem;text-wrap:balance}
+  .standfirst{font-size:clamp(1.05rem,2.3vw,1.3rem);line-height:1.55;max-width:56ch;margin:0 0 1.8rem}
+  .hero-meta{display:flex;flex-wrap:wrap;gap:.5rem 1.75rem;font-family:var(--f-mono);font-size:.78rem;
+    color:var(--muted);padding-top:1.4rem;border-top:1px solid var(--line-soft)}
+
+  section{padding-top:clamp(2.8rem,6vw,4.5rem)}
+  h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.6rem,3.5vw,2.2rem);line-height:1.14;
+    letter-spacing:-.018em;margin:0 0 .5rem;text-wrap:balance}
+  h3{font-family:var(--f-display);font-weight:700;font-size:1.14rem;margin:2.2rem 0 .55rem;letter-spacing:-.006em}
+  .kicker{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted);margin:0 0 .85rem}
+  p{margin:0 0 1.05rem}
+  a{color:var(--accent)}
+  strong{font-weight:600}
+  code{font-family:var(--f-mono);font-size:.87em;background:var(--surface-2);border:1px solid var(--line-soft);
+    padding:.08em .36em;border-radius:3px;word-break:break-word}
+  ul,ol{margin:0 0 1.05rem;padding-left:1.25rem}
+  li{margin-bottom:.5rem}
+  li::marker{color:var(--accent)}
+
+  figure{margin:2rem 0 2.2rem}
+  .fig{background:var(--surface);border:1px solid var(--line);border-radius:4px;
+    padding:clamp(1rem,3vw,2rem);overflow-x:auto}
+  figure svg{display:block;width:100%;max-width:100%;height:auto;color:var(--ink)}
+  figcaption{font-size:.88rem;color:var(--muted);margin-top:.85rem;max-width:var(--measure);line-height:1.55}
+  .s-fill{fill:var(--surface-2)} .s-ground{fill:var(--ground)} .s-stroke{stroke:var(--line)}
+  .s-acc{stroke:var(--accent)} .s-accf{fill:var(--accent)} .s-wash{fill:var(--accent-wash)}
+  .s-lbl{font-family:'IBM Plex Sans',sans-serif;font-size:13px;fill:var(--ink)}
+  .s-sm{font-family:'IBM Plex Mono',monospace;font-size:10.5px;fill:var(--muted);letter-spacing:.04em}
+
+  .tw{overflow-x:auto;margin:1.6rem 0 2rem;border:1px solid var(--line);border-radius:4px}
+  table{border-collapse:collapse;width:100%;min-width:580px;font-size:.94rem}
+  th,td{text-align:left;padding:.72rem .95rem;border-bottom:1px solid var(--line-soft);vertical-align:top}
+  thead th{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--muted);background:var(--surface);border-bottom:1px solid var(--line)}
+  tbody tr:last-child td{border-bottom:none}
+
+  .grid{display:grid;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:4px;margin:1.8rem 0}
+  @media(min-width:640px){.grid.two{grid-template-columns:1fr 1fr}}
+  @media(min-width:900px){.grid.three{grid-template-columns:repeat(3,1fr)}}
+  .cell{background:var(--surface);padding:1.15rem 1.25rem}
+  .cell h4{font-family:var(--f-display);font-weight:700;font-size:1rem;margin:0 0 .4rem}
+  .cell p{font-size:.92rem;color:var(--muted);margin:0;line-height:1.55}
+
+  .maxim{border-left:2px solid var(--accent);background:var(--accent-wash);padding:1rem 1.25rem;margin:1.8rem 0;
+    font-family:var(--f-display);font-weight:600;font-size:1.06rem;line-height:1.45}
+  .maxim span{display:block;font-family:var(--f-body);font-weight:400;font-size:.9rem;color:var(--muted);margin-top:.5rem}
+  .warnbox{border-left:2px solid var(--warn);background:rgba(201,132,42,.09);padding:.9rem 1.15rem;
+    margin:1.6rem 0;font-size:.94rem}
+  .warnbox b{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--warn);display:block;margin-bottom:.3rem}
+
+  pre{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:1rem 1.15rem;
+    overflow-x:auto;font-family:var(--f-mono);font-size:.82rem;line-height:1.6;margin:1.4rem 0}
+  pre .c{color:var(--muted)}
+  pre .a{color:var(--accent)}
+
+  ol.steps{list-style:none;padding:0;counter-reset:s}
+  ol.steps li{counter-increment:s;position:relative;padding:.8rem 0 .8rem 3.2rem;
+    border-bottom:1px solid var(--line-soft);margin:0}
+  ol.steps li:last-child{border-bottom:none}
+  ol.steps li::before{content:counter(s,decimal-leading-zero);position:absolute;left:0;top:.9rem;
+    font-family:var(--f-mono);font-size:.78rem;color:var(--accent);letter-spacing:.06em}
+
+  hr.rule{border:none;border-top:1px solid var(--line);margin:3.2rem 0 0}
+  footer{border-top:1px solid var(--line);margin-top:4rem;padding-top:1.6rem;
+    font-family:var(--f-mono);font-size:.76rem;color:var(--muted)}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="wrap">
+
+<header class="hero">
+  <p class="eyebrow">AIIANER / Architektur</p>
+  <h1>Der deutsche Marktplatz für Hermes</h1>
+  <p class="standfirst">
+    Ein Plugin, das die deutsche Sprache und alle AIIANER-Erweiterungen installiert,
+    aktuell hält und nach jedem Hermes-Update selbst repariert. Ohne Fork, ohne
+    Pull Request, ohne auf jemanden zu warten.
+  </p>
+  <div class="hero-meta">
+    <span>Stand 01.09.2026</span>
+    <span>Verifiziert gegen upstream/main</span>
+    <span>Noch nicht gebaut</span>
+  </div>
+</header>
+
+<section>
+  <p class="kicker">Warum es das gibt</p>
+  <h2>Die Vorgeschichte in vier Sätzen</h2>
+  <div class="col">
+    <p>
+      Die deutsche Sprachdatei liegt seit Juni als Pull Request bei Nous und ist bis
+      heute nicht im Produkt. Am 1. September hat teknium die Frage beantwortet:
+      Nous merged fremde PRs grundsätzlich nicht, sondern baut sie selbst nach. Das
+      Verfahren heißt dort <strong>Salvage</strong>, und wann es passiert, entscheidet
+      nicht der Beitragende.
+    </p>
+    <p>
+      Ein zweiter Einwand aus derselben Runde ist berechtigt: Sobald Deutsch im Kern
+      liegt, verlassen sich Nutzer darauf, und jedes unübersetzte Release fällt auf
+      Nous zurück. Dieses Dokument beschreibt den Weg, der beide Probleme umgeht,
+      statt sie zu verhandeln.
+    </p>
+  </div>
+
+  <div class="maxim">
+    Was wir brauchen, bauen wir außerhalb des Hermes-Verzeichnisses und laden es
+    selbst nach.
+    <span>
+      Damit trägt Nous weder Wartung noch Verantwortung, und wir warten auf niemanden.
+      Das deckt sich mit der Ansage des Core Teams, dass das Hermes-Verzeichnis
+      unveränderlich ist und Erweiterungen über Plugins laufen sollen.
+    </span>
+  </div>
+</section>
+
+<hr class="rule">
+
+<section>
+  <p class="kicker">Die Grundlage</p>
+  <h2>Drei Haken, die Updates überleben</h2>
+  <div class="col">
+    <p>
+      Alles Folgende steht in der offiziellen Dokumentation und wurde gegen den
+      aktuellen Stand von <code>upstream/main</code> geprüft. Entscheidend ist die
+      dritte Spalte: Alle drei Ablageorte liegen <strong>außerhalb</strong> des
+      Hermes-Checkouts und werden von einem Update nicht angefasst.
+    </p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Baustein</th><th>Was er kann</th><th>Wo er liegt</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Dashboard-Plugin</strong></td>
+          <td>Eigener Reiter in der Oberfläche, eigene Seiten, eigene Bereiche</td>
+          <td><code>~/.hermes/plugins/&lt;name&gt;/dashboard/</code></td>
+        </tr>
+        <tr>
+          <td><strong>Plugin-Schnittstelle</strong></td>
+          <td>Python-Backend unter <code>/api/plugins/&lt;name&gt;/</code>, voller Dateizugriff</td>
+          <td><code>…/dashboard/plugin_api.py</code></td>
+        </tr>
+        <tr>
+          <td><strong>Gateway-Hook</strong></td>
+          <td>Reagiert auf <code>gateway:startup</code> und weitere Ereignisse</td>
+          <td><code>~/.hermes/hooks/&lt;name&gt;/</code></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="col">
+    <p>
+      Der Gateway-Hook ist das Teil, das bisher gefehlt hat. Er ist der Grund, warum
+      dieser Entwurf funktioniert und der bisherige Weg nicht.
+    </p>
+  </div>
+
+  <figure>
+    <div class="fig">
+      <svg viewBox="0 0 900 300" role="img" aria-label="Der Hermes-Checkout wird bei jedem Update ueberschrieben. Der Ordner mit Plugins und Hooks bleibt unberuehrt, deshalb ueberlebt der Marktplatz jedes Update.">
+        <defs>
+          <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <polygon points="0,0 10,5 0,10" class="s-accf"/>
+          </marker>
+        </defs>
+
+        <text x="0" y="16" class="s-sm">WIRD BEI JEDEM UPDATE ÜBERSCHRIEBEN</text>
+        <rect x="0" y="28" width="380" height="112" rx="4" class="s-ground s-stroke" stroke-dasharray="5 4"/>
+        <text x="190" y="58" class="s-lbl" text-anchor="middle">~/.hermes/hermes-agent/</text>
+        <text x="190" y="80" class="s-sm" text-anchor="middle">der Hermes-Quellcode</text>
+        <line x1="30" y1="94" x2="350" y2="94" class="s-stroke"/>
+        <text x="190" y="114" class="s-sm" text-anchor="middle">i18n/types.ts · catalog.ts · languages.ts</text>
+        <text x="190" y="130" class="s-sm" text-anchor="middle">hier muss Deutsch verdrahtet werden</text>
+
+        <text x="470" y="16" class="s-sm">BLEIBT UNBERÜHRT</text>
+        <rect x="470" y="28" width="430" height="112" rx="4" class="s-wash s-acc"/>
+        <text x="685" y="58" class="s-lbl" text-anchor="middle">~/.hermes/plugins/ und ~/.hermes/hooks/</text>
+        <text x="685" y="80" class="s-sm" text-anchor="middle">unser Marktplatz und unsere Erweiterungen</text>
+        <line x1="500" y1="94" x2="870" y2="94" class="s-stroke"/>
+        <text x="685" y="114" class="s-sm" text-anchor="middle">Reiter · Schnittstelle · Startup-Hook</text>
+        <text x="685" y="130" class="s-sm" text-anchor="middle">überlebt jedes Update</text>
+
+        <path d="M 685 140 L 685 200 L 190 200 L 190 148" fill="none" class="s-acc" marker-end="url(#a1)"/>
+        <text x="440" y="222" class="s-lbl" text-anchor="middle">stellt nach jedem Update wieder her</text>
+        <text x="440" y="242" class="s-sm" text-anchor="middle">ausgelöst durch gateway:startup</text>
+
+        <rect x="300" y="258" width="280" height="34" rx="4" class="s-fill s-stroke"/>
+        <text x="440" y="280" class="s-sm" text-anchor="middle">Einbahnstraße: der Checkout weiß nichts von uns</text>
+      </svg>
+    </div>
+    <figcaption>
+      Die gestrichelte Box links wird bei jedem Update ersetzt. Die rote Box rechts
+      nicht. Deshalb wohnt alles Eigene rechts, und der Pfeil nach links ist die
+      Reparatur, nicht die Installation.
+    </figcaption>
+  </figure>
+</section>
+
+<hr class="rule">
+
+<section>
+  <p class="kicker">Der Aufbau</p>
+  <h2>Was gebaut wird</h2>
+  <div class="col">
+    <p>
+      Ein einziges Plugin mit dem Arbeitsnamen <code>aiianer-hub</code>. Es besteht aus
+      drei Teilen, die zusammen den Marktplatz ergeben.
+    </p>
+  </div>
+
+  <div class="grid three">
+    <div class="cell">
+      <h4>Der Laden</h4>
+      <p>Ein Reiter in Hermes, der die verfügbaren AIIANER-Komponenten zeigt: was installiert ist, was neu ist, was ein Update hat.</p>
+    </div>
+    <div class="cell">
+      <h4>Der Installateur</h4>
+      <p>Ein Python-Backend, das Komponenten herunterlädt, nach <code>~/.hermes/plugins/</code> legt und Versionen vergleicht.</p>
+    </div>
+    <div class="cell">
+      <h4>Der Wächter</h4>
+      <p>Ein Hook auf <code>gateway:startup</code>, der nach jedem Hermes-Update prüft, ob noch alles sitzt, und fehlende Teile wieder einspielt.</p>
+    </div>
+  </div>
+
+  <h3>Auf der Platte</h3>
+  <pre><span class="c"># Der Marktplatz selbst</span>
+~/.hermes/plugins/<span class="a">aiianer-hub</span>/
+├── plugin.yaml              <span class="c"># meldet das Plugin bei Hermes an</span>
+├── __init__.py              <span class="c"># register(ctx), optionale Werkzeuge</span>
+└── dashboard/
+    ├── manifest.json        <span class="c"># Reiter „AIIANER", Position, Symbol</span>
+    ├── dist/index.js        <span class="c"># die Oberfläche, gebaut gegen das Plugin-SDK</span>
+    └── plugin_api.py        <span class="c"># /api/plugins/aiianer-hub/…</span>
+
+<span class="c"># Der Wächter, getrennt davon</span>
+~/.hermes/hooks/<span class="a">aiianer-guard</span>/
+├── HOOK.yaml                <span class="c"># events: [gateway:startup]</span>
+└── handler.py               <span class="c"># prüft und repariert</span>
+
+<span class="c"># Was der Marktplatz installiert</span>
+~/.hermes/plugins/eurouter/            <span class="c"># EU-Router-Provider</span>
+~/.hermes/plugins/bot-mode-german/     <span class="c"># deutsche Bot-Mode-Texte</span>
+~/.hermes/plugins/group-chat-limits/   <span class="c"># Gruppenchat-Grenzen</span>
+~/.hermes/aiianer/de.ts                <span class="c"># die Sprachdatei, als Quelle abgelegt</span></pre>
+
+  <div class="col">
+    <p>
+      Die Sprachdatei liegt bewusst <strong>nicht</strong> im Checkout, sondern als
+      Quelle unter <code>~/.hermes/aiianer/</code>. Von dort spielt der Wächter sie ein.
+      Damit ist die Quelle update-fest, auch wenn ihr Ziel es nicht ist.
+    </p>
+  </div>
+</section>
+
+<hr class="rule">
+
+<section>
+  <p class="kicker">Der Kern</p>
+  <h2>Wie die Selbstheilung funktioniert</h2>
+  <div class="col">
+    <p>
+      Das ist der Teil, der den Unterschied zum bisherigen Weg macht. Bisher lief
+      <code>apply-de.py</code> einmal bei der Installation, und das nächste Hermes-Update
+      hat die Arbeit gelöscht. Jetzt läuft die Prüfung bei jedem Start.
+    </p>
+  </div>
+
+  <figure>
+    <div class="fig">
+      <svg viewBox="0 0 900 260" role="img" aria-label="Ablauf nach einem Hermes-Update: der Startup-Hook prueft, ob Deutsch noch verdrahtet ist, spielt es bei Bedarf erneut ein und meldet einen gebrochenen Anker deutlich.">
+        <defs>
+          <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <polygon points="0,0 10,5 0,10" class="s-accf"/>
+          </marker>
+          <marker id="a2g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <polygon points="0,0 10,5 0,10" fill="currentColor" opacity=".5"/>
+          </marker>
+        </defs>
+
+        <rect x="0" y="40" width="150" height="56" rx="4" class="s-fill s-stroke"/>
+        <text x="75" y="64" class="s-lbl" text-anchor="middle">Hermes-Update</text>
+        <text x="75" y="82" class="s-sm" text-anchor="middle">Deutsch ist weg</text>
+
+        <line x1="150" y1="68" x2="210" y2="68" class="s-acc" marker-end="url(#a2)"/>
+
+        <rect x="215" y="40" width="160" height="56" rx="4" class="s-wash s-acc"/>
+        <text x="295" y="64" class="s-lbl" text-anchor="middle">gateway:startup</text>
+        <text x="295" y="82" class="s-sm" text-anchor="middle">der Wächter erwacht</text>
+
+        <line x1="375" y1="68" x2="435" y2="68" class="s-acc" marker-end="url(#a2)"/>
+
+        <rect x="440" y="40" width="170" height="56" rx="4" class="s-fill s-stroke"/>
+        <text x="525" y="64" class="s-lbl" text-anchor="middle">Prüfung</text>
+        <text x="525" y="82" class="s-sm" text-anchor="middle">sitzt Deutsch noch?</text>
+
+        <line x1="610" y1="56" x2="690" y2="30" class="s-stroke" marker-end="url(#a2g)"/>
+        <text x="700" y="28" class="s-sm">ja: nichts tun</text>
+
+        <line x1="610" y1="80" x2="690" y2="112" class="s-acc" marker-end="url(#a2)"/>
+        <rect x="695" y="92" width="205" height="52" rx="4" class="s-wash s-acc"/>
+        <text x="797" y="114" class="s-lbl" text-anchor="middle">erneut einspielen</text>
+        <text x="797" y="132" class="s-sm" text-anchor="middle">aus ~/.hermes/aiianer/de.ts</text>
+
+        <line x1="525" y1="96" x2="525" y2="170" class="s-stroke" stroke-dasharray="4 4" marker-end="url(#a2g)"/>
+        <rect x="330" y="180" width="390" height="52" rx="4" class="s-fill s-stroke"/>
+        <text x="525" y="202" class="s-lbl" text-anchor="middle">Anker gebrochen?</text>
+        <text x="525" y="220" class="s-sm" text-anchor="middle">laut melden statt still versagen, mit Hinweis auf die Community</text>
+      </svg>
+    </div>
+    <figcaption>
+      Der wichtigste Zweig ist der untere. Wenn Upstream so stark umbaut, dass der
+      Ankerpunkt nicht mehr passt, darf das Ergebnis nicht ein halb übersetztes
+      Hermes sein, sondern eine klare Meldung.
+    </figcaption>
+  </figure>
+
+  <div class="col">
+    <p>
+      Warum das besser ist als der bisherige Shim beim EU-Router: Der Shim hängt am
+      <code>hermes</code>-Befehl im Terminal und greift nicht, wenn jemand die App über
+      das Symbol startet. Der Gateway-Hook greift immer.
+    </p>
+  </div>
+</section>
+
+<hr class="rule">
+
+<section>
+  <p class="kicker">Der Laden</p>
+  <h2>Was im Regal steht</h2>
+  <div class="col">
+    <p>
+      Der Katalog ist eine Datei im Repo, kein Server. Der Marktplatz liest sie beim
+      Öffnen, vergleicht mit dem, was lokal installiert ist, und zeigt den Unterschied.
+    </p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Komponente</th><th>Was sie tut</th><th>Art</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Deutsche Sprache</strong></td><td>Die Oberfläche auf Deutsch, gepflegt gegen jedes Release</td><td>Patch mit Wächter</td></tr>
+        <tr><td><strong>EU-Router</strong></td><td>EU-Compliance-Routen statt roher Modelle im Picker</td><td>Sauberes Plugin</td></tr>
+        <tr><td><strong>Bot-Mode Deutsch</strong></td><td>Deutsche Texte im Bot-Modus</td><td>Sauberes Plugin</td></tr>
+        <tr><td><strong>Gruppenchat-Grenzen</strong></td><td>Budget- und Übergabe-Regeln in Gruppen</td><td>Sauberes Plugin</td></tr>
+        <tr><td><em>künftige AIIANER-Erweiterungen</em></td><td>alles, was nur für die deutsche Community Sinn ergibt</td><td>Sauberes Plugin</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="col">
+    <p>
+      Der Unterschied in der dritten Spalte ist wichtig und gehört auch im Marktplatz
+      sichtbar gemacht. Ein sauberes Plugin lebt vollständig außerhalb und kann nicht
+      brechen. Der Sprach-Patch greift in den Checkout und braucht den Wächter. Wer
+      das installiert, soll wissen, was er bekommt.
+    </p>
+  </div>
+</section>
+
+<hr class="rule">
+
+<section>
+  <p class="kicker">Ablauf</p>
+  <h2>Installation und Update</h2>
+  <div class="col">
+    <p>
+      Für die Nutzerin gibt es genau einen Einstieg, und danach passiert alles im
+      Marktplatz selbst.
+    </p>
+  </div>
+
+  <ol class="steps">
+    <li><strong>Einmalig:</strong> Ein Befehl in der Konsole, oder der fertige Satz für den Hermes-Chat, der den Agenten die Installation selbst machen lässt. Er legt <code>aiianer-hub</code> und den Wächter an.</li>
+    <li><strong>Hermes neu starten.</strong> Der Reiter „AIIANER" erscheint.</li>
+    <li><strong>Im Reiter auswählen</strong>, was man haben will. Deutsche Sprache, EU-Router, was sonst im Regal steht.</li>
+    <li><strong>Ab hier nichts mehr.</strong> Updates der Komponenten meldet der Marktplatz selbst. Nach einem Hermes-Update repariert der Wächter, ohne dass jemand etwas merkt.</li>
+  </ol>
+
+  <div class="col">
+    <h3>Wie der Marktplatz Updates verteilt</h3>
+    <p>
+      Jede Komponente trägt eine Version in ihrer Manifest-Datei. Der Katalog im Repo
+      trägt die aktuelle. Beim Öffnen des Reiters vergleicht das Backend beide Listen
+      und zeigt, wo etwas älter ist. Ein Klick lädt die neue Fassung und ersetzt den
+      Ordner unter <code>~/.hermes/plugins/</code>.
+    </p>
+    <p>
+      Kein eigener Server nötig. Die Quelle ist das öffentliche Repo, abgerufen über
+      die übliche Tarball-Adresse, genau wie es der EU-Router-Installer schon macht.
+    </p>
+  </div>
+</section>
+
+<hr class="rule">
+
+<section>
+  <p class="kicker">Ehrlich bleiben</p>
+  <h2>Was dieser Entwurf nicht kann</h2>
+
+  <div class="warnbox">
+    <b>Die Sprachdatei bleibt ein Patch</b>
+    Hermes hat keine Möglichkeit, eine Kernsprache zur Laufzeit anzumelden.
+    <code>TRANSLATIONS</code> ist eine feste Konstante aus festen Importen, und der
+    Plugin-Weg für Texte ist ausdrücklich auf die eigenen Texte eines Plugins begrenzt.
+    Der Wächter macht das Problem unsichtbar, er beseitigt es nicht.
+  </div>
+
+  <div class="col">
+    <ul>
+      <li><strong>Bei starkem Umbau kann der Anker brechen.</strong> Dann fehlt Deutsch, bis der Patcher angepasst ist. Deshalb die laute Meldung statt stillem Versagen.</li>
+      <li><strong>Der Wächter läuft im Gateway.</strong> Wer Hermes ohne Gateway betreibt, bekommt die Reparatur nicht. Für den Normalfall Desktop und CLI ist das kein Thema.</li>
+      <li><strong>Wir tragen die Pflege.</strong> Genau das ist gewollt, es war der Kern des Angebots an Nous. Aber es bleibt Arbeit bei jedem größeren Release.</li>
+    </ul>
+
+    <h3>Der eine Weg, der das Problem wirklich beendet</h3>
+    <p>
+      Es gäbe eine Änderung, die den Patch überflüssig macht: ein Haken, mit dem sich
+      Sprachen zur Laufzeit anmelden lassen. Grob hundert Zeilen über vier Dateien,
+      nützlich für jede Sprache. Das ist die Größe, die dort erfahrungsgemäß gemerged
+      wird, im Gegensatz zu einer Sprachdatei mit knapp viertausend Zeilen.
+    </p>
+    <p>
+      Er ist bewusst <strong>nicht</strong> Teil dieses Plans, weil dieser Plan ohne
+      fremde Zustimmung funktionieren soll. Er bleibt als Option notiert, für den Fall
+      dass sich die Lage ändert.
+    </p>
+  </div>
+</section>
+
+<hr class="rule">
+
+<section>
+  <p class="kicker">Reihenfolge</p>
+  <h2>In welchen Schritten gebaut wird</h2>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Schritt</th><th>Was entsteht</th><th>Fertig, wenn</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Skelett</strong></td>
+          <td>Plugin mit Reiter, einem Aufruf gegen die eigene Schnittstelle, AIIANER-Aussehen</td>
+          <td>Der Reiter erscheint im Browser und liefert Daten, visuell bestätigt</td>
+        </tr>
+        <tr>
+          <td><strong>Wächter</strong></td>
+          <td>Hook auf <code>gateway:startup</code>, der die Sprachdatei prüft und einspielt</td>
+          <td>Nach einem simulierten Update ist Deutsch beim nächsten Start von allein wieder da</td>
+        </tr>
+        <tr>
+          <td><strong>Katalog</strong></td>
+          <td>Katalogdatei im Repo, Versionsvergleich, Installieren und Aktualisieren</td>
+          <td>Eine Komponente lässt sich über den Reiter installieren, aktualisieren und entfernen</td>
+        </tr>
+        <tr>
+          <td><strong>Umzug</strong></td>
+          <td>Die vorhandenen Erweiterungen wandern in den Katalog</td>
+          <td>EU-Router und Bot-Mode kommen aus dem Marktplatz statt aus der Konsole</td>
+        </tr>
+        <tr>
+          <td><strong>Community</strong></td>
+          <td>Anleitung, Chat-Prompt für die agentische Installation, Werkstatt-Eintrag</td>
+          <td>Jemand aus der Community installiert es ohne Rückfrage</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="col">
+    <p>
+      Der zweite Schritt ist der einzige, der etwas beweisen muss. Wenn die
+      Selbstheilung nach einem echten Update nicht greift, ändert sich der Plan und
+      nicht nur der Termin.
+    </p>
+  </div>
+</section>
+
+<hr class="rule">
+
+<section>
+  <p class="kicker">Belege</p>
+  <h2>Woher die Aussagen stammen</h2>
+  <div class="col">
+    <ul>
+      <li><strong>Dashboard-Plugins:</strong> <code>website/docs/user-guide/features/extending-the-dashboard.md</code>, 927 Zeilen, mit Manifest-Referenz und SDK.</li>
+      <li><strong>Gateway-Hooks und <code>gateway:startup</code>:</strong> <code>website/docs/user-guide/features/hooks.md</code>, Ereignistabelle.</li>
+      <li><strong>Keine Laufzeit-Registrierung für Sprachen:</strong> <code>apps/desktop/src/i18n/catalog.ts</code> ist eine Konstante; Suche nach <code>registerLocale</code> und Zuweisungen an <code>TRANSLATIONS</code> ohne Treffer.</li>
+      <li><strong>Plugin-Texte nur für das Plugin selbst:</strong> <code>apps/desktop/src/i18n/plugin-i18n.ts</code>, „never edits core".</li>
+      <li><strong>Salvage statt Merge:</strong> teknium im Nous-Discord, <code>#developers</code>, 01.09.2026.</li>
+      <li><strong>Unveränderliches Hermes-Verzeichnis, Plugins als empfohlener Weg:</strong> Cthulhu, Core Team, im selben Kanal.</li>
+    </ul>
+  </div>
+</section>
+
+<footer>
+  AIIANER Marktplatz für Hermes · Architektur · Stand 01.09.2026 · noch nicht gebaut
+</footer>
+
+</div>

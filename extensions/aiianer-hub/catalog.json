@@ -1,0 +1,40 @@
+{
+  "catalogVersion": "1",
+  "updated": "2026-09-03",
+  "source": "https://github.com/oliverhees/aiianer-hermes-extensions",
+  "components": [
+    {
+      "id": "german-language",
+      "name": "Deutsche Sprache",
+      "version": "2026.09.01",
+      "kind": "patch",
+      "summary": "Die Hermes-Oberflaeche auf Deutsch. Wird nach jedem Hermes-Update automatisch neu eingespielt.",
+      "note": "Greift in den Hermes-Checkout ein, weil Hermes keine Laufzeit-Registrierung fuer Sprachen anbietet. Der Waechter haelt es aktuell.",
+      "coverage": "95,6 % gegen en.ts, gemessen am Wert"
+    },
+    {
+      "id": "eurouter-provider",
+      "name": "EU-Router",
+      "version": "2.1.0",
+      "kind": "plugin",
+      "summary": "Zeigt deine EU-Compliance-Routen im Modell-Picker statt roher Katalog-Modelle.",
+      "note": "Laeuft vollstaendig ausserhalb des Hermes-Verzeichnisses."
+    },
+    {
+      "id": "bot-mode-german",
+      "name": "Bot-Modus auf Deutsch",
+      "version": "1.0.0",
+      "kind": "plugin",
+      "summary": "Deutsche Texte im Bot-Modus, inklusive der Oberflaeche fuer Gruppen und Zeitplaene.",
+      "note": "Protokoll-Texte bleiben bewusst englisch, sonst bricht die Bot-zu-Bot-Zustellung."
+    },
+    {
+      "id": "group-chat-limits",
+      "name": "Gruppenchat-Grenzen",
+      "version": "1.0.0",
+      "kind": "patch",
+      "summary": "Budget- und Uebergabe-Regeln fuer Gruppenchats.",
+      "note": "Greift in den Checkout ein, wird ebenfalls vom Waechter geprueft."
+    }
+  ]
+}
