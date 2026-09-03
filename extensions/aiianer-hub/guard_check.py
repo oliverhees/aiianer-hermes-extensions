@@ -86,18 +86,52 @@ def check_german() -> dict:
     return {"id": "german-language", "state": "ok" if wired else "missing"}
 
 
+# Jede Komponente hat ihren EIGENEN Nachweis. Eine gemeinsame Kandidatenliste
+# waere falsch: sie enthielt model-providers/eurouter fuer jede comp_id, und
+# sobald der EU-Router lag, meldete auch bot-mode-german "ok" - selbst wenn ein
+# Hermes-Update es laengst weggeraeumt hatte. /health sagte dann ok, obwohl
+# etwas fehlte, und der Waechter reparierte nichts.
+def _bots_plugin():
+    """Upstream hat die Datei zwischenzeitlich von plugin.js auf plugin.tsx
+    umbenannt. Fest auf einen Namen zu pruefen hiesse, nach dem naechsten
+    Umbenennen still 'missing' zu melden. Beide werden geprueft."""
+    agent = Path(os.environ.get("HERMES_AGENT_DIR") or (HERMES_HOME / "hermes-agent"))
+    basis = agent / "apps" / "desktop" / "src" / "plugins" / "hermes-bots"
+    for name in ("plugin.js", "plugin.tsx"):
+        kandidat = basis / name
+        if kandidat.is_file():
+            return kandidat
+    return None
+
+
+def _liegt_noch(comp_id: str) -> bool:
+    if comp_id == "eurouter-provider":
+        return (HERMES_HOME / "plugins" / "model-providers" / "eurouter").exists()
+
+    # Die beiden anderen sind keine Plugin-Ordner, sondern Aenderungen IM
+    # Checkout. Nachweis ist deshalb ein Merkmal in der Datei selbst.
+    marker = {
+        "bot-mode-german": "Gruppen",
+        "group-chat-limits": "resolveGroupChatLimits",
+    }.get(comp_id)
+    if marker is None:
+        return (HERMES_HOME / "plugins" / comp_id).exists() or (
+            HERMES_HOME / "desktop-plugins" / comp_id
+        ).exists()
+    ziel = _bots_plugin()
+    if ziel is None:
+        return False
+    try:
+        return marker in ziel.read_text(errors="ignore")
+    except Exception:
+        return False
+
+
 def check_plugin(comp_id: str) -> dict:
-    """Liegt ein sauberes Plugin noch an seinem Platz?"""
+    """Liegt die Komponente noch an ihrem Platz?"""
     if comp_id not in _installed():
         return {"id": comp_id, "state": "not-installed"}
-    for candidate in (
-        HERMES_HOME / "plugins" / comp_id,
-        HERMES_HOME / "plugins" / "model-providers" / "eurouter",
-        HERMES_HOME / "desktop-plugins" / comp_id,
-    ):
-        if candidate.exists():
-            return {"id": comp_id, "state": "ok"}
-    return {"id": comp_id, "state": "missing"}
+    return {"id": comp_id, "state": "ok" if _liegt_noch(comp_id) else "missing"}
 
 
 def check_all() -> dict:

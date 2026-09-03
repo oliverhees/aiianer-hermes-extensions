@@ -60,14 +60,21 @@ function makePane(useCatalog, aktionen) {
       setLaufend(v => ({ ...v, [id]: aktion }))
       setErgebnis(v => ({ ...v, [id]: null }))
       aktionen[aktion](id)
-        .then(antwort => {
-          setErgebnis(v => ({ ...v, [id]: { ok: true, ...antwort } }))
-          return refetch()
-        })
-        .catch(err => {
-          const text = err && err.message ? err.message : String(err)
-          setErgebnis(v => ({ ...v, [id]: { ok: false, message: text } }))
-        })
+        .then(
+          antwort => {
+            setErgebnis(v => ({ ...v, [id]: { ok: true, ...antwort } }))
+            // Der Refetch haengt BEWUSST in einer eigenen Kette. Steckte er im
+            // selben .then, landete sein Fehler im .catch unten und wuerde eine
+            // geglueckte Installation als Fehlschlag anzeigen - samt Verlust
+            // der Schritte, die der Nutzer danach braucht. Genau dann ist das
+            // wahrscheinlich, wenn das Gateway gerade neu startet.
+            return refetch().catch(() => {})
+          },
+          err => {
+            const text = err && err.message ? err.message : String(err)
+            setErgebnis(v => ({ ...v, [id]: { ok: false, message: text } }))
+          }
+        )
         .finally(() => setLaufend(v => ({ ...v, [id]: null })))
     }
 
@@ -138,7 +145,15 @@ function makePane(useCatalog, aktionen) {
         : (aktiv ? [] : (c.status === 'missing' ? (c.nextSteps || []) : []))
 
       const hinweis = []
-      if (res && res.ok && schritte.length) {
+      if (res && res.ok && !schritte.length) {
+        // Ohne diesen Zweig faellt eine erfolgreiche Aktion ohne hinterlegte
+        // Schritte durch alle Faelle: der Knopf wird wieder normal und
+        // sichtbar passiert gar nichts.
+        hinweis.push(jsx('p', {
+          className: 'text-xs text-emerald-400',
+          children: t('doneBare')
+        }, 'okbare'))
+      } else if (res && res.ok && schritte.length) {
         hinweis.push(jsxs('div', {
           className: 'rounded border border-emerald-600/50 bg-emerald-950/20 p-2 space-y-1',
           children: [
@@ -204,6 +219,7 @@ export default {
         installing: 'Installing, please wait...',
         uninstalling: 'Removing...',
         doneTitle: 'Done. What to do next:',
+        doneBare: 'Done. Restart Hermes to apply it.',
         failTitle: 'That did not work:',
         afterwards: 'Afterwards:',
         empty: 'Catalog is empty',
@@ -226,6 +242,7 @@ export default {
         installing: 'Wird installiert, einen Moment ...',
         uninstalling: 'Wird entfernt ...',
         doneTitle: 'Fertig. Das ist jetzt zu tun:',
+        doneBare: 'Fertig. Hermes neu starten, damit es greift.',
         failTitle: 'Das hat nicht geklappt:',
         afterwards: 'Danach nötig:',
         empty: 'Der Katalog ist leer',

@@ -106,7 +106,13 @@
 
         // Nach der Aktion: was der Nutzer jetzt tun muss. Ohne das erwartet er,
         // dass die Oberflaeche sofort deutsch ist, und das ist sie nicht.
-        res && res.ok && (res.nextSteps || []).length
+        res && res.ok && !(res.nextSteps || []).length
+          ? h(
+              "p",
+              { className: "mt-3 text-sm text-emerald-400" },
+              "Fertig. Hermes neu starten, damit es greift."
+            )
+          : res && res.ok && (res.nextSteps || []).length
           ? h(
               "div",
               { className: "mt-3 rounded border border-emerald-600/50 bg-emerald-950/20 p-2" },
@@ -162,8 +168,12 @@
     var health = hs[0];
     var setHealth = hs[1];
 
+    // Gibt ein Promise zurueck. Ohne das setzt der Aufrufer den Knopf frei,
+    // bevor der neue Katalog da ist: die Karte steht noch auf "missing", der
+    // Installieren-Knopf ist wieder aktiv, und ein zweiter Klick startet einen
+    // zweiten kompletten Installer-Lauf.
     function load() {
-      SDK.fetchJSON(API + "/catalog")
+      var a = SDK.fetchJSON(API + "/catalog")
         .then(function (d) {
           setItems(d.components || []);
           setErr(null);
@@ -171,11 +181,14 @@
         .catch(function (x) {
           setErr(String(x && x.message ? x.message : x));
         });
-      SDK.fetchJSON(API + "/health")
+      var b = SDK.fetchJSON(API + "/health")
         .then(setHealth)
-        .catch(function () {
-          setHealth(null);
+        .catch(function (x) {
+          // Nicht still schlucken: faellt /health aus, fehlt genau der
+          // Hinweis samt Reparieren-Knopf, den man dann braeuchte.
+          setHealth({ ok: false, broken: [], error: String(x && x.message ? x.message : x) });
         });
+      return Promise.all([a, b]);
     }
 
     useEffect(function () {
@@ -198,7 +211,10 @@
             n[id] = { ok: true, nextSteps: (antwort && antwort.nextSteps) || [] };
             return n;
           });
-          load();
+          // Auf den frischen Katalog WARTEN, sonst gibt der Knopf zu frueh
+          // wieder frei. Ein Fehler hier darf die geglueckte Aktion nicht
+          // nachtraeglich zum Fehlschlag machen.
+          return load().catch(function () {});
         })
         .catch(function (x) {
           setErgebnis(function (v) {

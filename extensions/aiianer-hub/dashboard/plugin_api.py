@@ -11,6 +11,7 @@ des Dashboards.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import re
 import os
@@ -59,7 +60,19 @@ STATE_FILE = STATE_DIR / "installed.json"
 LOCAL_CATALOG = Path(__file__).resolve().parent.parent / "catalog.json"
 AGENT_DIR = Path(os.environ.get("HERMES_AGENT_DIR") or (HERMES_HOME / "hermes-agent"))
 I18N_DIR = AGENT_DIR / "apps" / "desktop" / "src" / "i18n"
-BOTS_PLUGIN = AGENT_DIR / "apps" / "desktop" / "src" / "plugins" / "hermes-bots" / "plugin.js"
+BOTS_DIR = AGENT_DIR / "apps" / "desktop" / "src" / "plugins" / "hermes-bots"
+BOTS_PLUGIN = BOTS_DIR / "plugin.js"
+
+
+def _bots_ziel():
+    """Upstream hat die Datei von plugin.js auf plugin.tsx umbenannt. Fest auf
+    einen Namen zu setzen hiesse, nach dem naechsten Umbenennen ins Leere zu
+    schreiben."""
+    for name in ("plugin.js", "plugin.tsx"):
+        kandidat = BOTS_DIR / name
+        if kandidat.is_file():
+            return kandidat
+    return None
 EXT_STORE = HERMES_HOME / "aiianer-extensions"
 
 # Was der Nutzer NACH einer Aktion tun muss. Bewusst hier im lokalen Code und
@@ -109,6 +122,32 @@ def _steps(comp_id: str, aktion: str, entry: dict | None = None) -> list:
 
 # ---------------------------------------------------------------- Zustand
 
+@contextlib.contextmanager
+def _state_lock():
+    """Lesen-Aendern-Schreiben auf installed.json muss unter einer Sperre
+    laufen. Ohne sie verliert bei zwei gleichzeitigen Aktionen einer der
+    beiden Eintraege: die Komponente liegt dann auf der Platte, aber der
+    Zustand kennt sie nicht - der Waechter meldet not-installed und ein
+    spaeteres Deinstallieren wird mit 409 abgelehnt. Die Komponente waere
+    nicht mehr sauber zu entfernen.
+
+    fcntl gibt es auf Windows nicht; dort laeuft es ohne Sperre weiter,
+    statt den Dienst zu verweigern."""
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
+    sperre = STATE_DIR / "installed.lock"
+    try:
+        import fcntl
+    except ImportError:
+        yield
+        return
+    with open(sperre, "w") as fh:
+        fcntl.flock(fh, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(fh, fcntl.LOCK_UN)
+
+
 def _read_state() -> dict:
     try:
         return json.loads(STATE_FILE.read_text())
@@ -118,7 +157,11 @@ def _read_state() -> dict:
 
 def _write_state(state: dict) -> None:
     STATE_DIR.mkdir(parents=True, exist_ok=True)
-    STATE_FILE.write_text(json.dumps(state, indent=2, ensure_ascii=False))
+    # Erst daneben schreiben, dann umbenennen: ein Abbruch mittendrin darf
+    # keine halbe JSON-Datei hinterlassen.
+    tmp = STATE_FILE.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(state, indent=2, ensure_ascii=False))
+    tmp.replace(STATE_FILE)
 
 
 def _load_catalog() -> dict:
@@ -216,10 +259,11 @@ async def install(body: dict) -> dict:
                 if (src / name).is_file():
                     shutil.copy2(src / name, STATE_DIR / name)
 
-    state = _read_state()
-    vorher = state.get(comp_id, {}).get("version")
-    state[comp_id] = {"version": entry["version"], "at": _now()}
-    _write_state(state)
+    with _state_lock():
+        state = _read_state()
+        vorher = state.get(comp_id, {}).get("version")
+        state[comp_id] = {"version": entry["version"], "at": _now()}
+        _write_state(state)
     return {
         "ok": True,
         "id": comp_id,
@@ -319,8 +363,31 @@ def _uninstall_german(protokoll: list) -> None:
             ),
         )
 
+    # Auch nach der Vorpruefung kann die Kopiersequenz mittendrin brechen
+    # (kein Platz, read-only, Rechte). Deshalb vorher den Ist-Zustand
+    # festhalten und im Fehlerfall alles zuruecknehmen - dieselbe
+    # Alles-oder-nichts-Zusage, die apply-de.py fuer die Gegenrichtung gibt.
+    vorher = {}
     for name in namen:
-        _restore(quellen[name], I18N_DIR / name, protokoll)
+        ziel = I18N_DIR / name
+        if ziel.is_file():
+            vorher[name] = ziel.read_bytes()
+    try:
+        for name in namen:
+            _restore(quellen[name], I18N_DIR / name, protokoll)
+    except Exception as exc:
+        for name, inhalt in vorher.items():
+            try:
+                (I18N_DIR / name).write_bytes(inhalt)
+            except Exception:
+                pass
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                f"Rueckbau abgebrochen beim Schreiben: {exc}. Der vorherige "
+                "Zustand wurde wiederhergestellt."
+            ),
+        )
 
     # Gegenprobe am Ergebnis, nicht an der Absicht.
     reste = [n for n in namen if _verdrahtet(n, (I18N_DIR / n).read_text())]
@@ -379,10 +446,33 @@ def _uninstall_bots(comp_id: str, sicherungsname: str, protokoll: list) -> None:
             status_code=409,
             detail=(
                 f"Rueckbau abgebrochen: die Sicherung {sicherungsname} fehlt unter "
-                f"{EXT_STORE / comp_id}. Nichts wurde veraendert."
+                f"{EXT_STORE / comp_id}. Es wurde nichts veraendert."
             ),
         )
-    _restore(sicherung, BOTS_PLUGIN, protokoll)
+
+    ziel = BOTS_PLUGIN if BOTS_PLUGIN.is_file() else _bots_ziel()
+    if ziel is None:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Rueckbau abgebrochen: die Bot-Mode-Datei liegt nicht mehr an "
+                "ihrem Platz. Es wurde nichts veraendert."
+            ),
+        )
+
+    # Rueckgabewert AUSWERTEN. Pruefung und Kopie sind zwei Operationen - faellt
+    # die Sicherung dazwischen weg oder ist sie unlesbar, wuerde sonst gleich
+    # darauf der ganze Sicherungsordner geloescht. Danach laege die gepatchte
+    # Datei unveraendert da, ohne jede Moeglichkeit zum Rueckbau.
+    if not _restore(sicherung, ziel, protokoll):
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                f"Die Sicherung {sicherungsname} liess sich nicht einspielen. "
+                "Der Sicherungsordner bleibt deshalb erhalten, damit der "
+                "Rueckbau spaeter erneut versucht werden kann."
+            ),
+        )
     _drop(EXT_STORE / comp_id, protokoll)
 
 
@@ -412,19 +502,24 @@ def _run_uninstall(comp_id: str, protokoll: list) -> None:
 @router.post("/uninstall")
 async def uninstall(body: dict) -> dict:
     comp_id = (body or {}).get("id", "")
-    zustand = _read_state()
-    if comp_id not in zustand:
-        raise HTTPException(
-            status_code=409, detail=f"{comp_id} ist gar nicht installiert."
-        )
-
     protokoll: list = []
-    _run_uninstall(comp_id, protokoll)
+    with _state_lock():
+        zustand = _read_state()
+        if comp_id not in zustand:
+            raise HTTPException(
+                status_code=409, detail=f"{comp_id} ist gar nicht installiert."
+            )
 
-    # Erst wenn der Rueckbau durchlief, faellt der Zustandseintrag. Der
-    # Waechter richtet sich danach und spielt sonst alles wieder ein.
-    zustand.pop(comp_id, None)
-    _write_state(zustand)
+        _run_uninstall(comp_id, protokoll)
+
+        # Erst wenn der Rueckbau durchlief, faellt der Zustandseintrag. Der
+        # Waechter richtet sich danach und spielt sonst alles wieder ein.
+        # Frisch lesen: unter der Sperre kann sich zwischenzeitlich nichts
+        # geaendert haben, aber so bleibt die Regel "lesen, aendern,
+        # schreiben in einem Zug" sichtbar.
+        zustand = _read_state()
+        zustand.pop(comp_id, None)
+        _write_state(zustand)
 
     cat = _load_catalog()
     entry = next((c for c in cat.get("components", []) if c["id"] == comp_id), None)
@@ -454,9 +549,19 @@ async def repair() -> dict:
 
 def _download(tmp: str) -> Path:
     archive = Path(tmp) / "repo.tar.gz"
-    urllib.request.urlretrieve(TARBALL, archive)
+    # Ohne Timeout haengt der Download unbegrenzt und blockiert damit die
+    # ganze Route.
+    with urllib.request.urlopen(TARBALL, timeout=60) as resp, open(archive, "wb") as fh:
+        shutil.copyfileobj(resp, fh)
+    # filter="data" verhindert Tar-Slip (Pfade ausserhalb des Zielordners,
+    # Symlinks, absolute Pfade). Vor Python 3.14 ist das NICHT die
+    # Voreinstellung, und comp_id stammt aus dem Katalog im Netz.
     with tarfile.open(archive) as tf:
-        tf.extractall(tmp)
+        try:
+            tf.extractall(tmp, filter="data")
+        except TypeError:
+            # Python < 3.12 kennt den Parameter nicht.
+            tf.extractall(tmp)
     roots = [p for p in Path(tmp).iterdir() if p.is_dir() and p.name != "__MACOSX"]
     if not roots:
         raise HTTPException(status_code=500, detail="Archiv war leer")
