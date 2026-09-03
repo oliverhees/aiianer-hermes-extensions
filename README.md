@@ -30,6 +30,7 @@ und stehen in keiner offiziellen Verbindung zu Nous Research.
 
 | Komponente | Was sie tut | Installations-Satz |
 | --- | --- | --- |
+| **aiianer-hub** | **Der Marktplatz.** Ein Reiter in Hermes, aus dem du alle Komponenten unten installierst und aktuell hältst. Bringt einen Wächter mit, der nach jedem Hermes-Update prüft, ob noch alles sitzt, und Fehlendes selbst nachlegt. [Anleitung](extensions/aiianer-hub/README.md) | [PROMPT.md](extensions/aiianer-hub/PROMPT.md) |
 | **eurouter-provider** | EU Router (eurouter.ai) als Provider: EU-Compliance-Routen statt roher Modelle im Picker, DSGVO-konformes Routing. Eigenes Repo: [hermes-eurouter-plugin](https://github.com/oliverhees/hermes-eurouter-plugin) | [PROMPT.md](extensions/eurouter-provider/PROMPT.md) |
 | **german-language** | Deutsche Sprachdatei für Hermes Desktop (Interims-Installer, bis Upstream-PR [#51762](https://github.com/NousResearch/hermes-agent/pull/51762) gemerged ist) | [PROMPT.md](extensions/german-language/PROMPT.md) |
 | **bot-mode-german** | Deutsche Übersetzung für **Bot Mode** (das Plugin hatte upstream gar keine i18n — 195 Texte neu über `ctx.i18n` verdrahtet). Interims-Installer mit Checksummen-Schutz, bis der Upstream-PR gemerged ist | [PROMPT.md](extensions/bot-mode-german/PROMPT.md) |
@@ -40,8 +41,19 @@ Weitere Komponenten folgen — jede nach demselben Muster: `install.sh` + `PROMP
 
 ## Installation
 
-**Der einfachste Weg:** Öffne die `PROMPT.md` der Komponente und kopiere den
-Satz in deinen Hermes-Chat. Hermes erledigt den Rest.
+**Empfohlen: erst den Marktplatz.** Installierst du `aiianer-hub`, brauchst du
+danach kein Terminal mehr. Alles Weitere wählst du im Reiter „AIIANER" direkt in
+Hermes aus, inklusive Updates.
+
+```bash
+curl -sL https://raw.githubusercontent.com/oliverhees/aiianer-hermes-extensions/main/install.sh | bash -s aiianer-hub
+```
+
+Danach Hermes neu starten. Die [Anleitung](extensions/aiianer-hub/README.md)
+erklärt den Rest.
+
+**Einzelne Komponente ohne Marktplatz:** Öffne die `PROMPT.md` der Komponente und
+kopiere den Satz in deinen Hermes-Chat. Hermes erledigt den Rest.
 
 **Oder im Terminal**, eine Komponente direkt:
 
