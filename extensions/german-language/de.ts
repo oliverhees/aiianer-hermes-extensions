@@ -3934,10 +3934,6 @@ export const de = defineLocale({
         title: 'Anhängen und befehlen',
         text: 'Tippe @, um eine Datei ins Gespräch zu holen, und /, um einen Befehl auszuführen.'
       },
-      'model-switch': {
-        title: 'Modell mitten im Verlauf wechseln',
-        text: 'Der Modellname ist ein Knopf. Ändere ihn, wenn die Arbeit ihre Form ändert.'
-      },
       'right-pane': {
         title: 'Die Arbeitsfläche',
         text: 'Dateien, Terminal, Review und der integrierte Browser teilen sich die rechte Seite.'
