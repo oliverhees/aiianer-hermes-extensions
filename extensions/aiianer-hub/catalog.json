@@ -23,10 +23,10 @@
     {
       "id": "bot-mode-german",
       "name": "Bot-Modus auf Deutsch",
-      "version": "1.0.0",
+      "version": "2.0.0",
       "kind": "plugin",
-      "summary": "Deutsche Texte im Bot-Modus, inklusive der Oberfläche für Gruppen und Zeitpläne.",
-      "note": "Protokoll-Texte bleiben bewusst englisch, sonst bricht die Bot-zu-Bot-Zustellung."
+      "summary": "Der Bot-Modus auf Deutsch: Liste, Gruppenchats, Avatare, Zeitpläne. 194 Texte.",
+      "note": "Trägt ein deutsches Bündel in den Nachrichtenkatalog des Bot-Modus ein. Setzt „Deutsche Sprache“ voraus. Der Wächter spielt es nach einem Hermes-Update selbst wieder ein."
     },
     {
       "id": "group-chat-limits",
@@ -34,7 +34,7 @@
       "version": "1.0.0",
       "kind": "patch",
       "summary": "Budget- und Übergabe-Regeln für Gruppenchats.",
-      "note": "Greift in den Checkout ein, wird ebenfalls vom Wächter geprüft."
+      "note": "Zurzeit außer Betrieb: Hermes hat den Bot-Modus auf viele Module aufgeteilt, der Patch greift ins Leere und muss neu geschrieben werden."
     }
   ]
 }

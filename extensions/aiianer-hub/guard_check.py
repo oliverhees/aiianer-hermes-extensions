@@ -12,6 +12,7 @@ Faellt der Patcher aus, wird das laut gemeldet statt still geschluckt.
 from __future__ import annotations
 
 import json
+import re
 import os
 import subprocess
 import sys
@@ -91,6 +92,13 @@ def check_german() -> dict:
 # sobald der EU-Router lag, meldete auch bot-mode-german "ok" - selbst wenn ein
 # Hermes-Update es laengst weggeraeumt hatte. /health sagte dann ok, obwohl
 # etwas fehlte, und der Waechter reparierte nichts.
+def _bots_katalog():
+    """Der plugin-eigene Nachrichtenkatalog des Bot-Modus."""
+    agent = Path(os.environ.get("HERMES_AGENT_DIR") or (HERMES_HOME / "hermes-agent"))
+    k = agent / "apps" / "desktop" / "src" / "plugins" / "hermes-bots" / "i18n.ts"
+    return k if k.is_file() else None
+
+
 def _bots_plugin():
     """Upstream hat die Datei zwischenzeitlich von plugin.js auf plugin.tsx
     umbenannt. Fest auf einen Namen zu pruefen hiesse, nach dem naechsten
@@ -108,12 +116,23 @@ def _liegt_noch(comp_id: str) -> bool:
     if comp_id == "eurouter-provider":
         return (HERMES_HOME / "plugins" / "model-providers" / "eurouter").exists()
 
-    # Die beiden anderen sind keine Plugin-Ordner, sondern Aenderungen IM
-    # Checkout. Nachweis ist deshalb ein Merkmal in der Datei selbst.
-    marker = {
-        "bot-mode-german": "Gruppen",
-        "group-chat-limits": "resolveGroupChatLimits",
-    }.get(comp_id)
+    if comp_id == "bot-mode-german":
+        # Seit dem Umbau ist der Nachweis ein Eintrag im plugin-eigenen
+        # Nachrichtenkatalog, nicht mehr eine ersetzte Datei.
+        katalog = _bots_katalog()
+        if katalog is None:
+            return False
+        try:
+            t = katalog.read_text(errors="ignore")
+        except Exception:
+            return False
+        return "const de: BotsMessages" in t and bool(
+            re.search(r"BOTS_LOCALES[^}]*\bde\b", t)
+        )
+
+    # group-chat-limits ist eine Aenderung IM Code, Nachweis ist ein Merkmal
+    # in der Datei selbst.
+    marker = {"group-chat-limits": "resolveGroupChatLimits"}.get(comp_id)
     if marker is None:
         return (HERMES_HOME / "plugins" / comp_id).exists() or (
             HERMES_HOME / "desktop-plugins" / comp_id
@@ -172,6 +191,26 @@ def repair_german() -> dict:
     }
 
 
+def repair_bots_german() -> dict:
+    """Spielt das deutsche Bot-Modus-Buendel erneut ein. Gleiche Quelle wie der
+    Marktplatz, damit es nur einen Weg gibt."""
+    patcher = STATE_DIR / "apply-bots-de.py"
+    quelle = STATE_DIR / "de-bots.ts"
+    if not patcher.is_file() or not quelle.is_file():
+        msg = f"Quellen fehlen unter {STATE_DIR} - im Marktplatz neu installieren."
+        _log(f"bot-mode-german: {msg}")
+        return {"id": "bot-mode-german", "repaired": False, "detail": msg}
+    agent = Path(os.environ.get("HERMES_AGENT_DIR") or (HERMES_HOME / "hermes-agent"))
+    proc = subprocess.run(
+        [sys.executable, str(patcher), str(agent)],
+        capture_output=True, text=True, timeout=120, cwd=str(STATE_DIR),
+    )
+    ok = proc.returncode == 0
+    _log(f"bot-mode-german repariert={ok}: {(proc.stdout or proc.stderr).strip()[:200]}")
+    return {"id": "bot-mode-german", "repaired": ok,
+            "detail": (proc.stdout or proc.stderr).strip()[-300:]}
+
+
 def repair_all() -> dict:
     status = check_all()
     results = []
@@ -180,6 +219,8 @@ def repair_all() -> dict:
             continue
         if c["id"] == "german-language":
             results.append(repair_german())
+        elif c["id"] == "bot-mode-german":
+            results.append(repair_bots_german())
         else:
             results.append({
                 "id": c["id"], "repaired": False,

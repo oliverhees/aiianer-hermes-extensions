@@ -156,7 +156,7 @@
               h("p", { className: "text-sm font-medium" }, "Das hat nicht geklappt:"),
               h("p", { className: "text-sm text-muted-foreground mt-1 whitespace-pre-wrap" }, res.message)
             )
-          : !laufend && c.status === "missing" && (c.nextSteps || []).length
+          : !laufend && c.available !== false && c.status === "missing" && (c.nextSteps || []).length
           ? h(
               "p",
               { className: "text-xs text-muted-foreground mt-2" },

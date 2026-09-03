@@ -1,25 +1,20 @@
 #!/usr/bin/env bash
-# Deutsche Uebersetzung fuer Hermes "Bot Mode" (Plugin hermes-bots).
+# Deutsches Buendel fuer den Hermes-Bot-Modus.
 #
-# Interims-Weg, bis der Upstream-PR gemerged ist: Bot Mode liegt als
-# gebuendeltes Plugin IM Hermes-Checkout und hat upstream noch gar keine
-# i18n-Anbindung - alle Texte sind dort hart englisch. Diese Komponente
-# ersetzt die Plugin-Datei durch die uebersetzte Fassung (identischer Code,
-# nur alle Texte ueber ctx.i18n mit EN- und DE-Bundle).
-#
-# SICHERHEITSNETZ: Ersetzt wird NUR, wenn die vorhandene Datei exakt der
-# Upstream-Fassung entspricht, von der wir portiert haben. Hat Hermes Bot
-# Mode inzwischen weiterentwickelt, bricht der Installer bewusst ab, statt
-# neue Funktionen still gegen eine aeltere Uebersetzung zu tauschen.
+# Frueher ersetzte diese Komponente eine einzelne, komplett uebersetzte Datei.
+# Hermes hat den Bot-Modus seither auf viele Module aufgeteilt und dabei einen
+# plugin-eigenen Nachrichtenkatalog eingefuehrt. Damit ist die Uebersetzung
+# wieder additiv: ein 'de'-Buendel dazu, fertig. Das ist stabiler, weil ein
+# Upstream-Umbau am Code die Texte nicht mehr mitreisst.
 set -euo pipefail
+
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]:-.}")" 2>/dev/null && pwd)"
 HERMES_HOME_DIR="${HERMES_HOME:-$HOME/.hermes}"
 AGENT_DIR="${HERMES_AGENT_DIR:-$HERMES_HOME_DIR/hermes-agent}"
-TARGET="$AGENT_DIR/apps/desktop/src/plugins/hermes-bots/plugin.js"
 STORE="$HERMES_HOME_DIR/aiianer-extensions/bot-mode-german"
 
-# Remote-Bootstrap (curl | bash)
-if [ ! -f "$HERE/plugin.js" ]; then
+# Ohne lokalen Clone: aus dem Netz holen und dort weitermachen.
+if [ ! -f "$HERE/de-bots.ts" ]; then
   echo "Kein lokaler Clone gefunden - lade AIIANER Hermes Extensions von GitHub ..."
   TMP_DIR="$(mktemp -d)"; trap 'rm -rf "$TMP_DIR"' EXIT
   curl -sL "https://github.com/oliverhees/aiianer-hermes-extensions/archive/refs/heads/main.tar.gz" | tar -xz -C "$TMP_DIR"
@@ -28,44 +23,33 @@ if [ ! -f "$HERE/plugin.js" ]; then
   exec bash "$INNER" "$@"
 fi
 
-# shellcheck source=/dev/null
-. "$HERE/base.sha256"
-
-if [ ! -f "$TARGET" ]; then
-  echo "FEHLER: Bot-Mode-Plugin nicht gefunden unter $TARGET" >&2
-  echo "Ist Hermes Desktop installiert? (Bot Mode gehoert zum Lieferumfang.)" >&2
+CATALOG="$AGENT_DIR/apps/desktop/src/plugins/hermes-bots/i18n.ts"
+if [ ! -f "$CATALOG" ]; then
+  echo "FEHLER: Nachrichtenkatalog des Bot-Modus nicht gefunden unter" >&2
+  echo "  $CATALOG" >&2
+  echo "Ist Hermes Desktop installiert und aktuell?" >&2
   exit 1
 fi
 
-CURRENT="$(sha256sum "$TARGET" | cut -d' ' -f1)"
-
-if [ "$CURRENT" = "$TRANSLATED_SHA256" ]; then
-  echo "Bot Mode ist bereits auf Deutsch umgestellt - nichts zu tun."
-  exit 0
-fi
-
-if [ "$CURRENT" != "$UPSTREAM_BASE_SHA256" ]; then
-  echo "ABBRUCH: Bot Mode hat sich seit unserer Uebersetzung geaendert." >&2
+# Abhaengigkeit: 'de' muss eine gueltige Locale sein, sonst ist das Buendel
+# zwar registriert, aber nie erreichbar. Das erledigt german-language.
+TYPES="$AGENT_DIR/apps/desktop/src/i18n/types.ts"
+if [ -f "$TYPES" ] && ! grep -qE "^export type Locale = .*'de'" "$TYPES"; then
+  echo "FEHLER: Die deutsche Sprache ist nicht eingerichtet." >&2
   echo "" >&2
-  echo "Das heisst: Hermes hat neue Funktionen in Bot Mode gebracht. Wuerden wir" >&2
-  echo "die Datei jetzt ersetzen, waeren diese Funktionen wieder weg. Deshalb" >&2
-  echo "passiert hier absichtlich nichts." >&2
+  echo "Der Bot-Modus haengt daran: ohne 'de' als gueltige Sprache waere das" >&2
+  echo "Buendel zwar eingetragen, aber Hermes koennte es nie auswaehlen." >&2
   echo "" >&2
-  echo "Wir ziehen die Uebersetzung nach - Bescheid gibt es in der AIIANER" >&2
-  echo "Community: https://aiianer.de" >&2
+  echo "Installiere zuerst 'Deutsche Sprache' im AIIANER-Marktplatz." >&2
   exit 2
 fi
 
 mkdir -p "$STORE"
-cp "$TARGET" "$STORE/plugin.js.upstream-backup"
-cp "$HERE/plugin.js" "$TARGET"
-cp "$HERE/plugin.js" "$HERE/base.sha256" "$STORE/" 2>/dev/null || true
+cp "$HERE/de-bots.ts" "$HERE/apply-bots-de.py" "$STORE/"
+python3 "$STORE/apply-bots-de.py" "$AGENT_DIR"
 
-echo "Bot Mode auf Deutsch umgestellt."
-echo "Original gesichert unter: $STORE/plugin.js.upstream-backup"
 echo ""
-echo "Naechste Schritte:"
-echo "  1. Hermes Desktop komplett neu starten (die App baut beim ersten Start kurz neu)"
-echo "  2. Sprache unter Settings -> Language auf Deutsch stellen"
-echo ""
-echo "Nach einem Hermes-Update, das die Datei zuruecksetzt: diesen Installer erneut ausfuehren."
+echo "Fertig. Hermes Desktop komplett neu starten - beim ersten Start baut die App kurz neu."
+echo "Falls der Bot-Modus nach einem Hermes-Update wieder englisch ist:"
+echo "im AIIANER-Marktplatz auf 'Neu einspielen', oder der Waechter holt es beim"
+echo "naechsten Gateway-Start selbst nach."

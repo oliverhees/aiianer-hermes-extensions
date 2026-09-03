@@ -62,6 +62,7 @@ AGENT_DIR = Path(os.environ.get("HERMES_AGENT_DIR") or (HERMES_HOME / "hermes-ag
 I18N_DIR = AGENT_DIR / "apps" / "desktop" / "src" / "i18n"
 BOTS_DIR = AGENT_DIR / "apps" / "desktop" / "src" / "plugins" / "hermes-bots"
 BOTS_PLUGIN = BOTS_DIR / "plugin.js"
+BOTS_KATALOG = BOTS_DIR / "i18n.ts"
 
 
 def _bots_ziel():
@@ -113,7 +114,11 @@ NEXT_STEPS = {
 
 
 def _verfuegbar(comp_id: str) -> tuple:
-    """Kann diese Komponente auf DIESEM Rechner ueberhaupt installiert werden?
+    """Kann diese Komponente auf DIESEM Rechner installiert werden?
+
+    Liefert (ok, grund_de, grund_en). Beide Sprachen, weil die Beschriftungen
+    der Hermes-Sprache folgen: ein deutscher Absatz unter einer englischen
+    Ueberschrift sieht nach Fehler aus, nicht nach Erklaerung.
 
     Wird vor dem Anbieten geprueft, nicht erst beim Klick. Ein Knopf, der
     zuverlaessig in einen 500er laeuft, ist schlimmer als gar kein Knopf: der
@@ -121,29 +126,63 @@ def _verfuegbar(comp_id: str) -> tuple:
 
     Absichtlich hier im lokalen Code und nicht im Katalog aus dem Netz - die
     Pruefung entscheidet, was auf fremden Rechnern ausgefuehrt werden darf."""
-    if comp_id in ("bot-mode-german", "group-chat-limits"):
-        # BOTS_PLUGIN, nicht _bots_ziel(): der Rueckbau darf tolerant sein und
-        # nehmen, was da ist. Die Installer schreiben aber hart nach
-        # plugin.js - fehlt genau die, ist die Komponente nicht installierbar,
-        # auch wenn daneben eine plugin.tsx liegt.
+    if comp_id == "bot-mode-german":
+        if not BOTS_KATALOG.is_file():
+            return (
+                False,
+                "Der Nachrichtenkatalog des Bot-Modus liegt nicht an der "
+                f"erwarteten Stelle ({BOTS_KATALOG}). Aktualisiere Hermes "
+                "Desktop.",
+                "Bot Mode's message catalog is not where it is expected "
+                f"({BOTS_KATALOG}). Update Hermes Desktop.",
+            )
+        # Harte Abhaengigkeit: ohne 'de' als gueltige Locale waere das Buendel
+        # eingetragen, aber nie auswaehlbar. Lieber vorher sagen als hinterher
+        # ein "installiert, aber nichts passiert".
+        try:
+            verdrahtet = bool(
+                re.search(
+                    r"^export type Locale = .*'de'", (I18N_DIR / "types.ts").read_text(), re.M
+                )
+            )
+        except Exception:
+            verdrahtet = False
+        if not verdrahtet:
+            return (
+                False,
+                "Zuerst „Deutsche Sprache“ installieren. Der Bot-Modus haengt "
+                "daran: ohne Deutsch als gueltige Sprache waere das Buendel "
+                "zwar eingetragen, aber Hermes koennte es nie auswaehlen.",
+                "Install “Deutsche Sprache” first. Bot Mode depends on it: "
+                "without German as a valid locale the bundle would be "
+                "registered but never selectable.",
+            )
+
+    if comp_id == "group-chat-limits":
+        # Diese Komponente ist ein Diff gegen die alte Einzeldatei des
+        # Bot-Modus. Die gibt es nicht mehr; der Code liegt heute in Modulen.
         if not BOTS_PLUGIN.is_file():
             return (
                 False,
-                "Diese Komponente aendert die Bot-Modus-Datei von Hermes. "
-                "Hermes hat den Bot-Modus zwischenzeitlich von einer einzelnen "
-                "Datei auf viele Module umgestellt, damit passt unsere Fassung "
-                "nicht mehr. Sie wird nachgezogen - bis dahin waere ein "
-                "Installieren ein Schuss ins Leere.",
+                "Diese Komponente ist eine Änderung an der alten "
+                "Bot-Modus-Datei von Hermes. Hermes hat den Bot-Modus seither "
+                "auf viele Module aufgeteilt, damit greift die Änderung ins "
+                "Leere. Sie muss neu geschrieben werden.",
+                "This component patches Hermes' old single-file Bot Mode. "
+                "Hermes has since split Bot Mode into many modules, so the "
+                "patch no longer applies. It has to be rewritten.",
             )
     if comp_id == "german-language":
         if not (I18N_DIR / "types.ts").is_file():
             return (
                 False,
                 "Der Hermes-Quellordner liegt nicht an der erwarteten Stelle "
-                f"({I18N_DIR}). Ohne ihn laesst sich die Sprache nicht "
+                f"({I18N_DIR}). Ohne ihn lässt sich die Sprache nicht "
                 "einspielen.",
+                "Hermes' source folder is not where it is expected "
+                f"({I18N_DIR}). Without it the language cannot be installed.",
             )
-    return (True, "")
+    return (True, "", "")
 
 
 def _steps(comp_id: str, aktion: str, entry: dict | None = None) -> list:
@@ -227,6 +266,7 @@ async def catalog() -> dict:
                 "uninstallSteps": _steps(c["id"], "uninstall", c),
                 "available": _verfuegbar(c["id"])[0],
                 "unavailableReason": _verfuegbar(c["id"])[1],
+                "unavailableReasonEn": _verfuegbar(c["id"])[2],
                 "status": (
                     "missing"
                     if not installed
@@ -264,7 +304,7 @@ async def install(body: dict) -> dict:
         raise HTTPException(status_code=404, detail=f"Unbekannte Komponente: {comp_id}")
 
     # Auch der direkte Aufruf wird abgefangen, nicht nur der Knopf.
-    ok, grund = _verfuegbar(comp_id)
+    ok, grund, _ = _verfuegbar(comp_id)
     if not ok:
         raise HTTPException(status_code=409, detail=grund)
 
@@ -294,9 +334,9 @@ async def install(body: dict) -> dict:
 
         # Sprachdatei zusaetzlich als Quelle sichern, damit der Waechter sie
         # nach einem Hermes-Update erneut einspielen kann.
-        if comp_id == "german-language":
+        if comp_id in ("german-language", "bot-mode-german"):
             STATE_DIR.mkdir(parents=True, exist_ok=True)
-            for name in ("de.ts", "apply-de.py"):
+            for name in ("de.ts", "apply-de.py", "de-bots.ts", "apply-bots-de.py"):
                 if (src / name).is_file():
                     shutil.copy2(src / name, STATE_DIR / name)
 
@@ -517,6 +557,70 @@ def _uninstall_bots(comp_id: str, sicherungsname: str, protokoll: list) -> None:
     _drop(EXT_STORE / comp_id, protokoll)
 
 
+def _uninstall_bots_katalog(protokoll: list) -> None:
+    """Rueckbau des deutschen Bot-Modus-Buendels.
+
+    Bevorzugt die Erstsicherung. Fehlt sie, wird der de-Block chirurgisch aus
+    dem Katalog geschnitten und der Eintrag aus BOTS_LOCALES entfernt - das ist
+    hier vertretbar, weil beide Aenderungen exakt bekannt sind und der Rest der
+    Datei nie angefasst wurde."""
+    if not BOTS_KATALOG.is_file():
+        raise HTTPException(
+            status_code=409,
+            detail="Der Nachrichtenkatalog des Bot-Modus liegt nicht mehr da. Es wurde nichts veraendert.",
+        )
+
+    orig = BOTS_KATALOG.with_suffix(".ts.aiianer-orig")
+    if orig.is_file() and "const de: BotsMessages" not in orig.read_text():
+        _restore(orig, BOTS_KATALOG, protokoll)
+    else:
+        inhalt = BOTS_KATALOG.read_text()
+        ohne = re.sub(r"^const de: BotsMessages = \{.*?^\}\s*\n+", "", inhalt, count=1,
+                      flags=re.S | re.M)
+        ohne = re.sub(r"(BOTS_LOCALES: PluginLocaleBundles = \{ en,)\s*de,", r"\1", ohne, count=1)
+        if ohne == inhalt:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    "Weder eine brauchbare Erstsicherung noch ein erkennbarer "
+                    "de-Block gefunden. Es wurde nichts veraendert."
+                ),
+            )
+        vorher = BOTS_KATALOG.read_bytes()
+        try:
+            BOTS_KATALOG.write_text(ohne)
+            gepr = BOTS_KATALOG.read_text()
+            if "const de: BotsMessages" in gepr or re.search(
+                r"BOTS_LOCALES[^}]*\bde\b", gepr
+            ):
+                raise RuntimeError("de-Eintrag nach dem Schreiben noch vorhanden")
+        except Exception as exc:
+            BOTS_KATALOG.write_bytes(vorher)
+            raise HTTPException(
+                status_code=500,
+                detail=f"Rueckbau fehlgeschlagen, Datei wiederhergestellt: {exc}",
+            )
+        protokoll.append("de-Block aus dem Katalog entfernt")
+
+    _drop(BOTS_KATALOG.with_suffix(".ts.aiianer-bak"), protokoll)
+    _drop(orig, protokoll)
+    kritisch = []
+    for pfad in (STATE_DIR / "de-bots.ts", STATE_DIR / "apply-bots-de.py"):
+        _drop(pfad, protokoll)
+        if pfad.exists():
+            kritisch.append(str(pfad))
+    _drop(EXT_STORE / "bot-mode-german", protokoll)
+    if kritisch:
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "Zurueckgesetzt, aber diese Quellen des Waechters blieben liegen: "
+                + ", ".join(kritisch)
+                + ". Er wuerde das Buendel beim naechsten Start erneut einspielen."
+            ),
+        )
+
+
 def _uninstall_eurouter(protokoll: list) -> None:
     """Liegt ausserhalb des Hermes-Checkouts, deshalb reicht Entfernen.
     Der Start-Helfer unter ~/.local/bin/hermes bleibt bewusst liegen - er
@@ -529,7 +633,7 @@ def _run_uninstall(comp_id: str, protokoll: list) -> None:
     if comp_id == "german-language":
         _uninstall_german(protokoll)
     elif comp_id == "bot-mode-german":
-        _uninstall_bots(comp_id, "plugin.js.upstream-backup", protokoll)
+        _uninstall_bots_katalog(protokoll)
     elif comp_id == "group-chat-limits":
         _uninstall_bots(comp_id, "plugin.js.backup", protokoll)
     elif comp_id == "eurouter-provider":

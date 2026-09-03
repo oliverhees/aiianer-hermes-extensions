@@ -145,9 +145,13 @@ function makePane(useCatalog, aktionen) {
       // Was jetzt zu tun ist. Vor dem Klick als leiser Hinweis, nach dem
       // Klick als hervorgehobener Kasten - der Nutzer erwartet sonst, dass
       // Deutsch sofort da ist.
+      // Bei einer Komponente, die sich nicht installieren laesst, gibt es kein
+      // "Danach" - der Vorab-Hinweis waere dort schlicht falsch.
       const schritte = res && res.ok
         ? (res.nextSteps || [])
-        : (aktiv ? [] : (c.status === 'missing' ? (c.nextSteps || []) : []))
+        : (aktiv || c.available === false
+            ? []
+            : (c.status === 'missing' ? (c.nextSteps || []) : []))
 
       const hinweis = []
       if (c.available === false) {
@@ -155,7 +159,13 @@ function makePane(useCatalog, aktionen) {
           className: 'rounded border border-neutral-600/60 bg-neutral-900/40 p-2 space-y-1',
           children: [
             jsx('p', { className: 'text-xs font-medium', children: t('unavailTitle') }, 'ut'),
-            jsx('p', { className: 'text-xs opacity-70', children: c.unavailableReason }, 'ur')
+            jsx('p', {
+              className: 'text-xs opacity-70',
+              // Das Backend liefert beide Sprachen. t('lang') sagt, welche die
+              // App gerade spricht - sonst stuende ein deutscher Absatz unter
+              // einer englischen Ueberschrift.
+              children: (t('lang') === 'en' && c.unavailableReasonEn) || c.unavailableReason
+            }, 'ur')
           ]
         }, 'unavail'))
       }
@@ -260,7 +270,8 @@ export default {
         // translateFrom gibt dann den Schluessel selbst zurueck - im Badge
         // stand woertlich "status.missing".
         status: { current: 'current', outdated: 'update available', missing: 'not installed', unavailable: 'not available' },
-        unavailTitle: 'Cannot be installed right now:'
+        unavailTitle: 'Cannot be installed right now:',
+        lang: 'en'
       },
       de: {
         title: 'AIIANER Erweiterungen',
@@ -280,7 +291,8 @@ export default {
         empty: 'Der Katalog ist leer',
         errTitle: 'Katalog konnte nicht geladen werden',
         status: { current: 'aktuell', outdated: 'Update verfügbar', missing: 'nicht installiert', unavailable: 'zurzeit nicht möglich' },
-        unavailTitle: 'Lässt sich gerade nicht installieren:'
+        unavailTitle: 'Lässt sich gerade nicht installieren:',
+        lang: 'de'
       }
     })
 
