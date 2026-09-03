@@ -10,16 +10,54 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]:-.}")" 2>/dev/null && pwd)"
-HERMES_HOME_DIR="${HERMES_HOME:-$HOME/.hermes}"
+
+# Wo Hermes seine Daten haelt. Reihenfolge wie in Hermes' eigenem install.ps1:
+#   1. HERMES_HOME, wenn gesetzt
+#   2. natives Windows (Git Bash, MSYS, Cygwin): %LOCALAPPDATA%\hermes
+#   3. sonst (Linux, macOS, WSL): ~/.hermes
+resolve_hermes_home() {
+  if [ -n "${HERMES_HOME:-}" ]; then
+    printf '%s' "$HERMES_HOME"; return
+  fi
+  case "$(uname -s 2>/dev/null || echo unknown)" in
+    MINGW*|MSYS*|CYGWIN*)
+      if [ -n "${LOCALAPPDATA:-}" ]; then
+        if command -v cygpath >/dev/null 2>&1; then
+          printf '%s' "$(cygpath -u "$LOCALAPPDATA")/hermes"
+        else
+          printf '%s' "${LOCALAPPDATA//\\//}/hermes"
+        fi
+        return
+      fi
+      ;;
+  esac
+  printf '%s' "$HOME/.hermes"
+}
+
+HERMES_HOME_DIR="$(resolve_hermes_home)"
 
 PLUGIN_DIR="$HERMES_HOME_DIR/plugins/aiianer-hub"
 HOOK_DIR="$HERMES_HOME_DIR/hooks/aiianer-guard"
 STATE_DIR="$HERMES_HOME_DIR/aiianer"
 
 if [ ! -d "$HERMES_HOME_DIR" ]; then
-  echo "FEHLER: $HERMES_HOME_DIR existiert nicht. Ist Hermes installiert?" >&2
+  echo "FEHLER: $HERMES_HOME_DIR existiert nicht." >&2
+  echo "" >&2
+  echo "Gesucht wurde dort, weil:" >&2
+  if [ -n "${HERMES_HOME:-}" ]; then
+    echo "  HERMES_HOME ist auf diesen Pfad gesetzt." >&2
+  else
+    case "$(uname -s 2>/dev/null || echo unknown)" in
+      MINGW*|MSYS*|CYGWIN*) echo "  Du bist auf nativem Windows, dort liegt Hermes unter %LOCALAPPDATA%\\hermes." >&2 ;;
+      *) echo "  Auf Linux, macOS und WSL liegt Hermes unter ~/.hermes." >&2 ;;
+    esac
+  fi
+  echo "" >&2
+  echo "Ist Hermes installiert? Falls es woanders liegt, setze HERMES_HOME." >&2
   exit 1
 fi
+
+echo "Hermes-Verzeichnis: $HERMES_HOME_DIR"
 
 echo "Installiere AIIANER Marktplatz ..."
 

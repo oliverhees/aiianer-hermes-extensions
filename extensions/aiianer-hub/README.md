@@ -21,10 +21,18 @@ und die Sprachdatei nach jedem Update erneut einspielt. Du merkst davon nichts.
 **Der einfache Weg.** Kopiere den Satz aus [PROMPT.md](PROMPT.md) in deinen
 Hermes-Chat. Hermes hat Terminal-Zugriff und installiert sich das selbst.
 
-**Oder im Terminal**, ein Befehl:
+**Oder im Terminal.** Welcher Befehl gilt, hängt vom System ab.
+
+Linux, macOS und Windows mit WSL:
 
 ```bash
 curl -sL https://raw.githubusercontent.com/oliverhees/aiianer-hermes-extensions/main/install.sh | bash -s aiianer-hub
+```
+
+Windows nativ, also in PowerShell ohne WSL:
+
+```powershell
+irm https://raw.githubusercontent.com/oliverhees/aiianer-hermes-extensions/main/extensions/aiianer-hub/install.ps1 | iex
 ```
 
 Danach **Hermes komplett neu starten**. Der Reiter „AIIANER" erscheint neben
@@ -32,14 +40,26 @@ Skills. Dort wählst du aus, was du haben willst.
 
 ## Was wohin installiert wird
 
+Hermes legt seine Daten je nach System woanders ab. Der Installer findet den
+richtigen Ort selbst, du musst nichts einstellen.
+
+| System | Hermes-Verzeichnis |
+| --- | --- |
+| Linux, macOS, WSL | `~/.hermes` |
+| Windows nativ | `%LOCALAPPDATA%\hermes`, also `C:\Users\DeinName\AppData\Local\hermes` |
+| Beliebig | Was in `HERMES_HOME` steht, falls du das gesetzt hast |
+
+Darin landen drei Ordner. Im Folgenden steht `<hermes>` für den Pfad aus der
+Tabelle oben.
+
 | Ort | Was dort liegt |
 | --- | --- |
-| `~/.hermes/plugins/aiianer-hub/` | Der Reiter und sein Backend |
-| `~/.hermes/hooks/aiianer-guard/` | Der Wächter, lauscht auf den Gateway-Start |
-| `~/.hermes/aiianer/` | Sprachquelle, Zustand und Protokoll |
+| `<hermes>/plugins/aiianer-hub/` | Der Reiter und sein Backend |
+| `<hermes>/hooks/aiianer-guard/` | Der Wächter, lauscht auf den Gateway-Start |
+| `<hermes>/aiianer/` | Sprachquelle, Zustand und Protokoll |
 
-Alle drei liegen **außerhalb** des Hermes-Verzeichnisses und überleben deshalb
-jedes Update.
+Alle drei liegen **außerhalb** des Hermes-Programmverzeichnisses und überleben
+deshalb jedes Update.
 
 ## Der Wächter
 
@@ -49,8 +69,11 @@ Bei jedem Start des Gateways prüft er, ob deine Erweiterungen ein Update
 Sein Protokoll liegt unter:
 
 ```
-~/.hermes/aiianer/guard.log
+<hermes>/aiianer/guard.log
 ```
+
+Auf Linux und macOS also `~/.hermes/aiianer/guard.log`, auf nativem Windows
+`%LOCALAPPDATA%\hermes\aiianer\guard.log`.
 
 Dort steht pro Start eine Zeile. Entweder „Pruefung ok, nichts zu tun" oder
 „german-language nach Update erneut eingespielt".
@@ -103,11 +126,17 @@ Netz da, greift die mitgelieferte Fassung. Ein eigener Server ist nicht nötig.
 
 ## Entfernen
 
+Linux, macOS, WSL:
+
 ```bash
-rm -rf ~/.hermes/plugins/aiianer-hub
-rm -rf ~/.hermes/hooks/aiianer-guard
-rm -rf ~/.hermes/aiianer
+rm -rf ~/.hermes/plugins/aiianer-hub ~/.hermes/hooks/aiianer-guard ~/.hermes/aiianer
+```
+
+Windows nativ, in PowerShell:
+
+```powershell
+Remove-Item -Recurse -Force "$env:LOCALAPPDATA\hermes\plugins\aiianer-hub", "$env:LOCALAPPDATA\hermes\hooks\aiianer-guard", "$env:LOCALAPPDATA\hermes\aiianer"
 ```
 
 Danach Hermes neu starten. Bereits installierte Komponenten bleiben, die
-entfernst du einzeln aus `~/.hermes/plugins/`.
+entfernst du einzeln aus dem Ordner `plugins`.

@@ -32,7 +32,26 @@ CATALOG_URL = (
     "extensions/aiianer-hub/catalog.json"
 )
 
-HERMES_HOME = Path(os.environ.get("HERMES_HOME", Path.home() / ".hermes"))
+def hermes_home() -> Path:
+    """Wo Hermes seine Daten haelt, plattformuebergreifend.
+
+    Reihenfolge wie in Hermes' eigenem scripts/install.ps1:
+      1. HERMES_HOME, wenn gesetzt (gilt ueberall, auch fuer Profile)
+      2. natives Windows: %LOCALAPPDATA%\\hermes
+      3. sonst (Linux, macOS, WSL): ~/.hermes
+    """
+    env = os.environ.get("HERMES_HOME", "").strip()
+    if env:
+        return Path(env)
+    if os.name == "nt":
+        local = os.environ.get("LOCALAPPDATA", "").strip()
+        if local:
+            return Path(local) / "hermes"
+        return Path.home() / "AppData" / "Local" / "hermes"
+    return Path.home() / ".hermes"
+
+
+HERMES_HOME = hermes_home()
 PLUGINS = HERMES_HOME / "plugins"
 STATE_DIR = HERMES_HOME / "aiianer"
 STATE_FILE = STATE_DIR / "installed.json"

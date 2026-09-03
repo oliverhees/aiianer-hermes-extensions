@@ -45,8 +45,16 @@ Weitere Komponenten folgen — jede nach demselben Muster: `install.sh` + `PROMP
 danach kein Terminal mehr. Alles Weitere wählst du im Reiter „AIIANER" direkt in
 Hermes aus, inklusive Updates.
 
+Linux, macOS, WSL:
+
 ```bash
 curl -sL https://raw.githubusercontent.com/oliverhees/aiianer-hermes-extensions/main/install.sh | bash -s aiianer-hub
+```
+
+Windows nativ, in PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/oliverhees/aiianer-hermes-extensions/main/extensions/aiianer-hub/install.ps1 | iex
 ```
 
 Danach Hermes neu starten. Die [Anleitung](extensions/aiianer-hub/README.md)

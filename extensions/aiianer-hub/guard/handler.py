@@ -10,8 +10,19 @@ import os
 import sys
 from pathlib import Path
 
-HERMES_HOME = Path(os.environ.get("HERMES_HOME", Path.home() / ".hermes"))
-STATE_DIR = HERMES_HOME / "aiianer"
+def _hermes_home() -> Path:
+    env = os.environ.get("HERMES_HOME", "").strip()
+    if env:
+        return Path(env)
+    if os.name == "nt":
+        local = os.environ.get("LOCALAPPDATA", "").strip()
+        if local:
+            return Path(local) / "hermes"
+        return Path.home() / "AppData" / "Local" / "hermes"
+    return Path.home() / ".hermes"
+
+
+STATE_DIR = _hermes_home() / "aiianer"
 
 if str(STATE_DIR) not in sys.path:
     sys.path.insert(0, str(STATE_DIR))
