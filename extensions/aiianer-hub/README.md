@@ -35,8 +35,21 @@ Windows nativ, also in PowerShell ohne WSL:
 irm https://raw.githubusercontent.com/oliverhees/aiianer-hermes-extensions/main/extensions/aiianer-hub/install.ps1 | iex
 ```
 
-Danach **Hermes komplett neu starten**. Der Reiter „AIIANER" erscheint neben
-Skills. Dort wählst du aus, was du haben willst.
+Danach **Hermes komplett neu starten**.
+
+## Wo du es findest
+
+Hermes hat zwei Oberflächen mit zwei getrennten Plugin-Systemen. Der Marktplatz
+bedient beide, du findest ihn also überall.
+
+| Oberfläche | Wo | Wie du sie öffnest |
+| --- | --- | --- |
+| **Desktop-App** | Eintrag „AIIANER" in der Seitenleiste | Hermes normal starten |
+| **Web-Dashboard** | Reiter „AIIANER" neben Skills | `hermes web`, dann `http://127.0.0.1:9119` |
+
+Wenn du in der Desktop-App suchst und nichts findest, hast du Hermes nach der
+Installation vermutlich nicht neu gestartet. Plugins werden nur beim Start
+geladen.
 
 ## Was wohin installiert wird
 
@@ -54,7 +67,8 @@ Tabelle oben.
 
 | Ort | Was dort liegt |
 | --- | --- |
-| `<hermes>/plugins/aiianer-hub/` | Der Reiter und sein Backend |
+| `<hermes>/plugins/aiianer-hub/` | Web-Dashboard: Reiter und das Backend |
+| `<hermes>/desktop-plugins/aiianer-hub/` | Desktop-App: Seitenleisten-Eintrag und Seite |
 | `<hermes>/hooks/aiianer-guard/` | Der Wächter, lauscht auf den Gateway-Start |
 | `<hermes>/aiianer/` | Sprachquelle, Zustand und Protokoll |
 

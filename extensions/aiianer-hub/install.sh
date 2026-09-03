@@ -37,6 +37,7 @@ resolve_hermes_home() {
 HERMES_HOME_DIR="$(resolve_hermes_home)"
 
 PLUGIN_DIR="$HERMES_HOME_DIR/plugins/aiianer-hub"
+DESKTOP_DIR="$HERMES_HOME_DIR/desktop-plugins/aiianer-hub"
 HOOK_DIR="$HERMES_HOME_DIR/hooks/aiianer-guard"
 STATE_DIR="$HERMES_HOME_DIR/aiianer"
 
@@ -71,12 +72,19 @@ cp "$HERE/dashboard/dist/index.js"         "$PLUGIN_DIR/dashboard/dist/index.js"
 rm -rf "$PLUGIN_DIR/dashboard/__pycache__"
 echo "  Plugin      -> $PLUGIN_DIR"
 
-# 2) Gemeinsame Pruefjunktion
+# 2) Desktop-Fassung. Hermes hat zwei getrennte Plugin-Systeme: das
+#    Web-Dashboard liest plugins/<name>/dashboard/, die Electron-App liest
+#    desktop-plugins/<name>/plugin.js. Beide sprechen dasselbe Backend an.
+mkdir -p "$DESKTOP_DIR"
+cp "$HERE/desktop/plugin.js" "$DESKTOP_DIR/plugin.js"
+echo "  Desktop     -> $DESKTOP_DIR"
+
+# 3) Gemeinsame Pruefjunktion
 mkdir -p "$STATE_DIR"
 cp "$HERE/guard_check.py" "$STATE_DIR/guard_check.py"
 echo "  Pruefung    -> $STATE_DIR/guard_check.py"
 
-# 3) Waechter
+# 4) Waechter
 mkdir -p "$HOOK_DIR"
 cp "$HERE/guard/HOOK.yaml"  "$HOOK_DIR/HOOK.yaml"
 cp "$HERE/guard/handler.py" "$HOOK_DIR/handler.py"
@@ -86,7 +94,9 @@ echo "  Waechter    -> $HOOK_DIR"
 echo ""
 echo "Fertig. Naechste Schritte:"
 echo "  1. Hermes komplett neu starten"
-echo "  2. Der Reiter 'AIIANER' erscheint neben Skills"
+echo "  2. Der Eintrag 'AIIANER' erscheint in beiden Oberflaechen:"
+echo "     Desktop-App    -> in der Seitenleiste"
+echo "     Web-Dashboard  -> als Reiter, erreichbar mit: hermes web"
 echo "  3. Dort auswaehlen, was du installieren willst"
 echo ""
 echo "Der Waechter prueft ab jetzt bei jedem Gateway-Start, ob ein"

@@ -27,6 +27,7 @@ Ist Hermes installiert? Falls es woanders liegt, setze HERMES_HOME.
 Write-Host "Hermes-Verzeichnis: $HermesHome"
 
 $PluginDir = Join-Path $HermesHome 'plugins\aiianer-hub'
+$DesktopDir = Join-Path $HermesHome 'desktop-plugins\aiianer-hub'
 $HookDir   = Join-Path $HermesHome 'hooks\aiianer-guard'
 $StateDir  = Join-Path $HermesHome 'aiianer'
 
@@ -58,12 +59,17 @@ $Pyc = Join-Path $PluginDir 'dashboard\__pycache__'
 if (Test-Path $Pyc) { Remove-Item $Pyc -Recurse -Force }
 Write-Host "  Plugin      -> $PluginDir"
 
-# 2) Gemeinsame Pruefung
+# 2) Desktop-Fassung. Hermes hat zwei getrennte Plugin-Systeme.
+New-Item -ItemType Directory -Path $DesktopDir -Force | Out-Null
+Copy-Item (Join-Path $Here 'desktop\plugin.js') (Join-Path $DesktopDir 'plugin.js') -Force
+Write-Host "  Desktop     -> $DesktopDir"
+
+# 3) Gemeinsame Pruefung
 New-Item -ItemType Directory -Path $StateDir -Force | Out-Null
 Copy-Item (Join-Path $Here 'guard_check.py') (Join-Path $StateDir 'guard_check.py') -Force
 Write-Host "  Pruefung    -> $StateDir\guard_check.py"
 
-# 3) Waechter
+# 4) Waechter
 New-Item -ItemType Directory -Path $HookDir -Force | Out-Null
 Copy-Item (Join-Path $Here 'guard\HOOK.yaml')  (Join-Path $HookDir 'HOOK.yaml') -Force
 Copy-Item (Join-Path $Here 'guard\handler.py') (Join-Path $HookDir 'handler.py') -Force
@@ -76,7 +82,9 @@ if ($Temp -and (Test-Path $Temp)) { Remove-Item $Temp -Recurse -Force }
 Write-Host ""
 Write-Host "Fertig. Naechste Schritte:"
 Write-Host "  1. Hermes komplett neu starten"
-Write-Host "  2. Der Reiter 'AIIANER' erscheint neben Skills"
+Write-Host "  2. Der Eintrag 'AIIANER' erscheint in beiden Oberflaechen:"
+Write-Host "     Desktop-App    -> in der Seitenleiste"
+Write-Host "     Web-Dashboard  -> als Reiter, erreichbar mit: hermes web"
 Write-Host "  3. Dort auswaehlen, was du installieren willst"
 Write-Host ""
 Write-Host "Der Waechter prueft ab jetzt bei jedem Gateway-Start, ob ein"

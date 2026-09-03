@@ -6,6 +6,10 @@
   "use strict";
 
   var SDK = window.__HERMES_PLUGIN_SDK__;
+  // Schutz wie im mitgelieferten hermes-achievements: ohne SDK still aussteigen,
+  // statt beim Laden der Seite eine Ausnahme zu werfen.
+  if (!SDK || !window.__HERMES_PLUGINS__) return;
+
   var React = SDK.React;
   var h = React.createElement;
   var useState = SDK.hooks.useState;

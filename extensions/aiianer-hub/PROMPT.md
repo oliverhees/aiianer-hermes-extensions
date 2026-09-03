@@ -14,11 +14,13 @@ System, weil Hermes selbst herausfindet, wo er läuft.
 > Auf nativem Windows in PowerShell:
 > `irm https://raw.githubusercontent.com/oliverhees/aiianer-hermes-extensions/main/extensions/aiianer-hub/install.ps1 | iex`
 >
-> Prüfe danach, ob in deinem Hermes-Verzeichnis diese drei Ordner liegen:
-> `plugins/aiianer-hub`, `hooks/aiianer-guard` und `aiianer`. Dein
+> Prüfe danach, ob in deinem Hermes-Verzeichnis diese vier Ordner liegen:
+> `plugins/aiianer-hub`, `desktop-plugins/aiianer-hub`, `hooks/aiianer-guard`
+> und `aiianer`. Dein
 > Hermes-Verzeichnis ist `~/.hermes` auf Linux, macOS und WSL, und
 > `%LOCALAPPDATA%\hermes` auf nativem Windows. Falls `HERMES_HOME` gesetzt ist,
 > gilt das stattdessen.
 >
 > Sag mir, ob alles geklappt hat, und erinnere mich daran, Hermes komplett neu
-> zu starten. Danach finde ich den Reiter „AIIANER" neben Skills.
+> zu starten. Danach finde ich „AIIANER" in der Seitenleiste der Desktop-App
+> und als Reiter im Web-Dashboard.
