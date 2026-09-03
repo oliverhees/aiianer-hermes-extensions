@@ -51,6 +51,51 @@ Wenn du in der Desktop-App suchst und nichts findest, hast du Hermes nach der
 Installation vermutlich nicht neu gestartet. Plugins werden nur beim Start
 geladen.
 
+## Installieren, aktualisieren, entfernen
+
+Jede Karte im Marktplatz führt genau die Knöpfe, die im jeweiligen Zustand
+Sinn ergeben.
+
+| Zustand der Komponente | Was du siehst |
+| --- | --- |
+| nicht installiert | **Installieren**, darunter ein Hinweis, was danach nötig ist |
+| aktuell | **Neu einspielen**, **Deinstallieren** |
+| Update verfügbar | **Auf vX aktualisieren**, **Neu einspielen**, **Deinstallieren** |
+
+Während eine Aktion läuft, steht das auf dem Knopf und alle Knöpfe dieser
+Karte sind gesperrt. Danach erscheint ein Kasten mit den nächsten Schritten.
+
+**Das ist der wichtigste Teil.** Nach dem Installieren der deutschen Sprache
+ist Hermes noch nicht auf Deutsch. Es fehlen zwei Schritte, und genau die
+stehen dann in dem Kasten:
+
+1. Hermes komplett beenden und neu starten. Beim ersten Start baut die App
+   sich einmal neu, das dauert einen Moment.
+2. Settings → Language → Deutsch.
+
+### Deinstallieren
+
+Der Rückbau spielt genau die Sicherung zurück, die der jeweilige Installer
+beim Installieren angelegt hat. Nichts wird geraten und nichts pauschal
+gelöscht.
+
+| Komponente | Was zurückgeholt wird |
+| --- | --- |
+| Deutsche Sprache | `types.ts`, `catalog.ts`, `languages.ts` aus `*.aiianer-bak`, `de.ts` fliegt raus |
+| Bot-Modus auf Deutsch | die Originaldatei aus `plugin.js.upstream-backup` |
+| Gruppenchat-Grenzen | die Originaldatei aus `plugin.js.backup` |
+| EU-Router | der Ordner `plugins/model-providers/eurouter` |
+
+Fehlt eine Sicherung, bricht der Rückbau ab und **fasst nichts an**. Du
+bekommst dann im Klartext gesagt, welche Datei fehlt. Lieber installiert
+bleiben als halb zurückgebaut.
+
+Beim EU-Router bleibt der Start-Helfer unter `~/.local/bin/hermes` absichtlich
+liegen. Er repariert auch Dinge, die nichts mit dieser Komponente zu tun haben.
+
+Nach dem Deinstallieren vergisst auch der Wächter die Komponente. Er spielt
+sie beim nächsten Start also nicht wieder ein.
+
 ## Was wohin installiert wird
 
 Hermes legt seine Daten je nach System woanders ab. Der Installer findet den

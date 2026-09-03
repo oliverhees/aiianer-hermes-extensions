@@ -20,13 +20,14 @@
 
   var LABEL = {
     current: "aktuell",
-    outdated: "Update verfuegbar",
+    outdated: "Update verfügbar",
     missing: "nicht installiert"
   };
 
   function Row(props) {
     var c = props.item;
-    var busy = props.busy === c.id;
+    var laufend = props.laufend;      // 'install' | 'uninstall' | null
+    var res = props.ergebnis;         // Antwort oder Fehler dieser Karte
     var isPatch = c.kind === "patch";
 
     return h(
@@ -41,9 +42,12 @@
           { className: "flex flex-wrap items-center gap-2 mt-1" },
           h(C.Badge, null, LABEL[c.status] || c.status),
           h(C.Badge, null, "v" + c.version),
+          c.installed && c.installed !== c.version
+            ? h(C.Badge, null, "installiert: v" + c.installed)
+            : null,
           isPatch
             ? h(C.Badge, null, "greift in den Checkout ein")
-            : h(C.Badge, null, "eigenstaendig")
+            : h(C.Badge, null, "eigenständig")
         )
       ),
       h(
@@ -66,24 +70,69 @@
           : null,
         h(
           "div",
-          { className: "mt-3 flex gap-2" },
-          h(
-            C.Button,
-            {
-              disabled: busy || c.status === "current",
-              onClick: function () {
-                props.onInstall(c.id);
-              }
-            },
-            busy
-              ? "laeuft ..."
-              : c.status === "missing"
-              ? "Installieren"
-              : c.status === "outdated"
-              ? "Aktualisieren"
-              : "Installiert"
-          )
-        )
+          { className: "mt-3 flex flex-wrap gap-2" },
+          laufend
+            ? h(
+                C.Button,
+                { disabled: true },
+                laufend === "uninstall" ? "wird entfernt ..." : "wird installiert, einen Moment ..."
+              )
+            : c.status === "missing"
+            ? h(
+                C.Button,
+                { onClick: function () { props.onAktion(c.id, "install"); } },
+                "Installieren"
+              )
+            : [
+                c.status === "outdated"
+                  ? h(
+                      C.Button,
+                      { key: "upd", onClick: function () { props.onAktion(c.id, "install"); } },
+                      "Auf v" + c.version + " aktualisieren"
+                    )
+                  : null,
+                h(
+                  C.Button,
+                  { key: "re", variant: "outline", onClick: function () { props.onAktion(c.id, "install"); } },
+                  "Neu einspielen"
+                ),
+                h(
+                  C.Button,
+                  { key: "del", variant: "outline", onClick: function () { props.onAktion(c.id, "uninstall"); } },
+                  "Deinstallieren"
+                )
+              ]
+        ),
+
+        // Nach der Aktion: was der Nutzer jetzt tun muss. Ohne das erwartet er,
+        // dass die Oberflaeche sofort deutsch ist, und das ist sie nicht.
+        res && res.ok && (res.nextSteps || []).length
+          ? h(
+              "div",
+              { className: "mt-3 rounded border border-emerald-600/50 bg-emerald-950/20 p-2" },
+              h("p", { className: "text-sm font-medium" }, "Fertig. Das ist jetzt zu tun:"),
+              h(
+                "ol",
+                { className: "text-sm text-muted-foreground list-decimal pl-5 mt-1 space-y-0.5" },
+                res.nextSteps.map(function (z, i) {
+                  return h("li", { key: i }, z);
+                })
+              )
+            )
+          : res && !res.ok
+          ? h(
+              "div",
+              { className: "mt-3 rounded border border-red-600/60 bg-red-950/20 p-2" },
+              h("p", { className: "text-sm font-medium" }, "Das hat nicht geklappt:"),
+              h("p", { className: "text-sm text-muted-foreground mt-1 whitespace-pre-wrap" }, res.message)
+            )
+          : !laufend && c.status === "missing" && (c.nextSteps || []).length
+          ? h(
+              "p",
+              { className: "text-xs text-muted-foreground mt-2" },
+              "Danach nötig: " + c.nextSteps[0]
+            )
+          : null
       )
     );
   }
@@ -96,6 +145,14 @@
     var b = useState(null);
     var busy = b[0];
     var setBusy = b[1];
+
+    var lf = useState({});
+    var laufend = lf[0];
+    var setLaufend = lf[1];
+
+    var eg = useState({});
+    var ergebnis = eg[0];
+    var setErgebnis = eg[1];
 
     var e = useState(null);
     var err = e[0];
@@ -125,21 +182,33 @@
       load();
     }, []);
 
-    function install(id) {
-      setBusy(id);
-      setErr(null);
-      SDK.fetchJSON(API + "/install", {
+    // Pro Karte merken, was laeuft und was herauskam. Ein globales "busy"
+    // reicht nicht: der Nutzer soll sehen, WELCHE Karte gerade arbeitet.
+    function aktion(id, welche) {
+      setLaufend(function (v) { var n = {}; for (var k in v) n[k] = v[k]; n[id] = welche; return n; });
+      setErgebnis(function (v) { var n = {}; for (var k in v) n[k] = v[k]; n[id] = null; return n; });
+      SDK.fetchJSON(API + "/" + welche, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: id })
       })
-        .then(function () {
-          setBusy(null);
+        .then(function (antwort) {
+          setErgebnis(function (v) {
+            var n = {}; for (var k in v) n[k] = v[k];
+            n[id] = { ok: true, nextSteps: (antwort && antwort.nextSteps) || [] };
+            return n;
+          });
           load();
         })
         .catch(function (x) {
-          setBusy(null);
-          setErr(String(x && x.message ? x.message : x));
+          setErgebnis(function (v) {
+            var n = {}; for (var k in v) n[k] = v[k];
+            n[id] = { ok: false, message: String(x && x.message ? x.message : x) };
+            return n;
+          });
+        })
+        .then(function () {
+          setLaufend(function (v) { var n = {}; for (var k in v) n[k] = v[k]; n[id] = null; return n; });
         });
     }
 
@@ -225,8 +294,9 @@
         return h(Row, {
           key: c.id,
           item: c,
-          busy: busy,
-          onInstall: install
+          laufend: laufend[c.id] || null,
+          ergebnis: ergebnis[c.id] || null,
+          onAktion: aktion
         });
       }),
 

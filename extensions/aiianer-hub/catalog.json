@@ -8,8 +8,8 @@
       "name": "Deutsche Sprache",
       "version": "2026.09.01",
       "kind": "patch",
-      "summary": "Die Hermes-Oberflaeche auf Deutsch. Wird nach jedem Hermes-Update automatisch neu eingespielt.",
-      "note": "Greift in den Hermes-Checkout ein, weil Hermes keine Laufzeit-Registrierung fuer Sprachen anbietet. Der Waechter haelt es aktuell.",
+      "summary": "Die Hermes-Oberfläche auf Deutsch. Wird nach jedem Hermes-Update automatisch neu eingespielt.",
+      "note": "Greift in den Hermes-Checkout ein, weil Hermes keine Laufzeit-Registrierung für Sprachen anbietet. Der Wächter hält es aktuell.",
       "coverage": "95,6 % gegen en.ts, gemessen am Wert"
     },
     {
@@ -18,14 +18,14 @@
       "version": "2.1.0",
       "kind": "plugin",
       "summary": "Zeigt deine EU-Compliance-Routen im Modell-Picker statt roher Katalog-Modelle.",
-      "note": "Laeuft vollstaendig ausserhalb des Hermes-Verzeichnisses."
+      "note": "Läuft vollständig außerhalb des Hermes-Verzeichnisses."
     },
     {
       "id": "bot-mode-german",
       "name": "Bot-Modus auf Deutsch",
       "version": "1.0.0",
       "kind": "plugin",
-      "summary": "Deutsche Texte im Bot-Modus, inklusive der Oberflaeche fuer Gruppen und Zeitplaene.",
+      "summary": "Deutsche Texte im Bot-Modus, inklusive der Oberfläche für Gruppen und Zeitpläne.",
       "note": "Protokoll-Texte bleiben bewusst englisch, sonst bricht die Bot-zu-Bot-Zustellung."
     },
     {
@@ -33,8 +33,8 @@
       "name": "Gruppenchat-Grenzen",
       "version": "1.0.0",
       "kind": "patch",
-      "summary": "Budget- und Uebergabe-Regeln fuer Gruppenchats.",
-      "note": "Greift in den Checkout ein, wird ebenfalls vom Waechter geprueft."
+      "summary": "Budget- und Übergabe-Regeln für Gruppenchats.",
+      "note": "Greift in den Checkout ein, wird ebenfalls vom Wächter geprüft."
     }
   ]
 }

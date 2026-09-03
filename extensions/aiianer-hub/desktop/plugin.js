@@ -15,6 +15,7 @@
 // cron-costs macht es genauso. Ein Import von 'jsx' aus @hermes/plugin-sdk
 // laesst das Plugin beim Laden mit "does not provide an export named 'jsx'"
 // scheitern.
+import { useState } from 'react'
 import { jsx, jsxs } from 'react/jsx-runtime'
 
 import {
@@ -44,11 +45,31 @@ function makeUseCatalog(fetchCatalog) {
 
 // -- Oberflaeche --------------------------------------------------------------
 
-function makePane(useCatalog, doInstall) {
+function makePane(useCatalog, aktionen) {
   return function Pane() {
-    // usePluginI18n liefert die Uebersetzerfunktion DIREKT zurueck, kein Objekt.
     const t = usePluginI18n(ID)
     const { data, isLoading, error, refetch } = useCatalog()
+
+    // laufend[id] = 'install' | 'uninstall'; ergebnis[id] = Antwort oder Fehler.
+    // Ohne den laufend-Zustand wirkt der Klick stumm, bis der Refetch kommt -
+    // genau das war die Beschwerde.
+    const [laufend, setLaufend] = useState({})
+    const [ergebnis, setErgebnis] = useState({})
+
+    const ausfuehren = (id, aktion) => {
+      setLaufend(v => ({ ...v, [id]: aktion }))
+      setErgebnis(v => ({ ...v, [id]: null }))
+      aktionen[aktion](id)
+        .then(antwort => {
+          setErgebnis(v => ({ ...v, [id]: { ok: true, ...antwort } }))
+          return refetch()
+        })
+        .catch(err => {
+          const text = err && err.message ? err.message : String(err)
+          setErgebnis(v => ({ ...v, [id]: { ok: false, message: text } }))
+        })
+        .finally(() => setLaufend(v => ({ ...v, [id]: null })))
+    }
 
     if (isLoading) return jsx(Skeleton, { className: 'h-24 m-3' })
     if (error) {
@@ -61,42 +82,97 @@ function makePane(useCatalog, doInstall) {
     const items = (data && data.components) || []
     if (!items.length) return jsx(EmptyState, { title: t('empty') })
 
-    // Kinder gehoeren in props.children, der dritte Parameter ist der key.
-    // jsxs statt jsx, sobald children ein Array ist.
+    const knopf = (schluessel, beschriftung, opts) =>
+      jsx('button', {
+        className: cn(
+          'text-xs rounded px-2 py-1 border transition-opacity',
+          opts.aus ? 'opacity-50 cursor-not-allowed' : 'hover:bg-accent',
+          opts.betont ? 'border-red-500/60' : ''
+        ),
+        disabled: opts.aus,
+        onClick: opts.onClick,
+        children: beschriftung
+      }, schluessel)
+
     const karten = items.map(c => {
+      const aktiv = laufend[c.id]
+      const res = ergebnis[c.id]
+      const gesperrt = Boolean(aktiv)
+
       const kopf = jsxs('div', {
-        className: 'flex items-center gap-2',
+        className: 'flex items-center gap-2 flex-wrap',
         children: [
           jsx('span', { className: 'font-medium text-sm', children: c.name }, 'n'),
           jsx(Badge, { children: 'v' + c.version }, 'v'),
-          jsx(Badge, { children: t('status.' + c.status) || c.status }, 's')
+          jsx(Badge, { children: t('status.' + c.status) }, 's'),
+          c.installed && c.installed !== c.version
+            ? jsx('span', {
+                className: 'text-xs opacity-60',
+                children: t('installedIs', c.installed)
+              }, 'iv')
+            : null
         ]
       }, 'h')
 
-      const knopfText = c.status === 'missing' ? t('install')
-        : c.status === 'outdated' ? t('update')
-        : t('installed')
+      // Knopfreihe: was moeglich ist, haengt am Status.
+      const reihe = []
+      if (aktiv) {
+        reihe.push(knopf('busy', aktiv === 'uninstall' ? t('uninstalling') : t('installing'), { aus: true }))
+      } else if (c.status === 'missing') {
+        reihe.push(knopf('inst', t('install'), { aus: gesperrt, onClick: () => ausfuehren(c.id, 'install') }))
+      } else {
+        if (c.status === 'outdated') {
+          reihe.push(knopf('upd', t('updateTo', c.version), {
+            aus: gesperrt, betont: true, onClick: () => ausfuehren(c.id, 'install')
+          }))
+        }
+        reihe.push(knopf('rein', t('reinstall'), { aus: gesperrt, onClick: () => ausfuehren(c.id, 'install') }))
+        reihe.push(knopf('deinst', t('uninstall'), { aus: gesperrt, onClick: () => ausfuehren(c.id, 'uninstall') }))
+      }
 
-      const zeilen = [
-        kopf,
-        jsx('p', { className: 'text-xs opacity-70', children: c.summary }, 'd'),
-        c.note
-          ? jsx('p', { className: 'text-xs opacity-50', children: c.note }, 'note')
-          : null,
-        jsx('button', {
-          className: cn(
-            'text-xs rounded px-2 py-1 border',
-            c.status === 'current' ? 'opacity-50' : 'hover:bg-accent'
-          ),
-          disabled: c.status === 'current',
-          onClick: () => doInstall(c.id).then(() => refetch()),
-          children: knopfText
-        }, 'b')
-      ]
+      // Was jetzt zu tun ist. Vor dem Klick als leiser Hinweis, nach dem
+      // Klick als hervorgehobener Kasten - der Nutzer erwartet sonst, dass
+      // Deutsch sofort da ist.
+      const schritte = res && res.ok
+        ? (res.nextSteps || [])
+        : (aktiv ? [] : (c.status === 'missing' ? (c.nextSteps || []) : []))
+
+      const hinweis = []
+      if (res && res.ok && schritte.length) {
+        hinweis.push(jsxs('div', {
+          className: 'rounded border border-emerald-600/50 bg-emerald-950/20 p-2 space-y-1',
+          children: [
+            jsx('p', { className: 'text-xs font-medium', children: t('doneTitle') }, 'dt'),
+            jsxs('ol', {
+              className: 'text-xs opacity-80 list-decimal pl-4 space-y-0.5',
+              children: schritte.map((z, i) => jsx('li', { children: z }, 'z' + i))
+            }, 'ol')
+          ]
+        }, 'ok'))
+      } else if (res && !res.ok) {
+        hinweis.push(jsxs('div', {
+          className: 'rounded border border-red-600/60 bg-red-950/20 p-2 space-y-1',
+          children: [
+            jsx('p', { className: 'text-xs font-medium', children: t('failTitle') }, 'ft'),
+            jsx('p', { className: 'text-xs opacity-80 whitespace-pre-wrap', children: res.message }, 'fm')
+          ]
+        }, 'err'))
+      } else if (schritte.length) {
+        hinweis.push(jsx('p', {
+          className: 'text-xs opacity-50',
+          children: t('afterwards') + ' ' + schritte[0]
+        }, 'vor'))
+      }
 
       return jsxs('div', {
         className: cn('rounded-md border p-3 space-y-2'),
-        children: zeilen
+        children: [
+          kopf,
+          jsx('p', { className: 'text-xs opacity-70', children: c.summary }, 'd'),
+          c.note ? jsx('p', { className: 'text-xs opacity-50', children: c.note }, 'note') : null,
+          jsxs('div', { className: 'flex items-center gap-2 flex-wrap', children: reihe }, 'row'),
+          ...hinweis
+        ]
       }, c.id)
     })
 
@@ -121,25 +197,40 @@ export default {
         title: 'AIIANER Extensions',
         intro: 'German language and the AIIANER tools. What you install here survives Hermes updates.',
         install: 'Install',
-        update: 'Update',
-        installed: 'Installed',
+        reinstall: 'Reinstall',
+        uninstall: 'Uninstall',
+        updateTo: v => `Update to v${v}`,
+        installedIs: v => `installed: v${v}`,
+        installing: 'Installing, please wait...',
+        uninstalling: 'Removing...',
+        doneTitle: 'Done. What to do next:',
+        failTitle: 'That did not work:',
+        afterwards: 'Afterwards:',
         empty: 'Catalog is empty',
         errTitle: 'Could not load the catalog',
-        'status.current': 'current',
-        'status.outdated': 'update available',
-        'status.missing': 'not installed'
+        // Geschachtelt, NICHT flach mit Punkt im Schluessel: resolvePath in
+        // i18n/runtime.ts laeuft den Punktpfad durch einen verschachtelten
+        // Baum. Ein flacher Schluessel 'status.missing' wird nie gefunden und
+        // translateFrom gibt dann den Schluessel selbst zurueck - im Badge
+        // stand woertlich "status.missing".
+        status: { current: 'current', outdated: 'update available', missing: 'not installed' }
       },
       de: {
         title: 'AIIANER Erweiterungen',
         intro: 'Deutsche Sprache und die AIIANER-Werkzeuge. Was du hier installierst, überlebt Hermes-Updates.',
         install: 'Installieren',
-        update: 'Aktualisieren',
-        installed: 'Installiert',
+        reinstall: 'Neu einspielen',
+        uninstall: 'Deinstallieren',
+        updateTo: v => `Auf v${v} aktualisieren`,
+        installedIs: v => `installiert: v${v}`,
+        installing: 'Wird installiert, einen Moment ...',
+        uninstalling: 'Wird entfernt ...',
+        doneTitle: 'Fertig. Das ist jetzt zu tun:',
+        failTitle: 'Das hat nicht geklappt:',
+        afterwards: 'Danach nötig:',
         empty: 'Der Katalog ist leer',
         errTitle: 'Katalog konnte nicht geladen werden',
-        'status.current': 'aktuell',
-        'status.outdated': 'Update verfügbar',
-        'status.missing': 'nicht installiert'
+        status: { current: 'aktuell', outdated: 'Update verfügbar', missing: 'nicht installiert' }
       }
     })
 
@@ -148,10 +239,13 @@ export default {
     // body ist ein Objekt - die Bruecke serialisiert selbst. Ein
     // JSON.stringify hier wuerde dem Backend einen String statt eines
     // Objekts schicken.
-    const doInstall = id => ctx.rest('/install', { method: 'POST', body: { id } })
+    const aktionen = {
+      install: id => ctx.rest('/install', { method: 'POST', body: { id } }),
+      uninstall: id => ctx.rest('/uninstall', { method: 'POST', body: { id } })
+    }
 
     const useCatalog = makeUseCatalog(fetchCatalog)
-    const Pane = makePane(useCatalog, doInstall)
+    const Pane = makePane(useCatalog, aktionen)
 
     // Eigene Seite
     ctx.register({

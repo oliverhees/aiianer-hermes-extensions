@@ -56,6 +56,54 @@ PLUGINS = HERMES_HOME / "plugins"
 STATE_DIR = HERMES_HOME / "aiianer"
 STATE_FILE = STATE_DIR / "installed.json"
 LOCAL_CATALOG = Path(__file__).resolve().parent.parent / "catalog.json"
+AGENT_DIR = Path(os.environ.get("HERMES_AGENT_DIR") or (HERMES_HOME / "hermes-agent"))
+I18N_DIR = AGENT_DIR / "apps" / "desktop" / "src" / "i18n"
+BOTS_PLUGIN = AGENT_DIR / "apps" / "desktop" / "src" / "plugins" / "hermes-bots" / "plugin.js"
+EXT_STORE = HERMES_HOME / "aiianer-extensions"
+
+# Was der Nutzer NACH einer Aktion tun muss. Bewusst hier im lokalen Code und
+# nicht im Katalog: der Katalog kommt aus dem Netz, und Anweisungstexte, die
+# jemand von aussen setzen kann, sind eine Einladung zum Missbrauch. Der
+# Katalog darf sie ueberschreiben, muss aber nicht.
+NEXT_STEPS = {
+    "german-language": {
+        "install": [
+            "Hermes komplett beenden und neu starten. Beim ersten Start baut die App sich einmal neu, das dauert einen Moment.",
+            "Danach: Settings -> Language -> Deutsch auswählen.",
+            "Erst danach ist die Oberfläche auf Deutsch. Vorher ändert sich nichts.",
+        ],
+        "uninstall": [
+            "Hermes komplett beenden und neu starten.",
+            "Falls die Sprache noch auf Deutsch stand: Settings -> Language -> English.",
+        ],
+    },
+    "bot-mode-german": {
+        "install": ["Hermes neu starten. Der Bot-Modus ist danach auf Deutsch."],
+        "uninstall": ["Hermes neu starten. Der Bot-Modus ist wieder englisch."],
+    },
+    "group-chat-limits": {
+        "install": ["Hermes neu starten. Die Grenzen stehen dann in den Gruppenchat-Einstellungen."],
+        "uninstall": ["Hermes neu starten. Es gelten wieder die eingebauten Grenzen."],
+    },
+    "eurouter-provider": {
+        "install": [
+            "Hermes neu starten.",
+            "Der EU-Router taucht dann im Modell-Auswahlmenü als eigene Gruppe auf.",
+        ],
+        "uninstall": [
+            "Hermes neu starten.",
+            "Der Start-Helfer unter ~/.local/bin/hermes bleibt absichtlich liegen, weil er auch andere Reparaturen macht.",
+        ],
+    },
+}
+
+
+def _steps(comp_id: str, aktion: str, entry: dict | None = None) -> list:
+    """Katalog darf ueberschreiben, sonst der lokale Standard."""
+    vom_katalog = (entry or {}).get("nextSteps", {}).get(aktion)
+    if isinstance(vom_katalog, list) and vom_katalog:
+        return [str(x) for x in vom_katalog]
+    return NEXT_STEPS.get(comp_id, {}).get(aktion, [])
 
 
 # ---------------------------------------------------------------- Zustand
@@ -97,6 +145,8 @@ async def catalog() -> dict:
                 **c,
                 "installed": installed,
                 "installedAt": local.get("at"),
+                "nextSteps": _steps(c["id"], "install", c),
+                "uninstallSteps": _steps(c["id"], "uninstall", c),
                 "status": (
                     "missing"
                     if not installed
@@ -166,9 +216,143 @@ async def install(body: dict) -> dict:
                     shutil.copy2(src / name, STATE_DIR / name)
 
     state = _read_state()
+    vorher = state.get(comp_id, {}).get("version")
     state[comp_id] = {"version": entry["version"], "at": _now()}
     _write_state(state)
-    return {"ok": True, "id": comp_id, "version": entry["version"]}
+    return {
+        "ok": True,
+        "id": comp_id,
+        "action": "update" if vorher else "install",
+        "version": entry["version"],
+        "previousVersion": vorher,
+        "log": [z for z in (proc.stdout or "").splitlines() if z.strip()][-12:],
+        "nextSteps": _steps(comp_id, "install", entry),
+    }
+
+
+# ------------------------------------------------------- Rueckbau
+
+# Jeder Installer legt sein Backup selbst an. Der Rueckbau spielt genau
+# dieses Backup zurueck - nichts wird geraten und nichts pauschal geloescht.
+# Deshalb steht die Logik hier im lokalen Code und nicht im Katalog aus dem
+# Netz: wer das Repo kontrolliert, soll nicht kontrollieren, welche Dateien
+# auf fremden Rechnern verschwinden.
+
+
+def _restore(quelle: Path, ziel: Path, protokoll: list) -> bool:
+    if not quelle.is_file():
+        protokoll.append(f"Backup fehlt: {quelle}")
+        return False
+    shutil.copy2(quelle, ziel)
+    protokoll.append(f"wiederhergestellt: {ziel.name}")
+    return True
+
+
+def _drop(pfad: Path, protokoll: list) -> None:
+    try:
+        if pfad.is_dir():
+            shutil.rmtree(pfad)
+            protokoll.append(f"entfernt: {pfad}")
+        elif pfad.exists():
+            pfad.unlink()
+            protokoll.append(f"entfernt: {pfad.name}")
+    except Exception as exc:
+        protokoll.append(f"konnte {pfad} nicht entfernen: {exc}")
+
+
+def _uninstall_german(protokoll: list) -> None:
+    """apply-de.py sichert types.ts/catalog.ts/languages.ts als *.aiianer-bak."""
+    namen = ("types.ts", "catalog.ts", "languages.ts")
+
+    # ERST pruefen, DANN schreiben. Andersherum waere der Rueckbau nicht
+    # atomar: fehlt nur eine der drei Sicherungen, waeren die anderen Dateien
+    # bereits ueberschrieben und die Meldung "nichts veraendert" gelogen.
+    fehlend = [n for n in namen if not (I18N_DIR / (n + ".aiianer-bak")).is_file()]
+    if fehlend:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Rueckbau abgebrochen, es fehlen Sicherungen fuer: "
+                + ", ".join(fehlend)
+                + ". Ohne sie laesst sich der Originalzustand nicht sauber "
+                "herstellen. Es wurde nichts veraendert."
+            ),
+        )
+    for name in namen:
+        _restore(I18N_DIR / (name + ".aiianer-bak"), I18N_DIR / name, protokoll)
+    for name in namen:
+        _drop(I18N_DIR / (name + ".aiianer-bak"), protokoll)
+    _drop(I18N_DIR / "de.ts", protokoll)
+    # Quellen des Waechters mit entfernen, sonst spielt er beim naechsten
+    # Gateway-Start alles wieder ein.
+    _drop(STATE_DIR / "de.ts", protokoll)
+    _drop(STATE_DIR / "apply-de.py", protokoll)
+    _drop(EXT_STORE / "german-language", protokoll)
+
+
+def _uninstall_bots(comp_id: str, sicherungsname: str, protokoll: list) -> None:
+    sicherung = EXT_STORE / comp_id / sicherungsname
+    if not sicherung.is_file():
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"Rueckbau abgebrochen: die Sicherung {sicherungsname} fehlt unter "
+                f"{EXT_STORE / comp_id}. Nichts wurde veraendert."
+            ),
+        )
+    _restore(sicherung, BOTS_PLUGIN, protokoll)
+    _drop(EXT_STORE / comp_id, protokoll)
+
+
+def _uninstall_eurouter(protokoll: list) -> None:
+    """Liegt ausserhalb des Hermes-Checkouts, deshalb reicht Entfernen.
+    Der Start-Helfer unter ~/.local/bin/hermes bleibt bewusst liegen - er
+    macht auch Reparaturen, die nichts mit dieser Komponente zu tun haben."""
+    _drop(PLUGINS / "model-providers" / "eurouter", protokoll)
+    protokoll.append("~/.local/bin/hermes bleibt absichtlich unberuehrt")
+
+
+def _run_uninstall(comp_id: str, protokoll: list) -> None:
+    if comp_id == "german-language":
+        _uninstall_german(protokoll)
+    elif comp_id == "bot-mode-german":
+        _uninstall_bots(comp_id, "plugin.js.upstream-backup", protokoll)
+    elif comp_id == "group-chat-limits":
+        _uninstall_bots(comp_id, "plugin.js.backup", protokoll)
+    elif comp_id == "eurouter-provider":
+        _uninstall_eurouter(protokoll)
+    else:
+        raise HTTPException(
+            status_code=404, detail=f"Kein Rueckbau bekannt fuer: {comp_id}"
+        )
+
+
+@router.post("/uninstall")
+async def uninstall(body: dict) -> dict:
+    comp_id = (body or {}).get("id", "")
+    zustand = _read_state()
+    if comp_id not in zustand:
+        raise HTTPException(
+            status_code=409, detail=f"{comp_id} ist gar nicht installiert."
+        )
+
+    protokoll: list = []
+    _run_uninstall(comp_id, protokoll)
+
+    # Erst wenn der Rueckbau durchlief, faellt der Zustandseintrag. Der
+    # Waechter richtet sich danach und spielt sonst alles wieder ein.
+    zustand.pop(comp_id, None)
+    _write_state(zustand)
+
+    cat = _load_catalog()
+    entry = next((c for c in cat.get("components", []) if c["id"] == comp_id), None)
+    return {
+        "ok": True,
+        "id": comp_id,
+        "action": "uninstall",
+        "log": protokoll,
+        "nextSteps": _steps(comp_id, "uninstall", entry),
+    }
 
 
 @router.post("/repair")
