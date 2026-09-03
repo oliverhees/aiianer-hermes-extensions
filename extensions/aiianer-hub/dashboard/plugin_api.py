@@ -63,6 +63,7 @@ I18N_DIR = AGENT_DIR / "apps" / "desktop" / "src" / "i18n"
 BOTS_DIR = AGENT_DIR / "apps" / "desktop" / "src" / "plugins" / "hermes-bots"
 BOTS_PLUGIN = BOTS_DIR / "plugin.js"
 BOTS_KATALOG = BOTS_DIR / "i18n.ts"
+BOTS_ROUNDS = BOTS_DIR / "group-rounds.ts"
 
 
 def _bots_ziel():
@@ -97,8 +98,15 @@ NEXT_STEPS = {
         "uninstall": ["Hermes neu starten. Der Bot-Modus ist wieder englisch."],
     },
     "group-chat-limits": {
-        "install": ["Hermes neu starten. Die Grenzen stehen dann in den Gruppenchat-Einstellungen."],
-        "uninstall": ["Hermes neu starten. Es gelten wieder die eingebauten Grenzen."],
+        "install": [
+            "Hermes komplett beenden und neu starten. Beim ersten Start baut die App einmal neu.",
+            "Grenzen ändern: ~/.hermes/aiianer/gruppen-grenzen.json bearbeiten, hier auf „Neu einspielen“, dann wieder neu starten.",
+            "Voreingestellt sind 8 Runden und 40 Nachrichten für alle Räume statt Hermes' 3 und 10.",
+        ],
+        "uninstall": [
+            "Hermes neu starten. Es gelten wieder die eingebauten Grenzen.",
+            "Deine gruppen-grenzen.json bleibt liegen, falls du es dir anders überlegst.",
+        ],
     },
     "eurouter-provider": {
         "install": [
@@ -159,18 +167,14 @@ def _verfuegbar(comp_id: str) -> tuple:
             )
 
     if comp_id == "group-chat-limits":
-        # Diese Komponente ist ein Diff gegen die alte Einzeldatei des
-        # Bot-Modus. Die gibt es nicht mehr; der Code liegt heute in Modulen.
-        if not BOTS_PLUGIN.is_file():
+        if not BOTS_ROUNDS.is_file():
             return (
                 False,
-                "Diese Komponente ist eine Änderung an der alten "
-                "Bot-Modus-Datei von Hermes. Hermes hat den Bot-Modus seither "
-                "auf viele Module aufgeteilt, damit greift die Änderung ins "
-                "Leere. Sie muss neu geschrieben werden.",
-                "This component patches Hermes' old single-file Bot Mode. "
-                "Hermes has since split Bot Mode into many modules, so the "
-                "patch no longer applies. It has to be rewritten.",
+                "Die Rundenschleife des Gruppenchats liegt nicht an der "
+                f"erwarteten Stelle ({BOTS_ROUNDS}). Aktualisiere Hermes "
+                "Desktop.",
+                "The group chat round loop is not where it is expected "
+                f"({BOTS_ROUNDS}). Update Hermes Desktop.",
             )
     if comp_id == "german-language":
         if not (I18N_DIR / "types.ts").is_file():
@@ -334,9 +338,10 @@ async def install(body: dict) -> dict:
 
         # Sprachdatei zusaetzlich als Quelle sichern, damit der Waechter sie
         # nach einem Hermes-Update erneut einspielen kann.
-        if comp_id in ("german-language", "bot-mode-german"):
+        if comp_id in ("german-language", "bot-mode-german", "group-chat-limits"):
             STATE_DIR.mkdir(parents=True, exist_ok=True)
-            for name in ("de.ts", "apply-de.py", "de-bots.ts", "apply-bots-de.py"):
+            for name in ("de.ts", "apply-de.py", "de-bots.ts", "apply-bots-de.py",
+                         "aiianer-group-limits.ts", "apply-limits.py"):
                 if (src / name).is_file():
                     shutil.copy2(src / name, STATE_DIR / name)
 
@@ -621,6 +626,54 @@ def _uninstall_bots_katalog(protokoll: list) -> None:
         )
 
 
+def _uninstall_group_limits(protokoll: list) -> None:
+    """Rueckbau der Gruppenchat-Grenzen. Nur die Erstsicherung zaehlt: die
+    Naht wieder herauszuschneiden waere Rateroulette, die Sicherung ist der
+    Stand von vor dem Eingriff."""
+    if not BOTS_ROUNDS.is_file():
+        raise HTTPException(
+            status_code=409,
+            detail="Die Rundenschleife liegt nicht mehr da. Es wurde nichts veraendert.",
+        )
+    orig = BOTS_ROUNDS.with_suffix(".ts.aiianer-orig")
+    if not orig.is_file() or "aiianerCaps(group)" in orig.read_text():
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Keine brauchbare Erstsicherung der Rundenschleife gefunden. "
+                "Ohne sie laesst sich der Originalzustand nicht sauber "
+                "herstellen. Es wurde nichts veraendert."
+            ),
+        )
+    _restore(orig, BOTS_ROUNDS, protokoll)
+    if "aiianerCaps(group)" in BOTS_ROUNDS.read_text():
+        raise HTTPException(
+            status_code=500,
+            detail="Nach dem Wiederherstellen steckt die Naht immer noch drin.",
+        )
+    _drop(BOTS_ROUNDS.with_suffix(".ts.aiianer-bak"), protokoll)
+    _drop(orig, protokoll)
+    _drop(BOTS_DIR / "aiianer-group-limits.ts", protokoll)
+    _drop(BOTS_DIR / "aiianer-group-limits.data.ts", protokoll)
+    kritisch = []
+    for pfad in (STATE_DIR / "apply-limits.py", STATE_DIR / "aiianer-group-limits.ts"):
+        _drop(pfad, protokoll)
+        if pfad.exists():
+            kritisch.append(str(pfad))
+    _drop(EXT_STORE / "group-chat-limits", protokoll)
+    # gruppen-grenzen.json bleibt absichtlich liegen: das ist die Arbeit des
+    # Nutzers, nicht unsere Installation.
+    protokoll.append("gruppen-grenzen.json bleibt erhalten")
+    if kritisch:
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "Zurueckgesetzt, aber diese Quellen des Waechters blieben liegen: "
+                + ", ".join(kritisch)
+            ),
+        )
+
+
 def _uninstall_eurouter(protokoll: list) -> None:
     """Liegt ausserhalb des Hermes-Checkouts, deshalb reicht Entfernen.
     Der Start-Helfer unter ~/.local/bin/hermes bleibt bewusst liegen - er
@@ -635,7 +688,7 @@ def _run_uninstall(comp_id: str, protokoll: list) -> None:
     elif comp_id == "bot-mode-german":
         _uninstall_bots_katalog(protokoll)
     elif comp_id == "group-chat-limits":
-        _uninstall_bots(comp_id, "plugin.js.backup", protokoll)
+        _uninstall_group_limits(protokoll)
     elif comp_id == "eurouter-provider":
         _uninstall_eurouter(protokoll)
     else:

@@ -1,0 +1,8 @@
+{
+  "_hinweis": "Schluessel ist der Gruppenname. '*' gilt fuer alle Raeume ohne eigenen Eintrag. Achsen: rounds, messages, continuations, history, safetyRounds, safetyMessages. Eine Zahl setzt die Grenze, null schaltet die Achse aus, ein fehlender Eintrag erbt Hermes' Voreinstellung (3 Runden, 10 Nachrichten, 2 Fortsetzungen, 24 Verlaufszeilen). Steht rounds oder messages auf null, greift die zugehoerige Bremse; steht auch die auf null, laeuft der Raum bis jeder Bot passt. Deckel gegen Tippfehler: 100 Runden, 500 Nachrichten, 200 Verlaufszeilen. Dieser Hinweis wird ignoriert, weil er kein Objekt ist.",
+
+  "*": {
+    "rounds": 8,
+    "messages": 40
+  }
+}

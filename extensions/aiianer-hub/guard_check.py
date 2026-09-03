@@ -130,9 +130,19 @@ def _liegt_noch(comp_id: str) -> bool:
             re.search(r"BOTS_LOCALES[^}]*\bde\b", t)
         )
 
-    # group-chat-limits ist eine Aenderung IM Code, Nachweis ist ein Merkmal
-    # in der Datei selbst.
-    marker = {"group-chat-limits": "resolveGroupChatLimits"}.get(comp_id)
+    if comp_id == "group-chat-limits":
+        # Nachweis ist die Naht in der Rundenschleife, nicht mehr die alte
+        # Einzeldatei.
+        agent = Path(os.environ.get("HERMES_AGENT_DIR") or (HERMES_HOME / "hermes-agent"))
+        ziel = agent / "apps/desktop/src/plugins/hermes-bots/group-rounds.ts"
+        if not ziel.is_file():
+            return False
+        try:
+            return "aiianerCaps(group)" in ziel.read_text(errors="ignore")
+        except Exception:
+            return False
+
+    marker = None
     if marker is None:
         return (HERMES_HOME / "plugins" / comp_id).exists() or (
             HERMES_HOME / "desktop-plugins" / comp_id
@@ -211,6 +221,27 @@ def repair_bots_german() -> dict:
             "detail": (proc.stdout or proc.stderr).strip()[-300:]}
 
 
+def repair_group_limits() -> dict:
+    """Haengt die Gruppenchat-Grenzen erneut ein. Der Patcher erzeugt dabei
+    auch die Werte neu, eine geaenderte gruppen-grenzen.json wird also
+    mitgenommen."""
+    patcher = STATE_DIR / "apply-limits.py"
+    modul = STATE_DIR / "aiianer-group-limits.ts"
+    if not patcher.is_file() or not modul.is_file():
+        msg = f"Quellen fehlen unter {STATE_DIR} - im Marktplatz neu installieren."
+        _log(f"group-chat-limits: {msg}")
+        return {"id": "group-chat-limits", "repaired": False, "detail": msg}
+    agent = Path(os.environ.get("HERMES_AGENT_DIR") or (HERMES_HOME / "hermes-agent"))
+    proc = subprocess.run(
+        [sys.executable, str(patcher), str(agent), str(STATE_DIR)],
+        capture_output=True, text=True, timeout=120, cwd=str(STATE_DIR),
+    )
+    ok = proc.returncode == 0
+    _log(f"group-chat-limits repariert={ok}: {(proc.stdout or proc.stderr).strip()[:200]}")
+    return {"id": "group-chat-limits", "repaired": ok,
+            "detail": (proc.stdout or proc.stderr).strip()[-300:]}
+
+
 def repair_all() -> dict:
     status = check_all()
     results = []
@@ -221,6 +252,8 @@ def repair_all() -> dict:
             results.append(repair_german())
         elif c["id"] == "bot-mode-german":
             results.append(repair_bots_german())
+        elif c["id"] == "group-chat-limits":
+            results.append(repair_group_limits())
         else:
             results.append({
                 "id": c["id"], "repaired": False,

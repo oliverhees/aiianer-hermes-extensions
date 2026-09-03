@@ -31,10 +31,10 @@
     {
       "id": "group-chat-limits",
       "name": "Gruppenchat-Grenzen",
-      "version": "1.0.0",
+      "version": "2.0.0",
       "kind": "patch",
-      "summary": "Budget- und Übergabe-Regeln für Gruppenchats.",
-      "note": "Zurzeit außer Betrieb: Hermes hat den Bot-Modus auf viele Module aufgeteilt, der Patch greift ins Leere und muss neu geschrieben werden."
+      "summary": "Runden und Nachrichten pro Gruppenchat selbst festlegen, statt Hermes' harter 3 und 10.",
+      "note": "Ein einziger Eingriff in die Rundenschleife. Eingestellt wird in ~/.hermes/aiianer/gruppen-grenzen.json, danach „Neu einspielen“ und Hermes neu starten."
     }
   ]
 }

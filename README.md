@@ -35,7 +35,7 @@ und stehen in keiner offiziellen Verbindung zu Nous Research.
 | **german-language** | Deutsche Sprachdatei für Hermes Desktop (eigenständiger Installer, trägt Deutsch als Sprache in Hermes ein) | [PROMPT.md](extensions/german-language/PROMPT.md) |
 | **bot-mode-german** | Deutsche Texte für **Bot Mode**: Liste, Gruppenchats, Avatare, Zeitpläne. 194 Bausteine, eingetragen in den plugin-eigenen Nachrichtenkatalog von Bot Mode. Setzt `german-language` voraus | [PROMPT.md](extensions/bot-mode-german/PROMPT.md) |
 
-| **group-chat-limits** | *Zurzeit außer Betrieb, wird neu geschrieben.* Runden-, Nachrichten-, Mitglieder- und Verlaufsgrenzen für Bot-Mode-Gruppenchats pro Raum einstellbar, inklusive „aus“ mit abschaltbarer Notbremse. Upstream deckelt hart bei 3 Runden / 10 Nachrichten, wobei die Zehn bei 6 Bots immer zuerst greift | [PROMPT.md](extensions/group-chat-limits/PROMPT.md) |
+| **group-chat-limits** | Runden, Nachrichten, Fortsetzungen und Verlauf pro Gruppenchat selbst festlegen, inklusive „aus“ mit abschaltbarer Bremse. Hermes deckelt hart bei 3 Runden und 10 Nachrichten, wobei die Zehn bei 6 Bots immer zuerst greift | [PROMPT.md](extensions/group-chat-limits/PROMPT.md) |
 
 Weitere Komponenten folgen, jede nach demselben Muster: `install.sh` plus `PROMPT.md`.
 
