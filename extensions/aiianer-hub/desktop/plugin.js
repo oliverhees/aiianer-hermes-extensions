@@ -61,7 +61,7 @@ function MarketplaceHero({ updates, installiert, total, onCommunity }) {
           jsxs('span', { className: 'hidden font-mono text-[9px] uppercase tracking-[0.12em] opacity-55 lg:inline', children: [
             `${total} Komponenten`, ' · ', `${installiert} aktiv`, updates ? ` · ${updates} Update${updates === 1 ? '' : 's'}` : ''
           ] }, 'stats'),
-          jsx('button', { type: 'button', onClick: onCommunity, className: 'rounded-md bg-orange-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-300', children: 'Community öffnen ↗' }, 'cta')
+          jsx('a', { href: 'https://aiianer.de', target: '_blank', rel: 'noreferrer', onClick: onCommunity, className: 'rounded-md bg-orange-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-300', children: 'Community öffnen ↗' }, 'cta')
         ] })
       ] }, 'content')
     ]
@@ -269,11 +269,15 @@ function makePane(useCatalog, aktionen) {
           updates,
           installiert,
           total: items.length,
-          onCommunity: () => {
-            const result = ctx.os.openExternal('https://aiianer.de')
-            if (result && typeof result.catch === 'function') {
-              result.catch(() => host.notify({ kind: 'error', title: 'AIIANER Community', message: 'Die Community konnte nicht geöffnet werden.' }))
-            }
+          onCommunity: event => {
+            const hasDesktopBridge = typeof globalThis.window?.hermesDesktop?.openExternal === 'function'
+            if (!hasDesktopBridge) return
+            event.preventDefault()
+            Promise.resolve(ctx.os.openExternal('https://aiianer.de'))
+              .then(opened => {
+                if (!opened) globalThis.window.open('https://aiianer.de', '_blank', 'noopener,noreferrer')
+              })
+              .catch(() => globalThis.window.open('https://aiianer.de', '_blank', 'noopener,noreferrer'))
           }
         }, 'community-hero'),
         jsxs('div', {
