@@ -355,7 +355,11 @@ function makePane(useCatalog, aktionen, onCommunity) {
               className: aktiverTab === 'release-notes' ? 'border-b-2 border-accent px-3 py-2 text-xs font-medium text-accent' : 'px-3 py-2 text-xs opacity-60 hover:opacity-100',
               onClick: () => setAktiverTab('release-notes'),
               children: 'Release Notes'
-            }, 'release-tab')
+            }, 'release-tab'),
+            jsx('span', {
+              className: 'ml-auto self-center pb-2 text-[10px] font-mono tracking-wider opacity-50',
+              children: 'v1.3.7'
+            }, 'version')
           ]
         }, 'tabs'),
         aktiverTab === 'release-notes' ? jsx(ReleaseNotes, {}, 'release-notes') : jsxs('div', {
@@ -393,7 +397,11 @@ function makePane(useCatalog, aktionen, onCommunity) {
             jsx('p', { className: 'text-sm opacity-70', children: 'Deutsche Sprache und die AIIANER-Werkzeuge. Was du hier installierst, überlebt Hermes-Updates.' }, 'intro'),
             ...karten
           ]
-        }, 'marketplace-content')
+        }, 'marketplace-content'),
+        jsx('footer', {
+          className: 'border-t border-white/10 pt-4 text-center text-[10px] opacity-45',
+          children: 'Mit Liebe und Leidenschaft erstellt von Oliver Hees aka Aiianer · 2026'
+        }, 'footer')
       ]
     })
   }
