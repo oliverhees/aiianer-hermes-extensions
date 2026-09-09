@@ -3,7 +3,7 @@
   "label": "AIIANER",
   "description": "Deutsche Erweiterungen installieren und aktuell halten",
   "icon": "Package",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "tab": {
     "path": "/aiianer",
     "position": "after:skills"

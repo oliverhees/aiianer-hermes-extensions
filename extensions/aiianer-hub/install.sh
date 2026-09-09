@@ -65,6 +65,7 @@ echo "Installiere AIIANER Marktplatz ..."
 # 1) Plugin
 mkdir -p "$PLUGIN_DIR/dashboard/dist"
 cp "$HERE/plugin.yaml"                     "$PLUGIN_DIR/plugin.yaml"
+cp "$HERE/__init__.py"                     "$PLUGIN_DIR/__init__.py"
 cp "$HERE/catalog.json"                    "$PLUGIN_DIR/catalog.json"
 cp "$HERE/dashboard/manifest.json"         "$PLUGIN_DIR/dashboard/manifest.json"
 cp "$HERE/dashboard/plugin_api.py"         "$PLUGIN_DIR/dashboard/plugin_api.py"

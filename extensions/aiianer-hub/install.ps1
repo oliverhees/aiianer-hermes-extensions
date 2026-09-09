@@ -51,6 +51,7 @@ Write-Host "Installiere AIIANER Marktplatz ..."
 # 1) Plugin
 New-Item -ItemType Directory -Path (Join-Path $PluginDir 'dashboard\dist') -Force | Out-Null
 Copy-Item (Join-Path $Here 'plugin.yaml')                 (Join-Path $PluginDir 'plugin.yaml') -Force
+Copy-Item (Join-Path $Here '__init__.py')                 (Join-Path $PluginDir '__init__.py') -Force
 Copy-Item (Join-Path $Here 'catalog.json')                (Join-Path $PluginDir 'catalog.json') -Force
 Copy-Item (Join-Path $Here 'dashboard\manifest.json')     (Join-Path $PluginDir 'dashboard\manifest.json') -Force
 Copy-Item (Join-Path $Here 'dashboard\plugin_api.py')     (Join-Path $PluginDir 'dashboard\plugin_api.py') -Force

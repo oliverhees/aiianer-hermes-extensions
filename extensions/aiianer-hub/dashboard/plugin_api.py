@@ -264,6 +264,29 @@ def _read_state() -> dict:
         return {}
 
 
+def _local_plugin_version(comp_id: str, state: dict) -> str | None:
+    """Liest die Version des Marktplatzes auch bei älteren Installationen.
+
+    Frühe Installerstände haben den eigenen Eintrag noch nicht in
+    installed.json geschrieben. Das lokale Manifest ist dafür die belastbare
+    Quelle, damit der Marktplatz nicht fälschlich als "nicht installiert"
+    erscheint.
+    """
+    if comp_id != "aiianer-hub":
+        return state.get(comp_id, {}).get("version")
+    version = state.get(comp_id, {}).get("version")
+    if version:
+        return version
+    manifest = HERMES_HOME / "plugins" / "aiianer-hub" / "plugin.yaml"
+    try:
+        for line in manifest.read_text(encoding="utf-8").splitlines():
+            if line.startswith("version:"):
+                return line.split(":", 1)[1].strip()
+    except OSError:
+        pass
+    return None
+
+
 def _write_state(state: dict) -> None:
     STATE_DIR.mkdir(parents=True, exist_ok=True)
     # Erst daneben schreiben, dann umbenennen: ein Abbruch mittendrin darf
@@ -292,7 +315,7 @@ async def catalog() -> dict:
     items = []
     for c in cat.get("components", []):
         local = state.get(c["id"], {})
-        installed = local.get("version")
+        installed = _local_plugin_version(c["id"], state)
         ok, grund, grund_en = _verfuegbar(c["id"])
         prem_ok, prem_grund, prem_grund_en = _premium_berechtigt(c)
         if not prem_ok:
@@ -304,6 +327,7 @@ async def catalog() -> dict:
                 **c,
                 "installed": installed,
                 "installedAt": local.get("at"),
+                "selfManaged": c["id"] == "aiianer-hub",
                 "nextSteps": _steps(c["id"], "install", c),
                 "uninstallSteps": _steps(c["id"], "uninstall", c),
                 "available": ok,
@@ -354,6 +378,8 @@ async def install(body: dict) -> dict:
     if not prem_ok:
         raise HTTPException(status_code=403, detail=prem_grund)
 
+    previous_version = _local_plugin_version(comp_id, _read_state())
+
     with tempfile.TemporaryDirectory() as tmp:
         root = _download(tmp)
         src = root / "extensions" / comp_id
@@ -389,7 +415,7 @@ async def install(body: dict) -> dict:
 
     with _state_lock():
         state = _read_state()
-        vorher = state.get(comp_id, {}).get("version")
+        vorher = previous_version
         state[comp_id] = {"version": entry["version"], "at": _now()}
         _write_state(state)
     return {
@@ -742,6 +768,11 @@ def _run_uninstall(comp_id: str, protokoll: list) -> None:
 @router.post("/uninstall")
 async def uninstall(body: dict) -> dict:
     comp_id = (body or {}).get("id", "")
+    if comp_id == "aiianer-hub":
+        raise HTTPException(
+            status_code=409,
+            detail="Der AIIANER Marktplatz kann nicht über sich selbst deinstalliert werden.",
+        )
     protokoll: list = []
     with _state_lock():
         zustand = _read_state()

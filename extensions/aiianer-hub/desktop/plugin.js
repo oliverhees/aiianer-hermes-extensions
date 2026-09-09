@@ -43,8 +43,32 @@ function makeUseCatalog(fetchCatalog) {
   }
 }
 
-// -- Oberflaeche --------------------------------------------------------------
+// -- AIIANER-Community-Banner -------------------------------------------------
+function MarketplaceHero({ updates, installiert, total, onCommunity }) {
+  return jsxs('section', {
+    className: 'relative overflow-hidden rounded-xl border border-orange-500/35 bg-gradient-to-r from-orange-950/50 via-neutral-900 to-neutral-950 px-4 py-3 sm:px-5',
+    children: [
+      jsx('div', { className: 'pointer-events-none absolute inset-y-0 left-0 w-1 bg-orange-500' }, 'accent'),
+      jsxs('div', { className: 'relative flex flex-wrap items-center justify-between gap-x-5 gap-y-3', children: [
+        jsxs('div', { className: 'min-w-0', children: [
+          jsxs('div', { className: 'flex flex-wrap items-center gap-x-3 gap-y-1', children: [
+            jsx('span', { className: 'font-mono text-[10px] uppercase tracking-[0.22em] text-orange-300', children: 'AIIANER COMMUNITY' }, 'brand'),
+            jsx('span', { className: 'hidden text-[10px] opacity-45 sm:inline', children: 'KI zum Anwenden, nicht zum Hypen.' }, 'tagline')
+          ] }),
+          jsx('p', { className: 'mt-1 max-w-2xl text-xs leading-5 opacity-70', children: 'Kurse, Vorlagen, Live-Calls und Austausch für Menschen, die KI wirklich einsetzen.' }, 'copy')
+        ] }),
+        jsxs('div', { className: 'flex shrink-0 items-center gap-3', children: [
+          jsxs('span', { className: 'hidden font-mono text-[9px] uppercase tracking-[0.12em] opacity-55 lg:inline', children: [
+            `${total} Komponenten`, ' · ', `${installiert} aktiv`, updates ? ` · ${updates} Update${updates === 1 ? '' : 's'}` : ''
+          ] }, 'stats'),
+          jsx('button', { type: 'button', onClick: onCommunity, className: 'rounded-md bg-orange-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-300', children: 'Community öffnen ↗' }, 'cta')
+        ] })
+      ] }, 'content')
+    ]
+  })
+}
 
+// -- Oberflaeche --------------------------------------------------------------
 function makePane(useCatalog, aktionen) {
   return function Pane() {
     const t = usePluginI18n(ID)
@@ -92,9 +116,9 @@ function makePane(useCatalog, aktionen) {
     const knopf = (schluessel, beschriftung, opts) =>
       jsx('button', {
         className: cn(
-          'text-xs rounded px-2 py-1 border transition-opacity',
-          opts.aus ? 'opacity-50 cursor-not-allowed' : 'hover:bg-accent',
-          opts.betont ? 'border-red-500/60' : ''
+          'min-h-9 rounded-lg px-3 py-2 text-xs font-medium border transition-all',
+          opts.aus ? 'opacity-50 cursor-not-allowed' : 'hover:bg-accent hover:-translate-y-px',
+          opts.betont ? 'border-orange-500/70 bg-orange-500/15 text-orange-200 shadow-sm shadow-orange-950/40' : 'border-white/15 bg-white/5'
         ),
         disabled: opts.aus,
         onClick: opts.onClick,
@@ -127,7 +151,7 @@ function makePane(useCatalog, aktionen) {
       // gar kein Knopf.
       const reihe = []
       if (c.available === false) {
-        // kein Knopf, die Begruendung steht unten
+        reihe.push(knopf('unavailable', t('unavailableAction'), { aus: true }))
       } else if (aktiv) {
         reihe.push(knopf('busy', aktiv === 'uninstall' ? t('uninstalling') : t('installing'), { aus: true }))
       } else if (c.status === 'missing') {
@@ -139,7 +163,9 @@ function makePane(useCatalog, aktionen) {
           }))
         }
         reihe.push(knopf('rein', t('reinstall'), { aus: gesperrt, onClick: () => ausfuehren(c.id, 'install') }))
-        reihe.push(knopf('deinst', t('uninstall'), { aus: gesperrt, onClick: () => ausfuehren(c.id, 'uninstall') }))
+        if (!c.selfManaged) {
+          reihe.push(knopf('deinst', t('uninstall'), { aus: gesperrt, onClick: () => ausfuehren(c.id, 'uninstall') }))
+        }
       }
 
       // Was jetzt zu tun ist. Vor dem Klick als leiser Hinweis, nach dem
@@ -219,12 +245,15 @@ function makePane(useCatalog, aktionen) {
       }
 
       return jsxs('div', {
-        className: cn('rounded-md border p-3 space-y-2'),
+        className: cn(
+          'group rounded-xl border border-white/10 bg-black/10 p-4 sm:p-5 space-y-3 shadow-sm transition-colors',
+          'hover:border-orange-500/35 hover:bg-orange-950/10'
+        ),
         children: [
           kopf,
           jsx('p', { className: 'text-xs opacity-70', children: c.summary }, 'd'),
           c.note ? jsx('p', { className: 'text-xs opacity-50', children: c.note }, 'note') : null,
-          jsxs('div', { className: 'flex items-center gap-2 flex-wrap', children: reihe }, 'row'),
+          jsxs('div', { className: 'flex items-center gap-2 flex-wrap border-t border-white/10 pt-3 mt-3', children: reihe }, 'row'),
           ...hinweis
         ]
       }, c.id)
@@ -234,38 +263,19 @@ function makePane(useCatalog, aktionen) {
     const updates = items.filter(c => c.status === 'outdated').length
 
     return jsxs('div', {
-      className: 'p-3 sm:p-4 space-y-4 max-w-5xl',
+      className: 'p-4 sm:p-6 lg:p-8 space-y-6 max-w-6xl',
       children: [
-        jsxs('section', {
-          className: 'rounded-xl border border-orange-500/40 bg-gradient-to-br from-orange-950/50 via-background to-background p-5 sm:p-7 space-y-3',
-          children: [
-            jsxs('div', {
-              className: 'flex flex-wrap items-center gap-2 text-xs uppercase tracking-widest text-orange-300',
-              children: [
-                jsx('span', { children: 'AIIANER Community' }, 'label'),
-                jsx(Badge, { children: 'Dein Außenposten für KI' }, 'badge')
-              ]
-            }, 'eyebrow'),
-            jsx('h1', { className: 'text-2xl sm:text-3xl font-semibold tracking-tight', children: 'KI zum Anwenden, nicht zum Hypen.' }, 'title'),
-            jsx('p', {
-              className: 'max-w-2xl text-sm sm:text-base opacity-80',
-              children: 'Kurse, Vorlagen, Live-Calls und eine Community, die dir hilft, KI-Mitarbeiter wirklich in deinen Alltag zu bringen. Der Marktplatz ist nur ein Baustein davon.'
-            }, 'copy'),
-            jsxs('div', {
-              className: 'flex flex-wrap items-center gap-3 pt-2',
-              children: [
-                jsx('a', {
-                  href: 'https://aiianer.de',
-                  target: '_blank',
-                  rel: 'noreferrer',
-                  className: 'inline-flex items-center rounded-md bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-400',
-                  children: 'AIIANER Community entdecken ↗'
-                }, 'link'),
-                jsx('span', { className: 'text-xs opacity-55', children: 'Tutorials, Austausch und Hilfe beim Umsetzen' }, 'hint')
-              ]
-            }, 'actions')
-          ]
-        }, 'community'),
+        jsx(MarketplaceHero, {
+          updates,
+          installiert,
+          total: items.length,
+          onCommunity: () => {
+            const result = ctx.os.openExternal('https://aiianer.de')
+            if (result && typeof result.catch === 'function') {
+              result.catch(() => host.notify({ kind: 'error', title: 'AIIANER Community', message: 'Die Community konnte nicht geöffnet werden.' }))
+            }
+          }
+        }, 'community-hero'),
         jsxs('div', {
           className: 'flex flex-wrap items-end justify-between gap-3',
           children: [
@@ -286,7 +296,15 @@ function makePane(useCatalog, aktionen) {
             }, 'stats')
           ]
         }, 'marketplace'),
-        jsx('p', { className: 'text-xs opacity-65', children: t('intro') }, 'intro'),
+        updates ? jsxs('section', {
+          className: 'rounded-2xl border border-orange-500/30 bg-orange-500/10 p-4 sm:p-5',
+          children: [
+            jsx('p', { className: 'text-xs uppercase tracking-widest text-orange-300', children: 'Updates im Außenposten' }, 'eyebrow'),
+            jsx('p', { className: 'mt-1 text-sm font-medium', children: updates === 1 ? 'Eine Erweiterung wartet auf ihr Update.' : `${updates} Erweiterungen warten auf ihr Update.` }, 'title'),
+            jsx('p', { className: 'mt-1 text-xs opacity-70', children: 'Öffne die jeweilige Karte und aktualisiere sie mit einem Klick. Danach Hermes neu starten, wenn es angezeigt wird.' }, 'copy')
+          ]
+        }, 'updates-panel') : null,
+        jsx('p', { className: 'text-sm opacity-70', children: t('intro') }, 'intro'),
         ...karten
       ]
     })
@@ -324,6 +342,7 @@ export default {
         // stand woertlich "status.missing".
         status: { current: 'current', outdated: 'update available', missing: 'not installed', unavailable: 'not available' },
         unavailTitle: 'Cannot be installed right now:',
+        unavailableAction: 'Not available on this system',
         lang: 'en'
       },
       de: {
@@ -345,6 +364,7 @@ export default {
         errTitle: 'Katalog konnte nicht geladen werden',
         status: { current: 'aktuell', outdated: 'Update verfügbar', missing: 'nicht installiert', unavailable: 'zurzeit nicht möglich' },
         unavailTitle: 'Lässt sich gerade nicht installieren:',
+        unavailableAction: 'Auf diesem System nicht verfügbar',
         lang: 'de'
       }
     })

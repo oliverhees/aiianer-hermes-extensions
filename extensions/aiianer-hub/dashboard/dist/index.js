@@ -75,13 +75,11 @@
           "div",
           { className: "mt-3 flex flex-wrap gap-2" },
           c.available === false
-            ? c.installed && !laufend
-              ? h(
-                  C.Button,
-                  { key: "del", variant: "outline", onClick: function () { props.onAktion(c.id, "uninstall"); } },
-                  "Deinstallieren"
-                )
-              : null
+            ? h(
+                C.Button,
+                { key: "unavailable", disabled: true, variant: "outline" },
+                "Auf diesem System nicht verfügbar"
+              )
             : laufend
             ? h(
                 C.Button,
@@ -107,11 +105,13 @@
                   { key: "re", variant: "outline", onClick: function () { props.onAktion(c.id, "install"); } },
                   "Neu einspielen"
                 ),
-                h(
-                  C.Button,
-                  { key: "del", variant: "outline", onClick: function () { props.onAktion(c.id, "uninstall"); } },
-                  "Deinstallieren"
-                )
+                !c.selfManaged
+                  ? h(
+                      C.Button,
+                      { key: "del", variant: "outline", onClick: function () { props.onAktion(c.id, "uninstall"); } },
+                      "Deinstallieren"
+                    )
+                  : null
               ]
         ),
 
@@ -281,23 +281,20 @@
       "div",
       { className: "p-4 max-w-4xl" },
       h(
-        C.Card,
-        { className: "mb-5 overflow-hidden border-orange-500/40 bg-gradient-to-br from-orange-950/40 via-neutral-900 to-neutral-950" },
+        "section",
+        { className: "mb-5 relative overflow-hidden rounded-xl border border-orange-500/35 bg-gradient-to-r from-orange-950/50 via-neutral-900 to-neutral-950 px-4 py-3 sm:px-5" },
+        h("div", { className: "pointer-events-none absolute inset-y-0 left-0 w-1 bg-orange-500" }),
         h(
-          C.CardContent,
-          { className: "p-5 sm:p-6" },
-          h("div", { className: "flex flex-wrap items-center gap-2 text-xs uppercase tracking-widest text-orange-300" },
-            h("span", null, "AIIANER Community"),
-            h(C.Badge, { className: "bg-orange-500/20 text-orange-200" }, "Dein Außenposten für KI")
+          "div",
+          { className: "relative flex flex-wrap items-center justify-between gap-x-5 gap-y-3" },
+          h("div", { className: "min-w-0" },
+            h("div", { className: "flex flex-wrap items-center gap-x-3 gap-y-1" },
+              h("span", { className: "font-mono text-[10px] uppercase tracking-[0.22em] text-orange-300" }, "AIIANER Community"),
+              h("span", { className: "hidden text-[10px] opacity-45 sm:inline" }, "KI zum Anwenden, nicht zum Hypen.")
+            ),
+            h("p", { className: "mt-1 max-w-2xl text-xs leading-5 opacity-70" }, "Kurse, Vorlagen, Live-Calls und Austausch für Menschen, die KI wirklich einsetzen.")
           ),
-          h("h1", { className: "mt-3 text-2xl sm:text-3xl font-semibold tracking-tight" }, "KI zum Anwenden, nicht zum Hypen."),
-          h("p", { className: "mt-2 max-w-2xl text-sm sm:text-base text-neutral-200" },
-            "Kurse, Vorlagen, Live-Calls und eine Community, die dir hilft, KI-Mitarbeiter wirklich in deinen Alltag zu bringen. Der Marktplatz ist nur ein Baustein davon."
-          ),
-          h("div", { className: "mt-5 flex flex-wrap items-center gap-3" },
-            h("a", { href: "https://aiianer.de", target: "_blank", rel: "noreferrer", className: "inline-flex items-center rounded-md bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-400" }, "AIIANER Community entdecken ↗"),
-            h("span", { className: "text-xs text-neutral-400" }, "Tutorials, Austausch und Hilfe beim Umsetzen")
-          )
+          h("a", { href: "https://aiianer.de", target: "_blank", rel: "noreferrer", className: "shrink-0 rounded-md bg-orange-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-300" }, "Community öffnen ↗")
         )
       ),
       h(
@@ -314,6 +311,20 @@
           updates ? h(C.Badge, { className: "bg-orange-500/20 text-orange-200" }, updates + " Update" + (updates === 1 ? "" : "s")) : null
         )
       ),
+
+      updates
+        ? h(
+            C.Card,
+            { className: "mb-5 rounded-2xl border-orange-500/30 bg-orange-500/10" },
+            h(
+              C.CardContent,
+              { className: "p-4 sm:p-5" },
+              h("p", { className: "text-xs uppercase tracking-widest text-orange-300" }, "Updates im Außenposten"),
+              h("p", { className: "mt-1 text-sm font-medium" }, updates === 1 ? "Eine Erweiterung wartet auf ihr Update." : updates + " Erweiterungen warten auf ihr Update."),
+              h("p", { className: "mt-1 text-xs text-muted-foreground" }, "Öffne die jeweilige Karte und aktualisiere sie mit einem Klick. Danach Hermes neu starten, wenn es angezeigt wird.")
+            )
+          )
+        : null,
 
       health && !health.ok
         ? h(

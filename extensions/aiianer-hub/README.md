@@ -37,7 +37,18 @@ irm https://raw.githubusercontent.com/oliverhees/aiianer-hermes-extensions/main/
 
 Danach **Hermes komplett neu starten**.
 
-## Wo du es findest
+## Marktplatz aktualisieren
+
+Der Marktplatz aktualisiert sich über seinen eigenen Eintrag im Katalog. Wenn eine
+neue Version verfügbar ist, klickst du einfach auf **„Auf vX aktualisieren“**.
+Dabei werden Web-Dashboard, Desktop-App, Backend und Wächter gemeinsam ersetzt.
+Danach Hermes komplett neu starten. Einen separaten Installer oder ein zweites
+Update-System brauchst du nicht.
+
+Der Marktplatz kann nicht über sich selbst deinstalliert werden. Wenn du ihn
+entfernen willst, nutzt du den normalen Entfernen-Weg von Hermes oder die
+Installationsanleitung dieses Repos.
+
 
 Hermes hat zwei Oberflächen mit zwei getrennten Plugin-Systemen. Der Marktplatz
 bedient beide, du findest ihn also überall.

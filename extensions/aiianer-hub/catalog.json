@@ -1,8 +1,21 @@
 {
   "catalogVersion": "1",
-  "updated": "2026-09-03",
+  "updated": "2026-09-09",
   "source": "https://github.com/oliverhees/aiianer-hermes-extensions",
   "components": [
+    {
+      "id": "aiianer-hub",
+      "name": "AIIANER Marktplatz",
+      "version": "1.2.0",
+      "kind": "plugin",
+      "premium": false,
+      "summary": "Der Marktplatz selbst. Aktualisiert Oberfläche, Desktop-Plugin, Backend und Wächter in einem Schritt.",
+      "note": "Nach dem Aktualisieren Hermes komplett neu starten. Der Marktplatz kann nicht über sich selbst deinstalliert werden.",
+      "nextSteps": {
+        "install": ["Hermes komplett neu starten, damit die neue Marktplatz-Version geladen wird."],
+        "uninstall": []
+      }
+    },
     {
       "id": "german-language",
       "name": "Deutsche Sprache",
