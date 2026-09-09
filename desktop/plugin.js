@@ -85,7 +85,7 @@ function ReleaseNotes() {
       jsxs('div', {
         children: [
           jsx('p', { className: 'text-xs uppercase tracking-widest text-accent', children: 'Release Notes' }, 'eyebrow'),
-          jsx('h2', { className: 'mt-1 text-xl font-semibold', children: 'AIIANER EXTENSION HUB v1.3.4' }, 'title'),
+          jsx('h2', { className: 'mt-1 text-xl font-semibold', children: 'AIIANER EXTENSION HUB v1.3.5' }, 'title'),
           jsx('p', { className: 'mt-1 text-sm opacity-65', children: 'Die Änderungen dieser Version auf einen Blick.' }, 'intro')
         ]
       }, 'heading'),
@@ -179,7 +179,11 @@ function makePane(useCatalog, aktionen, onCommunity) {
         className: cn(
           'min-h-9 rounded-lg px-3 py-2 text-xs font-medium border transition-all',
           opts.aus ? 'opacity-50 cursor-not-allowed' : 'hover:bg-accent hover:-translate-y-px',
-          opts.betont ? 'border-accent/70 bg-accent/15 text-accent shadow-sm shadow-accent/20' : 'border-white/15 bg-white/5'
+          opts.update
+            ? 'border-red-500/80 bg-red-500/15 text-red-300 shadow-sm shadow-red-500/20 hover:bg-red-500/25'
+            : opts.betont
+              ? 'border-accent/70 bg-accent/15 text-accent shadow-sm shadow-accent/20'
+              : 'border-white/15 bg-white/5'
         ),
         disabled: opts.aus,
         onClick: opts.onClick,
@@ -220,7 +224,7 @@ function makePane(useCatalog, aktionen, onCommunity) {
       } else {
         if (c.status === 'outdated') {
           reihe.push(knopf('upd', t('updateTo', c.version), {
-            aus: gesperrt, betont: true, onClick: () => ausfuehren(c.id, 'install')
+            aus: gesperrt, betont: true, update: true, onClick: () => ausfuehren(c.id, 'install')
           }))
         }
         reihe.push(knopf('rein', t('reinstall'), { aus: gesperrt, onClick: () => ausfuehren(c.id, 'install') }))
