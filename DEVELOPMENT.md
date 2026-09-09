@@ -1,7 +1,7 @@
 # Entwicklungshandbuch: AIIANER Marktplatz für Hermes
 
 Dieses Dokument ist die Dev-Doku für das Projekt
-[aiianer-hermes-extensions](https://github.com/oliverhees/aiianer-hermes-extensions) —
+[aiianer-hermes-extensions](https://github.com/oliverhees/aiianer-hermes-extensions),
 das "AIIANER-Plugin", mit dem wir die deutschen Erweiterungen für Hermes Desktop
 ausliefern. Es sorgt dafür, dass Deutsch nach jedem Hermes-Update stabil bleibt
 und dass wir neue Erweiterungen einfach nachrüsten können.
@@ -128,7 +128,7 @@ eigenständig läuft).
   Update gar nicht kaputtgehen. Kein Wächter nötig.
 - **Greift in den Checkout ein (`patch`):** muss in Hermes' eigene Dateien
   schreiben (Sprachdatei, Rundenschleife). Das ist kein Pfusch, sondern die
-  einzige Möglichkeit — und es ist so gebaut, dass es sich selbst repariert.
+  einzige Möglichkeit, und es ist so gebaut, dass es sich selbst repariert.
 
 ### Abhängigkeiten
 
@@ -165,11 +165,11 @@ Remote lädt er sich vorher den Tarball.
 1. **Update-sichere Orte** bevorzugen, wo Hermes das offiziell vorsieht
    (`~/.hermes/plugins/...`).
 2. **Muss eine Komponente in den Checkout,** arbeitet der Installer mit
-   gezielten, wiederholbaren Einfügungen an stabilen Ankern — alles-oder-nichts
+   gezielten, wiederholbaren Einfügungen an stabilen Ankern, alles-oder-nichts
    mit Backup, laute Fehlermeldung statt halbem Zustand. Nach einem Update den
    Satz einfach nochmal ausführen.
 3. **Offiziellen Weg nehmen, wo es einen gibt.** Bot Mode bringt seit dem Umbau
-   einen eigenen Nachrichtenkatalog mit — dort tragen wir nur noch ein deutsches
+   einen eigenen Nachrichtenkatalog mit, dort tragen wir nur noch ein deutsches
    Bündel ein, statt Dateien zu ersetzen. Solche Türen halten, weil sie dafür
    gedacht sind.
 
@@ -199,13 +199,13 @@ Dashboards. Vollständig dokumentiert mit aussagekräftigen Docstrings.
   der zuverlässig in einen 500er läuft, ist schlimmer als gar kein Knopf.
 - **State-Lock (`_state_lock`):** Lesen-Ändern-Schreiben auf `installed.json`
   unter `fcntl`-Sperre, damit zwei parallele Aktionen keinen Zustand verlieren
-  (unter Windows ohne Sperre weiter — nicht verweigern).
+  (unter Windows ohne Sperre weiter, nicht verweigern).
 - **Atomic write:** `installed.json` wird erst als `.tmp` geschrieben, dann
-  umbenannt — kein halbes JSON bei Abbruch.
+  umbenannt, kein halbes JSON bei Abbruch.
 - **Tar-Slip-Schutz:** `tarfile.extractall(..., filter="data")` (Fallback für
-  Python < 3.12) — `comp_id` stammt aus dem Netz-Katalog.
+  Python < 3.12), `comp_id` stammt aus dem Netz-Katalog.
 - **Der Wächter ist eine Datei, eine Wahrheit:** `guard_check.py` lebt unter
-  `~/.hermes/aiianer/` und wird von BEIDEM benutzt — dem Hook-Handler und der
+  `~/.hermes/aiianer/` und wird von BEIDEM benutzt, dem Hook-Handler und der
   `/health`-Route.
 
 ---
@@ -213,7 +213,7 @@ Dashboards. Vollständig dokumentiert mit aussagekräftigen Docstrings.
 ## 6. Die zwei Frontends
 
 Beide frontends sprechen dasselbe Python-Backend. Sie sind bewusst zweimal
-gebaut, weil die Plugin-Systeme getrennt sind — aber sie teilen sich Logik und
+gebaut, weil die Plugin-Systeme getrennt sind, aber sie teilen sich Logik und
 Design-Entscheidungen.
 
 ### Web-Dashboard (`dashboard/dist/index.js`)
@@ -224,7 +224,7 @@ Design-Entscheidungen.
   `hermes-achievements`).
 - Rendert Karten je Komponente mit Status, Version, Aktionen
   (Installieren / Neu einspielen / Deinstallieren / Aktualisieren).
-- Zeigt **nach** einer Aktion die nächsten Schritte als hervorgehobenen Kasten —
+- Zeigt **nach** einer Aktion die nächsten Schritte als hervorgehobenen Kasten,
   das ist wichtig, weil nach dem Installieren der deutschen Sprache Hermes noch
   nicht sofort deutsch ist (Neu-Start + Sprache umstellen nötig).
 
@@ -234,13 +234,13 @@ Design-Entscheidungen.
   JSX-Syntax (die Datei wird nicht kompiliert).
 - **Wichtige Fallen (gut dokumentiert im Code):**
   - `jsx` kommt aus React selbst (`react/jsx-runtime`), NICHT aus dem
-    Plugin-SDK — der SDK-Import `jsx` gibt es nicht und lässt das Plugin mit
+    Plugin-SDK, der SDK-Import `jsx` gibt es nicht und lässt das Plugin mit
     "does not provide an export named 'jsx'" scheitern.
-  - `ctx.rest()`-Body ist ein Objekt, KEIN `JSON.stringify` — die Brücke
+  - `ctx.rest()`-Body ist ein Objekt, KEIN `JSON.stringify`, die Brücke
     serialisiert selbst; ein String würde dem Backend ein Objekt-Wrapper
     schicken.
   - Geschachtelte i18n-Keys (z. B. `status.missing`) müssen wirklich
-    verschachtelt registriert werden, nicht flach mit Punkt im Key — sonst
+    verschachtelt registriert werden, nicht flach mit Punkt im Key, sonst
     rendert der Badge wörtlich "status.missing".
 - Registriert: eigene Route `/aiianer`, Seitenleisten-Eintrag "AIIANER",
   Befehlspaletten-Eintrag.
@@ -264,7 +264,7 @@ Design-Entscheidungen.
    ausführen (Timeout 180s) → 500 mit Fehlertext wenn fehlschlägt.
 6. Für Patch-Komponenten (`german-language`, `bot-mode-german`,
    `group-chat-limits`): die Quell-Dateien zusätzlich nach
-   `~/.hermes/aiianer/` kopieren — damit der Wächter sie nach einem
+   `~/.hermes/aiianer/` kopieren, damit der Wächter sie nach einem
    Hermes-Update erneut einspielen kann.
 7. Unter dem State-Lock: `installed.json` aktualisieren (Version + Zeitpunkt),
    atomic schreiben.
@@ -282,7 +282,7 @@ raten.
 ## 8. Der Rückbau (Uninstall): nie raten
 
 `POST /uninstall` folgt einer strengen Regel: **es wird nur zurückgespielt,
-was gesichert wurde — es wird nie pauschal gelöscht.**
+was gesichert wurde, es wird nie pauschal gelöscht.**
 
 - Der Installer legt für Patch-Komponenten die Sicherungen der angefassten
   Originale ab (`*.orig` in der Sicherungsstruktur
@@ -292,17 +292,17 @@ was gesichert wurde — es wird nie pauschal gelöscht.**
   - `bot-mode-german` & `group-chat-limits`: gezielte Regex-Rollbacks in den
     Checkout-Dateien (nur unsere eingefügten Blöcke werden entfernt).
   - `german-language`: unter dem Backup heraus versorgen, ohne die Sprache
-    komplett zu deaktivieren — schlimmstenfalls bleibt Englisch der Fallback.
+    komplett zu deaktivieren, schlimmstenfalls bleibt Englisch der Fallback.
   - `eurouter-provider`: Plugin-Ordner entfernen; echte Liste der angelegten
     Dateien aus der Sicherung, niemals ein wilder `rm -rf`.
 - Es wird **nur entfernt, was in `installed.json` als installiert steht.**
-  Eine Komponente, die mehrfach gebucht ist, wäre logisch unmöglich — der
+  Eine Komponente, die mehrfach gebucht ist, wäre logisch unmöglich, der
   Installer blockt bereits die Zweitinstallation desselben `comp_id`.
 - Nach dem Rückbau: `installed.json` aktualisieren, `guard.log` mit
   Uninstall-Protokoll ergänzen.
 
 **Wichtig:** Es gibt keine "Seite, die nie wieder etwas anfasst". Jeder
-Uninstall ist ein eigener, dokumentierter Fall pro `kind` — nicht ein
+Uninstall ist ein eigener, dokumentierter Fall pro `kind`, nicht ein
 Generik-Dateilöscher.
 
 ---
@@ -314,7 +314,7 @@ Wächter legt es beim nächsten Start wieder an.**
 
 ### Wie es funktioniert
 
-1. Der Hook `HOOK.yaml` lauscht auf `gateway:startup` — also bei jedem Start
+1. Der Hook `HOOK.yaml` lauscht auf `gateway:startup`, also bei jedem Start
    des Hermes-Gateways, nicht nur beim Install.
 2. `handler.py` ruft das gemeinsame `guard_check.py` unter
    `~/.hermes/aiianer/guard_check.py` auf (eine Datei, eine Wahrheit).
@@ -329,7 +329,7 @@ Wächter legt es beim nächsten Start wieder an.**
 
 - Der Wächter ist **additiv und anker-basiert**: er fügt nur unsere bekannten
   Blöcke wieder ein, er überschreibt nie etwas Fremdes.
-- Er wacht **nicht** über eigenständige `plugin`-Komponenten — die brauchen
+- Er wacht **nicht** über eigenständige `plugin`-Komponenten, die brauchen
   keinen Schutz, weil sie außerhalb des Checkouts leben.
 - `guard_check.py` ist die **einzige** Instanz der Prüflogik: sowohl der
   Hook als auch die `/health`-Route nutzen sie. Es gibt keine zweite,
@@ -337,7 +337,7 @@ Wächter legt es beim nächsten Start wieder an.**
 
 ### Manuelle Trigger
 
-- Die Dashboard-Route `POST /repair` stößt dieselbe Prüfung an — so kann der
+- Die Dashboard-Route `POST /repair` stößt dieselbe Prüfung an, so kann der
   Nutzer "Neu einspielen" drücken, ohne auf einen Gateway-Neustart zu warten.
 - Debugging: `python ~/.hermes/aiianer/guard_check.py` von Hand ausführen.
 
@@ -388,10 +388,10 @@ Regeln:
 
 - **Ein Eintrag pro Komponente.** Eine zweite Installation desselben `comp_id`
   wiederholt den Installationspfad, aktualisiert `version`/`installed_at`.
-- **Unbekannte Einträge:** Der Rückbau entfernt nur bekannte Felder —
+- **Unbekannte Einträge:** Der Rückbau entfernt nur bekannte Felder,
   eine fremde Datei im Hermes-Verzeichnis ist nicht das Problem des Plugins.
 - **Schreibreihenfolge ist geschützt:** Lock, dann `.tmp`-Datei, dann `os.replace`
-  — ein Absturz dazwischen lässt das alte, gültige JSON stehen.
+ , ein Absturz dazwischen lässt das alte, gültige JSON stehen.
 
 ---
 
@@ -405,7 +405,7 @@ Die drei Komponenten des Sicherheitsmodells:
    vergeben, sondern über die bekannte Repo-Struktur (Tarball aus der
    festen Quelle, sicher entpackt).
 2. **Nur unsere bekannten Anker:** Patches arbeiten an vordefinierten,
-   stabilen Code-Stellen im Hermes-Checkout — keine wilden Dateioperationen.
+   stabilen Code-Stellen im Hermes-Checkout, keine wilden Dateioperationen.
    Ein Hermes-Update, das eine dieser Stellen verschiebt, bricht laut ab und
    meldet sich, statt blind einzufügen.
 3. **Keine Credentials im Repo:** Kein Token, kein API-Key in `install.sh`,
@@ -423,9 +423,9 @@ Zusätzlich: `SECURITY.md` im Repo beschreibt den Meldeprozess für Lücken
 Damit der Marktplatz "das Ding, das man bedingungslos installiert" bleibt:
 
 - **Laut, nicht leise:** Ein `install.sh`, das fehlschlägt, sagt das dem
-  Backend — und das Backend dem UI als 500 mit Text. Nie "ok" melden, wenn
+  Backend, und das Backend dem UI als 500 mit Text. Nie "ok" melden, wenn
   nichts eingebaut wurde.
-- **Wiederholbar:** Idempotenz ist Pflicht — ein zweiter Lauf ist eine
+- **Wiederholbar:** Idempotenz ist Pflicht, ein zweiter Lauf ist eine
   Aktualisierung, kein Fehler.
 - **Warum hinter allem:** Der Katalog erklärt `summary`/`note`/`coverage`;
   das Backend dokumentiert `nextSteps`. Kein Knopf ohne erklärten Effekt.
@@ -438,7 +438,7 @@ Damit der Marktplatz "das Ding, das man bedingungslos installiert" bleibt:
 
 So greift jede Komponente konkret in Hermes ein (oder auch nicht).
 
-### `german-language` — der Patch, der alles trägt
+### `german-language`: der Patch, der alles trägt
 
 | Aspekt | Wert |
 | --- | --- |
@@ -452,19 +452,19 @@ Diese Komponente ist die Flaggschiff-Logik: Sie beweist das Versprechen
 "Deutsch bleibt, egal was Hermes-Update passiert". Alle anderen Patches
 kopieren dieses Muster.
 
-### `bot-mode-german` — der saubere Weg über den offiziellen Katalog
+### `bot-mode-german`: der saubere Weg über den offiziellen Katalog
 
 | Aspekt | Wert |
 | --- | --- |
 | kind | `plugin` |
 | Was es tut | Deutsches Bündel (194 Nachrichtenbausteine) für den Bot-Modus |
-| Mechanik | Trägt ein Bündel in den offiziellen Bot-Mode-Nachrichtenkatalog ein, statt Dateien zu ersetzen — nutzt die Tür, die Hermes dafür baut |
+| Mechanik | Trägt ein Bündel in den offiziellen Bot-Mode-Nachrichtenkatalog ein, statt Dateien zu ersetzen, nutzt die Tür, die Hermes dafür baut |
 | Abhängigkeit | Braucht `german-language` (`'de'` als gültige Locale), sonst nicht installierbar |
 
 Lehrstück: Wenn Hermes eine offizielle Erweiterungs-Tür hat, nehmen wir die.
 Der Katalog-Ansatz überlebt Updates von selbst, weil er dafür gedacht ist.
 
-### `group-chat-limits` — gezielter Patch in der Rundenschleife
+### `group-chat-limits`: gezielter Patch in der Rundenschleife
 
 | Aspekt | Wert |
 | --- | --- |
@@ -473,14 +473,14 @@ Der Katalog-Ansatz überlebt Updates von selbst, weil er dafür gedacht ist.
 | Mechanik | Gezielte, wiederholbare Einfügungen an den stabilen Ankern der Rundenschleife |
 | Rückbau | Regex-Rollback, nur unsere eingefügten Blöcke werden entfernt |
 
-### `eurouter-provider` — eigenständig, kein Eingriff
+### `eurouter-provider`: eigenständig, kein Eingriff
 
 | Aspekt | Wert |
 | --- | --- |
 | kind | `plugin` |
 | Was es tut | EU-Compliance-Routen im Modell-Picker statt roher Modelle, DSGVO-first |
 | Mechanik | Legt einen eigenen Provider-Ordner außerhalb des Checkouts an; delegiert inhaltlich an das EU-Router-Konzept |
-| Wächter | **nicht nötig** — liegt außerhalb des Hermes-Checkouts, kein Update kann es entfernen |
+| Wächter | **nicht nötig**, liegt außerhalb des Hermes-Checkouts, kein Update kann es entfernen |
 
 Der eurouter zeigt die zweite Säule: **Was außerhalb des Checkouts leben kann,
 lebt außerhalb.** Das ist der wartungsärmste Fall überhaupt.
@@ -491,17 +491,17 @@ lebt außerhalb.** Das ist der wartungsärmste Fall überhaupt.
 
 1. **Ordner/Dateien im Workspace-Clone ändern** (einzige Wahrheit).
 2. **Katalog-Version der betroffenen Komponente anheben**, wenn sich etwas
-   verändert hat — die UI zeigt sonst "aktuell" obwohl sich der Code geändert
+   verändert hat, die UI zeigt sonst "aktuell" obwohl sich der Code geändert
    hat. Version live testen: Install-Status `outdated` erscheint erst, wenn
    lokal eine ältere Version gebucht ist.
 3. **Lokal testen** (siehe Abschnitt 16).
 4. **Commit** im Workspace-Clone: `git add … && git commit -m "…"`.
 5. **Push:** `git push origin main` (Auth ist eingerichtet).
 6. **Nicht vergessen:** Der Katalog und der Wächter-Zustand kommen beim
-   Install aus dem Netz — ein neuer Push ist erst nach **Cache-Umlauf** live
+   Install aus dem Netz, ein neuer Push ist erst nach **Cache-Umlauf** live
    (der Katalog-Handler zieht den Tarball aus GitHub, nicht aus dem Repo).
 
-**Wichtig — die Install-Quellen kommen aus dem Netz:** `install.sh`
+**Wichtig, die Install-Quellen kommen aus dem Netz:** `install.sh`
 (Dispatcher) und `install.ps1` ziehen den Tarball von GitHub. Lokale
 Änderungen in der Arbeitskopie wirken sich also **nicht** auf fremde
 Installationen aus, bis sie gepusht sind.
@@ -517,7 +517,7 @@ Installationen aus, bis sie gepusht sind.
 - `guard_check.py` ist als eigenständiges Skript lauffähig (manueller Lauf zur
   Diagnose).
 - Frontend-Bundles: `dist/index.js` (Web) und `desktop/plugin.js` sind ohne
-  Build-Schritt eincheckbar — kein `npm build` nötig, kein Kompilier-Schritt
+  Build-Schritt eincheckbar, kein `npm build` nötig, kein Kompilier-Schritt
   im Repo.
 
 ### Was fehlt / Sinnvoll als nächster Schritt
@@ -531,19 +531,19 @@ Installationen aus, bis sie gepusht sind.
 - **Rückbau-Test je Komponente:** Install → bewusste Änderung → Uninstall →
   prüfen, dass exakt der Ursprungszustand wieder da ist.
 - **Versions-Bump-Test:** `catalog.json`-Version anheben, alte Version in
-  `installed.json` — Status muss `outdated` + "Aktualisieren" zeigen.
+  `installed.json`, Status muss `outdated` + "Aktualisieren" zeigen.
 
 ---
 
 ## 17. Release-Praxis
 
 - **`main` ist das Release.** Ältere Versionen werden laut `SECURITY.md` nicht
-  mehr unterstützt — d.h. wir halten main grün und aktuell.
+  mehr unterstützt, d.h. wir halten main grün und aktuell.
 - **Kein Feature-Branch-Zwang:** Für ein Zwei-Personen-Team reicht direkt auf
   master zu arbeiten, solange getestet wird. Wenn mehr Leute mitarbeiten:
   themenbezogene Branches + Merge, main bleibt rot-Frei.
 - **Ein Release = eine Katalog-Version je geänderter Komponente.** Wer den
-  Katalog anfasst, hebt die Version der betroffenen Komponente an — Katalog
+  Katalog anfasst, hebt die Version der betroffenen Komponente an, Katalog
   und Komponenten-Versionen bleiben synchron.
 
 ---
@@ -552,7 +552,7 @@ Installationen aus, bis sie gepusht sind.
 
 Der Vorteil unseres Ansatzes: Der Marktplatz ist bereits die **Vertriebs- und
 Update-Infrastruktur**. Jede neue deutsche Erweiterung ist nur noch eine
-Komponente im Katalog — kein neues Plugin-System, kein neuer Installer. Das
+Komponente im Katalog, kein neues Plugin-System, kein neuer Installer. Das
 heißt: Wir können schnell und oft liefern.
 
 ### Kriterium für jede neue Komponente
@@ -568,10 +568,10 @@ Bevor eine Idee in den Katalog wandert, besteht sie den Test:
 
 ### Ideen-Pool (priorisiert)
 
-**Phase A — Komfort (klein, schnell lieferbar):**
+**Phase A, Komfort (klein, schnell lieferbar):**
 
 - **Deutsche Tastatur-/Prompt-Snippets:** `/de`-Befehle für Alltagsaufgaben
-  (formelle E-Mail, Angebot, Rechnung, Entschuldigung) mit deutschem Ton —
+  (formelle E-Mail, Angebot, Rechnung, Entschuldigung) mit deutschem Ton,
   direkt als Komponente im Katalog.
 - **Deutsche Format-Werkzeuge:** Datum/Uhrzeit im deutschen Format erzwingen,
   deutsche Zahlen (Komma statt Punkt), Anrede-Korrektur in generierten
@@ -580,7 +580,7 @@ Bevor eine Idee in den Katalog wandert, besteht sie den Test:
   personenbezogene Daten enthält (Name, E-Mail, Adresse) und ob der Empfänger
   sie braucht. Ein Thema, das international kaum jemand als Komponente liefert.
 
-**Phase B — Tiefe (differenzierend):**
+**Phase B, Tiefe (differenzierend):**
 
 - **Deutsche Bot-Stimme als Paket:** Bot-Modus auf Deutsch mit
   Geschäftskorrespondenz-Baustein-Sammlung (Anrede, Höflichkeitsfloskeln,
@@ -589,11 +589,11 @@ Bevor eine Idee in den Katalog wandert, besteht sie den Test:
   Standard-Modelle vorbelegen (z. B. deutsche/europäische Hosts), mit
   verständlicher Erklärung "Daten bleiben in der EU" direkt im Picker.
 - **Update-Transparenz:** Nach jedem Hermes-Update im Chat melden
-  ("Der deutsche Sprach-Satz wurde automatisch wiederhergestellt") — der
+  ("Der deutsche Sprach-Satz wurde automatisch wiederhergestellt"), der
   Wächter kann das als Event liefern. Das ist sichtbarer Mehrwert, den
   sonst niemand hat.
 
-**Phase C — Community (Netzwerk-Effekt):**
+**Phase C, Community (Netzwerk-Effekt):**
 
 - **Deutsche Community-Erweiterungen:** Katalog für Dritte öffnen
   (Komponenten von Community-Mitgliedern), mit Review-Pflicht und
@@ -608,7 +608,7 @@ Bevor eine Idee in den Katalog wandert, besteht sie den Test:
 - **Keine deutschen Modelle erfinden:** Wir bündeln, was es gibt (EU-Hosting,
   Open Source), wir trainieren nichts.
 - **Kein Eingriff in fremde Dateien ohne Sicherung:** Der Patch-Weg bleibt
-  der dokumentierte Ausnahmefall mit Wächter — nicht der Standard.
+  der dokumentierte Ausnahmefall mit Wächter, nicht der Standard.
 
 ---
 
@@ -616,10 +616,10 @@ Bevor eine Idee in den Katalog wandert, besteht sie den Test:
 
 - **`ARCHITEKTUR-MARKTPLATZ.html` ist Stand frühe Phase** und zeigt nicht den
   finalen Stand (u. a. eurouter, Wächter-Detail). Sie ist als visueller
-  Einstieg ok, aber nicht als Wahrheit für Details — diese Datei hier ist es.
+  Einstieg ok, aber nicht als Wahrheit für Details, diese Datei hier ist es.
 - **`install.ps1`-Windows-Pfad:** Existiert, aber der volle Windows-Test
   (natives PowerShell, `%LOCALAPPDATA%`) steht noch aus.
-- **Automatisierte Tests fehlen** (siehe Abschnitt 16) — aktuell ist der
+- **Automatisierte Tests fehlen** (siehe Abschnitt 16), aktuell ist der
   "Test" die eigene Installation auf Olivers Maschine.
 - **Cache-Umlauf nach Push:** Der Netz-Katalog braucht nach einem Push etwas
   Zeit, bis fremde Installationen die neue Version sehen (siehe Abschnitt 15).
