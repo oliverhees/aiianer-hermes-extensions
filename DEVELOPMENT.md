@@ -258,24 +258,33 @@ Design-Entscheidungen.
 2. Komponente im Katalog suchen → 404 wenn unbekannt.
 3. `_verfuegbar()` erneut prüfen (auch direkte Aufrufe ohne UI werden
    abgefangen) → 409 wenn nicht installierbar.
-4. Repo-Tarball in ein Temp-Verzeichnis laden und sicher entpacken
+4. Für Premium-Komponenten (`"premium": true` im Katalog) `_premium_berechtigt()`
+   prüfen: liest `~/.hermes/aiianer/mitgliedschaft.json` auf ein gültiges
+   `level` (`mitglied`/`wartung`) und ein nicht abgelaufenes `gueltigBis`
+   → 403 mit dem Sperr-Grund, wenn nicht berechtigt. Test-Anleitung:
+   `extensions/aiianer-hub/PREMIUM-TEST.md`.
+5. Repo-Tarball in ein Temp-Verzeichnis laden und sicher entpacken
    (`filter="data"`, Tar-Slip-Schutz).
-5. `extensions/<comp_id>/` im heruntergeladenen Repo suchen, `install.sh` darin
+6. `extensions/<comp_id>/` im heruntergeladenen Repo suchen, `install.sh` darin
    ausführen (Timeout 180s) → 500 mit Fehlertext wenn fehlschlägt.
-6. Für Patch-Komponenten (`german-language`, `bot-mode-german`,
+7. Für Patch-Komponenten (`german-language`, `bot-mode-german`,
    `group-chat-limits`): die Quell-Dateien zusätzlich nach
    `~/.hermes/aiianer/` kopieren, damit der Wächter sie nach einem
    Hermes-Update erneut einspielen kann.
-7. Unter dem State-Lock: `installed.json` aktualisieren (Version + Zeitpunkt),
+8. Unter dem State-Lock: `installed.json` aktualisieren (Version + Zeitpunkt),
    atomic schreiben.
-8. Antwort mit `ok`, `action` (update/install), Version, Log-Zeilen und
+9. Antwort mit `ok`, `action` (update/install), Version, Log-Zeilen und
    `nextSteps`.
 
 Der **Catalog-Handler** reichert jede Komponente mit lokalem Zustand an:
 `installed`, `installedAt`, `nextSteps`, `uninstallSteps`, `available` +
-`unavailableReason` (de/en) und `status` (`missing` | `outdated` | `current`).
+`unavailableReason` (de/en), `premium` (aus dem Katalog) und `status`
+(`missing` | `outdated` | `current`).
 Damit kann die UI entscheiden, welche Knöpfe sinnvoll sind, ohne selbst zu
-raten.
+raten. Bei Premium-Komponenten ohne gültige Mitgliedschaft setzt der Handler
+`available` auf `false` und den Sperr-Grund als `unavailableReason`; die UI
+zeigt dann das Badge `Premium`, blendet Install/Update aus und lässt nur
+`Deinstallieren` übrig.
 
 ---
 

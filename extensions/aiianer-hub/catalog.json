@@ -8,6 +8,7 @@
       "name": "Deutsche Sprache",
       "version": "2026.09.01",
       "kind": "patch",
+      "premium": false,
       "summary": "Die Hermes-Oberfläche auf Deutsch. Wird nach jedem Hermes-Update automatisch neu eingespielt.",
       "note": "Greift in den Hermes-Checkout ein, weil Hermes keine Laufzeit-Registrierung für Sprachen anbietet. Der Wächter hält es aktuell.",
       "coverage": "95,6 % gegen en.ts, gemessen am Wert"
@@ -17,6 +18,7 @@
       "name": "EU-Router",
       "version": "2.1.0",
       "kind": "plugin",
+      "premium": false,
       "summary": "Zeigt deine EU-Compliance-Routen im Modell-Picker statt roher Katalog-Modelle.",
       "note": "Läuft vollständig außerhalb des Hermes-Verzeichnisses."
     },
@@ -25,6 +27,7 @@
       "name": "Bot-Modus auf Deutsch",
       "version": "2.0.0",
       "kind": "plugin",
+      "premium": false,
       "summary": "Der Bot-Modus auf Deutsch: Liste, Gruppenchats, Avatare, Zeitpläne. 194 Texte.",
       "note": "Trägt ein deutsches Bündel in den Nachrichtenkatalog des Bot-Modus ein. Setzt „Deutsche Sprache“ voraus. Der Wächter spielt es nach einem Hermes-Update selbst wieder ein."
     },
@@ -33,6 +36,7 @@
       "name": "Gruppenchat-Grenzen",
       "version": "2.0.0",
       "kind": "patch",
+      "premium": false,
       "summary": "Runden und Nachrichten pro Gruppenchat selbst festlegen, statt Hermes' harter 3 und 10.",
       "note": "Ein einziger Eingriff in die Rundenschleife. Eingestellt wird in ~/.hermes/aiianer/gruppen-grenzen.json, danach „Neu einspielen“ und Hermes neu starten."
     }

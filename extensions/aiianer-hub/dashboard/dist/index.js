@@ -41,6 +41,9 @@
           "div",
           { className: "flex flex-wrap items-center gap-2 mt-1" },
           h(C.Badge, null, c.available === false ? "zurzeit nicht möglich" : (LABEL[c.status] || c.status)),
+          c.premium
+            ? h(C.Badge, { className: "bg-amber-500/20 text-amber-300" }, "Premium")
+            : null,
           h(C.Badge, null, "v" + c.version),
           c.installed && c.installed !== c.version
             ? h(C.Badge, null, "installiert: v" + c.installed)
@@ -72,7 +75,13 @@
           "div",
           { className: "mt-3 flex flex-wrap gap-2" },
           c.available === false
-            ? null
+            ? c.installed && !laufend
+              ? h(
+                  C.Button,
+                  { key: "del", variant: "outline", onClick: function () { props.onAktion(c.id, "uninstall"); } },
+                  "Deinstallieren"
+                )
+              : null
             : laufend
             ? h(
                 C.Button,

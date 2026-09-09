@@ -12,6 +12,7 @@ des Dashboards.
 from __future__ import annotations
 
 import contextlib
+import datetime
 import json
 import re
 import os
@@ -189,6 +190,37 @@ def _verfuegbar(comp_id: str) -> tuple:
     return (True, "", "")
 
 
+def _premium_berechtigt(entry: dict) -> tuple[bool, str, str]:
+    """Premium-Komponenten nur fuer Community-Mitglieder mit Aktivierung.
+
+    Lesart der Mitgliedschaftsdatei ~/.hermes/aiianer/mitgliedschaft.json:
+    {"level": "mitglied" | "wartung", "gueltigBis": "YYYY-MM-DD"}.
+    Fehlt die Datei, ist sie ungueltig oder abgelaufen, sperrt die
+    Komponente mit einer freundlichen Meldung. Kein rätselhafter Fehler,
+    sondern der klare Hinweis, wo es langgeht.
+    """
+    if not entry.get("premium"):
+        return (True, "", "")
+    datei = STATE_DIR / "mitgliedschaft.json"
+    try:
+        mit = json.loads(datei.read_text(encoding="utf-8"))
+        level = mit.get("level", "")
+        gueltig_bis = mit.get("gueltigBis", "")
+        if level in ("mitglied", "wartung") and gueltig_bis:
+            jahr, monat, tag = (int(x) for x in gueltig_bis.split("-")[:3])
+            if datetime.date(jahr, monat, tag) >= datetime.date.today():
+                return (True, "", "")
+    except Exception:
+        pass
+    return (
+        False,
+        "Diese Komponente ist exklusiv fuer AIIANER-Community-Mitglieder. "
+        "Mitglied werden: https://aiianer.de",
+        "This component is exclusive to AIIANER community members. "
+        "Become a member: https://aiianer.de",
+    )
+
+
 def _steps(comp_id: str, aktion: str, entry: dict | None = None) -> list:
     """Katalog darf ueberschreiben, sonst der lokale Standard."""
     vom_katalog = (entry or {}).get("nextSteps", {}).get(aktion)
@@ -261,6 +293,12 @@ async def catalog() -> dict:
     for c in cat.get("components", []):
         local = state.get(c["id"], {})
         installed = local.get("version")
+        ok, grund, grund_en = _verfuegbar(c["id"])
+        prem_ok, prem_grund, prem_grund_en = _premium_berechtigt(c)
+        if not prem_ok:
+            ok = False
+            grund = prem_grund
+            grund_en = prem_grund_en
         items.append(
             {
                 **c,
@@ -268,9 +306,9 @@ async def catalog() -> dict:
                 "installedAt": local.get("at"),
                 "nextSteps": _steps(c["id"], "install", c),
                 "uninstallSteps": _steps(c["id"], "uninstall", c),
-                "available": _verfuegbar(c["id"])[0],
-                "unavailableReason": _verfuegbar(c["id"])[1],
-                "unavailableReasonEn": _verfuegbar(c["id"])[2],
+                "available": ok,
+                "unavailableReason": grund,
+                "unavailableReasonEn": grund_en,
                 "status": (
                     "missing"
                     if not installed
@@ -311,6 +349,10 @@ async def install(body: dict) -> dict:
     ok, grund, _ = _verfuegbar(comp_id)
     if not ok:
         raise HTTPException(status_code=409, detail=grund)
+
+    prem_ok, prem_grund, _ = _premium_berechtigt(entry)
+    if not prem_ok:
+        raise HTTPException(status_code=403, detail=prem_grund)
 
     with tempfile.TemporaryDirectory() as tmp:
         root = _download(tmp)

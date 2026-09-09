@@ -101,8 +101,8 @@ Programm-Checkout liegt. Deshalb gilt hier:
 AIIANER Hermes Extensions folgt einem **Open-Core-Modell**: Die **Basis steht
 unter MIT** (siehe [LICENSE](LICENSE)) und ist damit für private wie
 kommerzielle Nutzung frei, ohne Copyleft. Der Verdienst liegt in
-**Premium-Komponenten im Katalog** (nur für Community-Mitglieder) und in
-**Wartungs- und Supportverträgen**. Details in [LICENSING.md](LICENSING.md),
+**Premium-Komponenten im Katalog** (nur für Community-Mitglieder installierbar)
+und in **Support- und Setup-Services**. Details in [LICENSING.md](LICENSING.md),
 Anfragen an **support@aiianer.de** oder über die
 [AIIANER Community](https://aiianer.de).
 
