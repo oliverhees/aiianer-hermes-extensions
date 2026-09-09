@@ -46,6 +46,16 @@ function makeUseCatalog(fetchCatalog) {
   }
 }
 
+function makeUseReleases(fetchReleases) {
+  return function useReleases() {
+    return useQuery({
+      queryKey: [ID, 'releases'],
+      queryFn: fetchReleases,
+      staleTime: 300000
+    })
+  }
+}
+
 // -- AIIANER-Community-Banner -------------------------------------------------
 function MarketplaceHero({ updates, installiert, total, onCommunity }) {
   return jsxs('section', {
@@ -54,11 +64,12 @@ function MarketplaceHero({ updates, installiert, total, onCommunity }) {
       jsx('div', { className: 'pointer-events-none absolute inset-y-0 left-0 w-1 bg-accent' }, 'accent'),
       jsxs('div', { className: 'relative flex flex-wrap items-center justify-between gap-x-5 gap-y-3', children: [
         jsxs('div', { className: 'min-w-0', children: [
-          jsxs('div', { className: 'flex flex-wrap items-center gap-x-3 gap-y-1', children: [
-            jsx('span', { className: 'font-mono text-[10px] uppercase tracking-[0.22em] text-accent', children: 'AIIANER COMMUNITY' }, 'brand'),
-            jsx('span', { className: 'hidden text-[10px] opacity-45 sm:inline', children: 'KI zum Anwenden, nicht zum Hypen.' }, 'tagline')
+          jsx('h1', { className: 'text-xl font-bold tracking-tight text-foreground sm:text-2xl', children: 'AIIANER COMMUNITY' }, 'brand'),
+          jsxs('div', { className: 'mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1', children: [
+            jsx('span', { className: 'font-mono text-[10px] uppercase tracking-[0.22em] text-accent', children: 'KI zum Anwenden, nicht zum Hypen.' }, 'tagline'),
+            jsx('span', { className: 'hidden text-[10px] opacity-45 sm:inline', children: 'Dein Außenposten für KI, die arbeitet.' }, 'subline')
           ] }),
-          jsxs('p', { className: 'mt-1 max-w-2xl text-xs leading-5 opacity-70', children: [
+          jsxs('p', { className: 'mt-2 max-w-2xl text-xs leading-5 opacity-70', children: [
             'Kurse, Vorlagen, Live-Calls und Austausch für Menschen, die KI wirklich einsetzen. ',
             'AIIANER nutzt Hermes als Basis des KI-Betriebssystems und baut darauf Plugins, MCPs und Werkzeuge für den Alltag.'
           ] }, 'copy')
@@ -78,43 +89,50 @@ function MarketplaceHero({ updates, installiert, total, onCommunity }) {
 }
 
 // -- Versionshinweise ---------------------------------------------------------
-function Versionshinweise() {
+function Versionshinweise({ daten, laedt, fehler }) {
+  const releases = (daten && daten.releases) || []
+  const quelle = daten && daten.source === 'github' ? 'GitHub-Releases' : 'lokaler Rückfall'
+  const datum = wert => {
+    if (!wert) return ''
+    const parsed = new Date(wert)
+    return Number.isNaN(parsed.getTime()) ? '' : new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium' }).format(parsed)
+  }
+
   return jsxs('section', {
     className: 'rounded-xl border border-white/10 bg-black/10 p-4 sm:p-5 space-y-5',
     children: [
       jsxs('div', {
         children: [
           jsx('p', { className: 'text-xs uppercase tracking-widest text-accent', children: 'Versionshinweise' }, 'eyebrow'),
-          jsx('h2', { className: 'mt-1 text-xl font-semibold', children: 'AIIANER EXTENSION HUB v1.3.11' }, 'title'),
-          jsx('p', { className: 'mt-1 text-sm opacity-65', children: 'Die Änderungen dieser Version auf einen Blick.' }, 'intro')
+          jsx('h2', { className: 'mt-1 text-xl font-semibold', children: 'Was sich im Außenposten geändert hat' }, 'title'),
+          jsx('p', { className: 'mt-1 text-sm opacity-65', children: `Versionierte Hinweise aus ${quelle}.` }, 'intro')
         ]
       }, 'heading'),
-      jsxs('div', {
-        className: 'space-y-4 text-sm',
+      laedt ? jsx(Skeleton, { className: 'h-24' }, 'loading') : null,
+      !laedt && fehler ? jsx('p', { className: 'text-sm text-red-300', children: 'Versionshinweise konnten nicht geladen werden.' }, 'error') : null,
+      !laedt && !fehler && !releases.length ? jsx('p', { className: 'text-sm opacity-65', children: 'Noch keine veröffentlichten Versionshinweise vorhanden.' }, 'empty') : null,
+      !laedt && !fehler && releases.map(release => jsxs('article', {
+        className: 'border-t border-white/10 pt-4 first:border-t-0 first:pt-0',
         children: [
-          jsxs('div', { children: [
-            jsx('p', { className: 'font-medium', children: 'Community-Link' }, 'title'),
-            jsx('p', { className: 'mt-1 opacity-70', children: 'Der Community-Link ist jetzt korrekt mit Hermes verdrahtet. Falls der normale Klick nicht öffnet, erklärt der Hinweis direkt am Button den Weg über das Rechtsklick-Menü.' }, 'copy')
-          ] }, 'community'),
-          jsxs('div', { children: [
-            jsx('p', { className: 'font-medium', children: 'Theme-Anpassung' }, 'title'),
-            jsx('p', { className: 'mt-1 opacity-70', children: 'Button, Statusanzeigen, Update-Hinweise und Akzentflächen verwenden die aktiven Hermes-Theme-Farben.' }, 'copy')
-          ] }, 'theme'),
-          jsxs('div', { children: [
-            jsx('p', { className: 'font-medium', children: 'Hermes als Basis' }, 'title'),
-            jsx('p', { className: 'mt-1 opacity-70', children: 'Der Header erklärt jetzt, dass AIIANER Hermes als Basis des KI-Betriebssystems nutzt und darauf Plugins, MCPs und Werkzeuge aufbaut.' }, 'copy')
-          ] }, 'hermes')
+          jsxs('div', { className: 'flex flex-wrap items-center gap-2', children: [
+            jsx(Badge, { children: release.tagName }, 'tag'),
+            datum(release.publishedAt) ? jsx('span', { className: 'text-xs opacity-50', children: datum(release.publishedAt) }, 'date') : null
+          ] }, 'meta'),
+          jsx('h3', { className: 'mt-2 text-base font-semibold', children: release.name || release.tagName }, 'name'),
+          jsx('p', { className: 'mt-2 whitespace-pre-wrap text-sm leading-6 opacity-75', children: release.body || 'Keine zusätzlichen Hinweise zu dieser Version.' }, 'body'),
+          release.url ? jsx('a', { href: release.url, target: '_blank', rel: 'noreferrer', className: 'mt-3 inline-block text-xs font-medium text-accent hover:underline', children: 'Auf GitHub ansehen ↗' }, 'link') : null
         ]
-      }, 'notes')
+      }, release.tagName))
     ]
   })
 }
 
 // -- Oberflaeche --------------------------------------------------------------
-function makePane(useCatalog, aktionen, onCommunity) {
+function makePane(useCatalog, useReleases, aktionen, onCommunity) {
   return function Pane() {
     const t = usePluginI18n(ID)
     const { data, isLoading, isFetching, error, refetch } = useCatalog()
+    const { data: releaseDaten, isLoading: releasesLaden, error: releasesFehler } = useReleases()
 
     // laufend[id] = 'install' | 'uninstall'; ergebnis[id] = Antwort oder Fehler.
     // Ohne den laufend-Zustand wirkt der Klick stumm, bis der Refetch kommt -
@@ -379,6 +397,11 @@ function makePane(useCatalog, aktionen, onCommunity) {
 
     const installiert = items.filter(c => c.installed).length
     const updates = items.filter(c => c.status === 'outdated').length
+    // Dieser Marker darf keine eigene Versionskonstante haben. Er zeigt exakt
+    // dieselbe Katalogantwort wie die Hub-Karte und aktualisiert sich nach dem
+    // Refetch deshalb gemeinsam mit ihr.
+    const hub = items.find(c => c.id === ID)
+    const hubVersion = (hub && (hub.installed || hub.version)) || '—'
 
     return jsxs('div', {
       className: 'p-4 sm:p-6 lg:p-8 space-y-6 max-w-6xl',
@@ -404,11 +427,13 @@ function makePane(useCatalog, aktionen, onCommunity) {
             }, 'release-tab'),
             jsx('span', {
               className: 'ml-auto self-center pb-2 text-[10px] font-mono tracking-wider opacity-50',
-              children: 'v1.3.11'
+              children: 'v' + hubVersion
             }, 'version')
           ]
         }, 'tabs'),
-        aktiverTab === 'release-notes' ? jsx(Versionshinweise, {}, 'release-notes') : jsxs('div', {
+        aktiverTab === 'release-notes'
+          ? jsx(Versionshinweise, { daten: releaseDaten, laedt: releasesLaden, fehler: releasesFehler }, 'release-notes')
+          : jsxs('div', {
           className: 'space-y-4',
           children: [
             jsx('button', {
@@ -501,6 +526,7 @@ export default {
     })
 
     const fetchCatalog = () => ctx.rest('/catalog')
+    const fetchReleases = () => ctx.rest('/releases')
     // PluginRestOptions kennt method/body/upload/timeoutMs. KEIN headers, und
     // body ist ein Objekt - die Bruecke serialisiert selbst. Ein
     // JSON.stringify hier wuerde dem Backend einen String statt eines
@@ -511,11 +537,12 @@ export default {
     }
 
     const useCatalog = makeUseCatalog(fetchCatalog)
+    const useReleases = makeUseReleases(fetchReleases)
     const onCommunity = event => {
       event.preventDefault()
       void ctx.os.openExternal('https://aiianer.de')
     }
-    const Pane = makePane(useCatalog, aktionen, onCommunity)
+    const Pane = makePane(useCatalog, useReleases, aktionen, onCommunity)
 
     // Eigene Seite
     ctx.register({

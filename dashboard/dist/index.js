@@ -201,6 +201,10 @@
     var health = hs[0];
     var setHealth = hs[1];
 
+    var rs = useState(null);
+    var releaseData = rs[0];
+    var setReleaseData = rs[1];
+
     var ts = useState("marketplace");
     var aktiverTab = ts[0];
     var setAktiverTab = ts[1];
@@ -225,7 +229,14 @@
           // Hinweis samt Reparieren-Knopf, den man dann braeuchte.
           setHealth({ ok: false, broken: [], error: String(x && x.message ? x.message : x) });
         });
-      return Promise.all([a, b]);
+      var r = SDK.fetchJSON(API + "/releases")
+        .then(setReleaseData)
+        .catch(function () {
+          // Die Katalogansicht bleibt nutzbar; die Hinweise zeigen dann eine
+          // ehrliche leere Fassung statt die Seite zu blockieren.
+          setReleaseData({ releases: [], source: "lokal" });
+        });
+      return Promise.all([a, b, r]);
     }
 
     useEffect(function () {
@@ -280,6 +291,13 @@
 
     var installiert = items.filter(function (c) { return c.installed; }).length;
     var updates = items.filter(function (c) { return c.status === "outdated"; }).length;
+    var releases = (releaseData && releaseData.releases) || [];
+    var releaseQuelle = releaseData && releaseData.source === "github" ? "GitHub-Releases" : "lokalen Rückfall";
+    function releaseDatum(wert) {
+      if (!wert) return "";
+      var parsed = new Date(wert);
+      return isNaN(parsed.getTime()) ? "" : new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" }).format(parsed);
+    }
 
     return h(
       "div",
@@ -292,11 +310,12 @@
           "div",
           { className: "relative flex flex-wrap items-center justify-between gap-x-5 gap-y-3" },
           h("div", { className: "min-w-0" },
-            h("div", { className: "flex flex-wrap items-center gap-x-3 gap-y-1" },
-              h("span", { className: "font-mono text-[10px] uppercase tracking-[0.22em] text-accent" }, "AIIANER Community"),
-              h("span", { className: "hidden text-[10px] opacity-45 sm:inline" }, "KI zum Anwenden, nicht zum Hypen.")
+            h("h1", { className: "text-xl font-bold tracking-tight sm:text-2xl" }, "AIIANER COMMUNITY"),
+            h("div", { className: "mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1" },
+              h("span", { className: "font-mono text-[10px] uppercase tracking-[0.22em] text-accent" }, "KI zum Anwenden, nicht zum Hypen."),
+              h("span", { className: "hidden text-[10px] opacity-45 sm:inline" }, "Dein Außenposten für KI, die arbeitet.")
             ),
-            h("p", { className: "mt-1 max-w-2xl text-xs leading-5 text-muted-foreground" }, "Kurse, Vorlagen, Live-Calls und Austausch für Menschen, die KI wirklich einsetzen. AIIANER nutzt Hermes als Basis des KI-Betriebssystems und baut darauf Plugins, MCPs und Werkzeuge für den Alltag.")
+            h("p", { className: "mt-2 max-w-2xl text-xs leading-5 text-muted-foreground" }, "Kurse, Vorlagen, Live-Calls und Austausch für Menschen, die KI wirklich einsetzen. AIIANER nutzt Hermes als Basis des KI-Betriebssystems und baut darauf Plugins, MCPs und Werkzeuge für den Alltag.")
           ),
           h("div", { className: "flex flex-col items-stretch gap-1 shrink-0" },
             h("a", { href: "https://aiianer.de", target: "_blank", rel: "noreferrer", className: "rounded-md border border-accent bg-accent px-3 py-2 text-xs font-semibold text-accent-foreground transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-accent" }, "Community öffnen ↗"),
@@ -314,13 +333,23 @@
         "section",
         { className: aktiverTab === "release-notes" ? "mb-5 rounded-xl border border-border bg-card p-4 sm:p-5" : "hidden" },
         h("p", { className: "text-xs uppercase tracking-widest text-accent" }, "Versionshinweise"),
-        h("h2", { className: "mt-1 text-xl font-semibold" }, "AIIANER EXTENSION HUB v1.3.11"),
-        h("p", { className: "mt-1 text-sm text-muted-foreground" }, "Die Änderungen dieser Version auf einen Blick."),
+        h("h2", { className: "mt-1 text-xl font-semibold" }, "Was sich im Außenposten geändert hat"),
+        h("p", { className: "mt-1 text-sm text-muted-foreground" }, "Versionierte Hinweise aus " + releaseQuelle + "."),
         h("div", { className: "mt-5 space-y-4 text-sm" },
-          h("div", null, h("p", { className: "font-medium" }, "Community-Link"), h("p", { className: "mt-1 text-muted-foreground" }, "Der Community-Link ist jetzt korrekt mit Hermes verdrahtet. Falls der normale Klick nicht öffnet, erklärt der Hinweis direkt am Button den Weg über das Rechtsklick-Menü.")),
-          h("div", null, h("p", { className: "font-medium" }, "Theme-Anpassung"), h("p", { className: "mt-1 text-muted-foreground" }, "Button, Statusanzeigen, Update-Hinweise und Akzentflächen verwenden die aktiven Hermes-Theme-Farben.")),
-          h("div", null, h("p", { className: "font-medium" }, "Hermes als Basis"), h("p", { className: "mt-1 text-muted-foreground" }, "Der Header erklärt jetzt, dass AIIANER Hermes als Basis des KI-Betriebssystems nutzt und darauf Plugins, MCPs und Werkzeuge aufbaut."))
-        ),
+          releases.length
+            ? releases.map(function (release) {
+                return h("article", { key: release.tagName, className: "border-t border-border pt-4 first:border-t-0 first:pt-0" },
+                  h("div", { className: "flex flex-wrap items-center gap-2" },
+                    h(C.Badge, null, release.tagName),
+                    releaseDatum(release.publishedAt) ? h("span", { className: "text-xs text-muted-foreground" }, releaseDatum(release.publishedAt)) : null
+                  ),
+                  h("h3", { className: "mt-2 font-semibold" }, release.name || release.tagName),
+                  h("p", { className: "mt-2 whitespace-pre-wrap leading-6 text-muted-foreground" }, release.body || "Keine zusätzlichen Hinweise zu dieser Version."),
+                  release.url ? h("a", { href: release.url, target: "_blank", rel: "noreferrer", className: "mt-3 inline-block text-xs font-medium text-accent hover:underline" }, "Auf GitHub ansehen ↗") : null
+                );
+              })
+            : h("p", { className: "text-muted-foreground" }, "Noch keine veröffentlichten Versionshinweise vorhanden.")
+        )
       ),
       h(
         "div",

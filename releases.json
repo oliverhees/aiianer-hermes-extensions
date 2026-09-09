@@ -1,0 +1,11 @@
+{
+  "releases": [
+    {
+      "tagName": "v1.3.12",
+      "name": "v1.3.12 · Frische Versionsanzeige und GitHub-Hinweise",
+      "publishedAt": "2026-09-09T20:30:00Z",
+      "body": "## Was neu ist\n- Der Versionsmarker oben rechts kommt jetzt aus dem aktuellen Katalog und aktualisiert sich nach einem Hub-Update.\n- AIIANER COMMUNITY ist im Header deutlich größer und klarer lesbar.\n- Versionshinweise werden aus den versionierten GitHub-Releases geladen; diese Datei ist der lokale Rückfall, falls GitHub nicht erreichbar ist.",
+      "url": "https://github.com/oliverhees/aiianer-hermes-extensions/releases/tag/v1.3.12"
+    }
+  ]
+}

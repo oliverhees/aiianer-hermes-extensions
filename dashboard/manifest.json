@@ -3,7 +3,7 @@
   "label": "AIIANER EXTENSION HUB",
   "description": "Deutsche Erweiterungen installieren und aktuell halten",
   "icon": "Package",
-  "version": "1.3.11",
+  "version": "1.3.12",
   "tab": {
     "path": "/aiianer",
     "position": "after:skills"

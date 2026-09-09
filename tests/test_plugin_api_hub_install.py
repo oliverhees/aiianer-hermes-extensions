@@ -31,6 +31,7 @@ class HubRootInstallTest(unittest.TestCase):
             (source / "plugin.yaml").write_text("name: aiianer-hub\nversion: 9.9.9\n")
             (source / "__init__.py").write_text("def register(ctx): pass\n")
             (source / "catalog.json").write_text('{"components": []}\n')
+            (source / "releases.json").write_text('{"releases": []}\n')
             (source / "guard_check.py").write_text("# guard\n")
             (source / "dashboard" / "manifest.json").write_text('{"name": "aiianer-hub"}\n')
             (source / "dashboard" / "plugin_api.py").write_text("# backend\n")
@@ -54,6 +55,7 @@ class HubRootInstallTest(unittest.TestCase):
                 "name: aiianer-hub\nversion: 9.9.9\n",
             )
             self.assertTrue((hermes_home / "plugins" / "aiianer-hub" / "dashboard" / "plugin_api.py").is_file())
+            self.assertTrue((hermes_home / "plugins" / "aiianer-hub" / "releases.json").is_file())
             expected_desktop = (source / "desktop" / "plugin.js").read_text()
             self.assertEqual(
                 (hermes_home / "plugins" / "aiianer-hub" / "desktop" / "plugin.js").read_text(),
@@ -62,6 +64,25 @@ class HubRootInstallTest(unittest.TestCase):
             self.assertFalse(legacy_desktop.exists())
             self.assertFalse((hermes_home / "plugins" / "aiianer-hub" / "desktop" / "plugin.js.neu").exists())
             self.assertTrue((hermes_home / "hooks" / "aiianer-guard" / "handler.py").is_file())
+
+
+class ReleaseNormalizationTest(unittest.TestCase):
+    def test_normalizes_github_and_local_release_shapes(self):
+        api = load_api_module()
+        releases = api._normalize_releases([
+            {
+                "tag_name": "v1.3.12",
+                "name": "Version 1.3.12",
+                "body": "- Katalog synchronisiert",
+                "published_at": "2026-09-09T20:30:00Z",
+                "html_url": "https://example.invalid/releases/v1.3.12",
+            },
+            {"tag_name": ""},
+        ])
+        self.assertEqual(len(releases), 1)
+        self.assertEqual(releases[0]["tagName"], "v1.3.12")
+        self.assertEqual(releases[0]["publishedAt"], "2026-09-09T20:30:00Z")
+        self.assertEqual(releases[0]["url"], "https://example.invalid/releases/v1.3.12")
 
 
 if __name__ == "__main__":

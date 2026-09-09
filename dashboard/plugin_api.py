@@ -31,6 +31,7 @@ router = APIRouter()
 REPO = "oliverhees/aiianer-hermes-extensions"
 TARBALL = f"https://github.com/{REPO}/archive/refs/heads/main.tar.gz"
 CATALOG_URL = f"https://raw.githubusercontent.com/{REPO}/main/catalog.json"
+RELEASES_URL = f"https://api.github.com/repos/{REPO}/releases"
 
 def hermes_home() -> Path:
     """Wo Hermes seine Daten haelt, plattformuebergreifend.
@@ -56,6 +57,7 @@ PLUGINS = HERMES_HOME / "plugins"
 STATE_DIR = HERMES_HOME / "aiianer"
 STATE_FILE = STATE_DIR / "installed.json"
 LOCAL_CATALOG = Path(__file__).resolve().parent.parent / "catalog.json"
+LOCAL_RELEASES = Path(__file__).resolve().parent.parent / "releases.json"
 AGENT_DIR = Path(os.environ.get("HERMES_AGENT_DIR") or (HERMES_HOME / "hermes-agent"))
 I18N_DIR = AGENT_DIR / "apps" / "desktop" / "src" / "i18n"
 BOTS_DIR = AGENT_DIR / "apps" / "desktop" / "src" / "plugins" / "hermes-bots"
@@ -302,6 +304,46 @@ def _load_catalog() -> dict:
         return json.loads(LOCAL_CATALOG.read_text())
 
 
+def _normalize_releases(payload: object) -> list[dict]:
+    """Reduziert GitHub-Antworten auf sichere, UI-taugliche Release-Daten."""
+    raw_items = payload.get("releases", []) if isinstance(payload, dict) else payload
+    if not isinstance(raw_items, list):
+        raise ValueError("GitHub-Releases haben kein gültiges Listenformat")
+
+    releases = []
+    for item in raw_items[:12]:
+        if not isinstance(item, dict):
+            continue
+        tag = item.get("tag_name", item.get("tagName", ""))
+        if not isinstance(tag, str) or not tag.strip():
+            continue
+        body = item.get("body", "")
+        name = item.get("name", tag)
+        published = item.get("published_at", item.get("publishedAt", ""))
+        url = item.get("html_url", item.get("url", ""))
+        releases.append({
+            "tagName": tag.strip()[:80],
+            "name": str(name or tag).strip()[:180],
+            "body": str(body or "")[:12000],
+            "publishedAt": str(published or "")[:80],
+            "url": str(url or "")[:500],
+        })
+    return releases
+
+
+def _load_releases() -> tuple[list[dict], str]:
+    """Lädt veröffentlichte GitHub-Releases; lokale Release-Datei ist Rückfall."""
+    request = urllib.request.Request(RELEASES_URL, headers={"Accept": "application/vnd.github+json"})
+    try:
+        with urllib.request.urlopen(request, timeout=8) as resp:
+            github_releases = _normalize_releases(json.loads(resp.read().decode("utf-8")))
+            if github_releases:
+                return github_releases, "github"
+    except Exception:
+        pass
+    return _normalize_releases(json.loads(LOCAL_RELEASES.read_text(encoding="utf-8"))), "lokal"
+
+
 def _atomic_copy(source: Path, target: Path) -> None:
     """Schreibt eine Datei erst neben ihr und schaltet sie dann atomar sichtbar.
 
@@ -332,6 +374,7 @@ def _install_hub_from_root(source: Path) -> None:
         ("plugin.yaml", agent_target / "plugin.yaml"),
         ("__init__.py", agent_target / "__init__.py"),
         ("catalog.json", agent_target / "catalog.json"),
+        ("releases.json", agent_target / "releases.json"),
         ("guard_check.py", agent_target / "guard_check.py"),
         ("dashboard/manifest.json", agent_target / "dashboard" / "manifest.json"),
         ("dashboard/plugin_api.py", agent_target / "dashboard" / "plugin_api.py"),
@@ -400,6 +443,13 @@ async def catalog() -> dict:
             }
         )
     return {"catalogVersion": cat.get("catalogVersion"), "components": items}
+
+
+@router.get("/releases")
+async def releases() -> dict:
+    """Versionierte GitHub-Hinweise, mit lokaler Fassung für Offline-Betrieb."""
+    items, source = _load_releases()
+    return {"releases": items, "source": source}
 
 
 def _guard():
