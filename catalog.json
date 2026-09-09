@@ -6,13 +6,13 @@
     {
       "id": "aiianer-hub",
       "name": "AIIANER EXTENSION HUB",
-      "version": "1.3.10",
+      "version": "1.3.11",
       "kind": "plugin",
       "premium": false,
       "summary": "Der Marktplatz selbst. Aktualisiert Oberfläche, Desktop-Plugin, Backend und Wächter in einem Schritt.",
-      "note": "Nach dem Aktualisieren Hermes komplett neu starten. Der Marktplatz kann nicht über sich selbst deinstalliert werden.",
+      "note": "Der Hub ersetzt sich kontrolliert und startet sein Backend danach automatisch neu.",
       "nextSteps": {
-        "install": ["Hermes komplett neu starten, damit die neue Marktplatz-Version geladen wird."],
+        "install": ["Der Hub startet sein Backend automatisch neu und lädt danach den aktuellen Katalog."],
         "uninstall": []
       }
     },

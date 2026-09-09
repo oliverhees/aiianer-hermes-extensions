@@ -302,16 +302,31 @@ def _load_catalog() -> dict:
         return json.loads(LOCAL_CATALOG.read_text())
 
 
+def _atomic_copy(source: Path, target: Path) -> None:
+    """Schreibt eine Datei erst neben ihr und schaltet sie dann atomar sichtbar.
+
+    Der Desktop-Watcher darf beim Hub-Update niemals eine halb geschriebene
+    JavaScript-Datei importieren. ``replace`` ist auf allen unterstützten
+    Plattformen für Dateien atomar; die neue Datei erscheint mit einem Schlag.
+    """
+    target.parent.mkdir(parents=True, exist_ok=True)
+    temporary = target.with_name(target.name + ".neu")
+    shutil.copy2(source, temporary)
+    temporary.replace(target)
+
+
 def _install_hub_from_root(source: Path) -> None:
     """Installiert den Marktplatz aus dem Root eines Hybrid-Git-Plugins.
 
-    Der Hub ist keine Erweiterung unter ``extensions/aiianer-hub`` mehr.
-    Das war absichtlich entfernt worden, weil zwei Kataloge sonst gegeneinander
-    arbeiteten. Beim Selbst-Update kommen die Dateien daher direkt vom
-    heruntergeladenen Repository-Root in die drei Hermes-Ziele.
+    Ein Hybrid-Plugin besitzt genau eine kanonische Desktop-Quelle unter
+    ``plugins/aiianer-hub/desktop``. Die frühere zweite Kopie unter
+    ``desktop-plugins`` konnte beim Hot-Reload gegen den neuen Stand gewinnen.
+    Alle Backend-Dateien werden vor dem Desktop-Einstieg atomar geschaltet; der
+    Watcher sieht daher erst dann eine neue UI, wenn ihr Backend vollständig
+    bereitliegt.
     """
     agent_target = PLUGINS / "aiianer-hub"
-    desktop_target = HERMES_HOME / "desktop-plugins" / "aiianer-hermes-extensions"
+    legacy_desktop_target = HERMES_HOME / "desktop-plugins" / "aiianer-hermes-extensions"
     hook_target = HERMES_HOME / "hooks" / "aiianer-guard"
     files = (
         ("plugin.yaml", agent_target / "plugin.yaml"),
@@ -321,22 +336,30 @@ def _install_hub_from_root(source: Path) -> None:
         ("dashboard/manifest.json", agent_target / "dashboard" / "manifest.json"),
         ("dashboard/plugin_api.py", agent_target / "dashboard" / "plugin_api.py"),
         ("dashboard/dist/index.js", agent_target / "dashboard" / "dist" / "index.js"),
-        # Hermes lädt Hybrid-Plugins sowohl über die Unified-Tür als auch über
-        # desktop-plugins. Beide müssen denselben deutschen UI-Stand tragen.
-        ("desktop/plugin.js", agent_target / "desktop" / "plugin.js"),
-        ("desktop/plugin.js", desktop_target / "plugin.js"),
         ("guard/HOOK.yaml", hook_target / "HOOK.yaml"),
         ("guard/handler.py", hook_target / "handler.py"),
     )
+    desktop_source = source / "desktop" / "plugin.js"
+    desktop_target = agent_target / "desktop" / "plugin.js"
     missing = [relative for relative, _ in files if not (source / relative).is_file()]
+    if not desktop_source.is_file():
+        missing.append("desktop/plugin.js")
     if missing:
         raise HTTPException(
             status_code=500,
             detail="Der heruntergeladene Hub ist unvollständig: " + ", ".join(missing),
         )
+
+    # Backend zuerst, den beobachteten Desktop-Einstieg zuletzt. So ist ein
+    # Watcher-Reload immer ein Wechsel von komplett-alt zu komplett-neu.
     for relative, target in files:
-        target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(source / relative, target)
+        _atomic_copy(source / relative, target)
+    _atomic_copy(desktop_source, desktop_target)
+
+    # Nur unseren historischen, eindeutigen Doppelpfad entfernen. Das ist kein
+    # allgemeines Aufräumen fremder Plugins, sondern beendet die alte Race-Quelle.
+    if legacy_desktop_target.exists():
+        shutil.rmtree(legacy_desktop_target)
 
 
 # ---------------------------------------------------------------- Routen
@@ -466,6 +489,10 @@ async def install(body: dict) -> dict:
         "previousVersion": vorher,
         "log": install_log,
         "nextSteps": _steps(comp_id, "install", entry),
+        # Der Hub ersetzt bei einem Self-Update seinen eigenen Python-Code.
+        # Der laufende Gateway-Prozess hat diesen aber schon importiert und
+        # muss daher kontrolliert neu gestartet werden.
+        "requiresGatewayRestart": comp_id == "aiianer-hub",
     }
 
 

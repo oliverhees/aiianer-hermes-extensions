@@ -85,7 +85,7 @@ function Versionshinweise() {
       jsxs('div', {
         children: [
           jsx('p', { className: 'text-xs uppercase tracking-widest text-accent', children: 'Versionshinweise' }, 'eyebrow'),
-          jsx('h2', { className: 'mt-1 text-xl font-semibold', children: 'AIIANER EXTENSION HUB v1.3.10' }, 'title'),
+          jsx('h2', { className: 'mt-1 text-xl font-semibold', children: 'AIIANER EXTENSION HUB v1.3.11' }, 'title'),
           jsx('p', { className: 'mt-1 text-sm opacity-65', children: 'Die Änderungen dieser Version auf einen Blick.' }, 'intro')
         ]
       }, 'heading'),
@@ -167,6 +167,33 @@ function makePane(useCatalog, aktionen, onCommunity) {
         .then(
           antwort => {
             setErgebnis(v => ({ ...v, [id]: { ok: true, ...antwort } }))
+            const gatewayNeustart = aktion === 'install' && antwort.requiresGatewayRestart === true
+            if (gatewayNeustart) {
+              host.notify({
+                kind: 'warning',
+                title: 'Hub wird neu geladen',
+                message: 'Der neue Hub-Stand ist installiert. Das Hermes-Backend wird jetzt neu gestartet.'
+              })
+              if (typeof host.restartGateway === 'function') {
+                return host.restartGateway()
+                  .then(() => {
+                    host.notify({
+                      kind: 'success',
+                      title: 'Hub aktualisiert',
+                      message: 'Backend und Katalog laufen jetzt mit dem neuen Stand.'
+                    })
+                    return refetch().catch(() => {})
+                  })
+                  .catch(error => {
+                    const text = error && error.message ? error.message : String(error)
+                    setErgebnis(v => ({ ...v, [id]: {
+                      ok: true,
+                      ...antwort,
+                      warnings: ['Der Hub ist installiert, aber der automatische Backend-Neustart ist fehlgeschlagen: ' + text]
+                    } }))
+                  })
+              }
+            }
             if (aktion === 'install' && (antwort.nextSteps || []).some(step => /neu starten|restart/i.test(step))) {
               host.notify({
                 kind: 'warning',
@@ -377,7 +404,7 @@ function makePane(useCatalog, aktionen, onCommunity) {
             }, 'release-tab'),
             jsx('span', {
               className: 'ml-auto self-center pb-2 text-[10px] font-mono tracking-wider opacity-50',
-              children: 'v1.3.10'
+              children: 'v1.3.11'
             }, 'version')
           ]
         }, 'tabs'),

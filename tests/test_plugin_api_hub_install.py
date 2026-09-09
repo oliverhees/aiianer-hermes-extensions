@@ -43,6 +43,10 @@ class HubRootInstallTest(unittest.TestCase):
             api.PLUGINS = hermes_home / "plugins"
             api.STATE_DIR = hermes_home / "aiianer"
 
+            legacy_desktop = hermes_home / "desktop-plugins" / "aiianer-hermes-extensions"
+            legacy_desktop.mkdir(parents=True)
+            (legacy_desktop / "plugin.js").write_text("// stale desktop\n")
+
             api._install_hub_from_root(source)
 
             self.assertEqual(
@@ -55,10 +59,8 @@ class HubRootInstallTest(unittest.TestCase):
                 (hermes_home / "plugins" / "aiianer-hub" / "desktop" / "plugin.js").read_text(),
                 expected_desktop,
             )
-            self.assertEqual(
-                (hermes_home / "desktop-plugins" / "aiianer-hermes-extensions" / "plugin.js").read_text(),
-                expected_desktop,
-            )
+            self.assertFalse(legacy_desktop.exists())
+            self.assertFalse((hermes_home / "plugins" / "aiianer-hub" / "desktop" / "plugin.js.neu").exists())
             self.assertTrue((hermes_home / "hooks" / "aiianer-guard" / "handler.py").is_file())
 
 
