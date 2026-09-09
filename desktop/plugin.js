@@ -85,7 +85,7 @@ function ReleaseNotes() {
       jsxs('div', {
         children: [
           jsx('p', { className: 'text-xs uppercase tracking-widest text-accent', children: 'Release Notes' }, 'eyebrow'),
-          jsx('h2', { className: 'mt-1 text-xl font-semibold', children: 'AIIANER Marktplatz v1.3.1' }, 'title'),
+          jsx('h2', { className: 'mt-1 text-xl font-semibold', children: 'AIIANER Hub v1.3.2' }, 'title'),
           jsx('p', { className: 'mt-1 text-sm opacity-65', children: 'Die Änderungen dieser Version auf einen Blick.' }, 'intro')
         ]
       }, 'heading'),
@@ -114,7 +114,7 @@ function ReleaseNotes() {
 function makePane(useCatalog, aktionen, onCommunity) {
   return function Pane() {
     const t = usePluginI18n(ID)
-    const { data, isLoading, error, refetch } = useCatalog()
+    const { data, isLoading, isFetching, error, refetch } = useCatalog()
 
     // laufend[id] = 'install' | 'uninstall'; ergebnis[id] = Antwort oder Fehler.
     // Ohne den laufend-Zustand wirkt der Klick stumm, bis der Refetch kommt -
@@ -122,6 +122,21 @@ function makePane(useCatalog, aktionen, onCommunity) {
     const [laufend, setLaufend] = useState({})
     const [ergebnis, setErgebnis] = useState({})
     const [aktiverTab, setAktiverTab] = useState('marketplace')
+
+    const updatesPruefen = () => {
+      void refetch().then(result => {
+        const anzahl = (result.data?.components || []).filter(c => c.status === 'outdated').length
+        host.notify({
+          kind: anzahl ? 'warning' : 'success',
+          title: anzahl ? 'Updates verfügbar' : 'Alles aktuell',
+          message: anzahl
+            ? `${anzahl} ${anzahl === 1 ? 'Erweiterung wartet' : 'Erweiterungen warten'} auf ein Update.`
+            : 'Keine Updates für deine AIIANER-Erweiterungen gefunden.'
+        })
+      }).catch(error => {
+        host.notifyError(error)
+      })
+    }
 
     const ausfuehren = (id, aktion) => {
       setLaufend(v => ({ ...v, [id]: aktion }))
@@ -332,6 +347,12 @@ function makePane(useCatalog, aktionen, onCommunity) {
         aktiverTab === 'release-notes' ? jsx(ReleaseNotes, {}, 'release-notes') : jsxs('div', {
           className: 'space-y-4',
           children: [
+            jsx('button', {
+              className: 'justify-self-start rounded-md border border-accent/60 bg-accent/10 px-3 py-2 text-xs font-medium text-accent transition hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-50',
+              disabled: isFetching,
+              onClick: updatesPruefen,
+              children: isFetching ? 'Prüfe Updates ...' : 'Updates prüfen'
+            }, 'check-updates'),
             jsxs('div', {
               children: [
                 jsx('p', { className: 'text-xs uppercase tracking-widest text-accent', children: 'Dein Marktplatz' }, 'eyebrow'),
@@ -453,7 +474,7 @@ export default {
       id: 'aiianer-nav',
       area: 'sidebar.nav',
       order: 60,
-      data: { codicon: 'package', label: 'AIIANER', path: '/aiianer' }
+      data: { codicon: 'package', label: 'AIIANER Hub', path: '/aiianer' }
     })
 
     // Ueber die Befehlspalette erreichbar
