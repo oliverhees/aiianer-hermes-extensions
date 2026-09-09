@@ -270,14 +270,10 @@ function makePane(useCatalog, aktionen) {
           installiert,
           total: items.length,
           onCommunity: event => {
-            const hasDesktopBridge = typeof globalThis.window?.hermesDesktop?.openExternal === 'function'
-            if (!hasDesktopBridge) return
             event.preventDefault()
-            Promise.resolve(ctx.os.openExternal('https://aiianer.de'))
-              .then(opened => {
-                if (!opened) globalThis.window.open('https://aiianer.de', '_blank', 'noopener,noreferrer')
-              })
-              .catch(() => globalThis.window.open('https://aiianer.de', '_blank', 'noopener,noreferrer'))
+            const popup = globalThis.window?.open('https://aiianer.de', '_blank', 'noopener,noreferrer')
+            if (popup) return
+            void ctx.os.openExternal('https://aiianer.de')
           }
         }, 'community-hero'),
         jsxs('div', {
