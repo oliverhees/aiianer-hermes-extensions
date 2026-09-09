@@ -130,7 +130,7 @@
           ? h(
               "div",
               { className: "mt-3 rounded border border-amber-600/60 bg-amber-950/20 p-2" },
-              h("p", { className: "text-sm font-medium" }, "Diese Reste liessen sich nicht entfernen:"),
+              h("p", { className: "text-sm font-medium" }, "Diese Reste ließen sich nicht entfernen:"),
               h(
                 "ul",
                 { className: "text-sm text-muted-foreground list-disc pl-5 mt-1" },
@@ -274,22 +274,44 @@
         });
     }
 
+    var installiert = items.filter(function (c) { return c.installed; }).length;
+    var updates = items.filter(function (c) { return c.status === "outdated"; }).length;
+
     return h(
       "div",
-      { className: "p-4 max-w-3xl" },
+      { className: "p-4 max-w-4xl" },
+      h(
+        C.Card,
+        { className: "mb-5 overflow-hidden border-orange-500/40 bg-gradient-to-br from-orange-950/40 via-neutral-900 to-neutral-950" },
+        h(
+          C.CardContent,
+          { className: "p-5 sm:p-6" },
+          h("div", { className: "flex flex-wrap items-center gap-2 text-xs uppercase tracking-widest text-orange-300" },
+            h("span", null, "AIIANER Community"),
+            h(C.Badge, { className: "bg-orange-500/20 text-orange-200" }, "Dein Außenposten für KI")
+          ),
+          h("h1", { className: "mt-3 text-2xl sm:text-3xl font-semibold tracking-tight" }, "KI zum Anwenden, nicht zum Hypen."),
+          h("p", { className: "mt-2 max-w-2xl text-sm sm:text-base text-neutral-200" },
+            "Kurse, Vorlagen, Live-Calls und eine Community, die dir hilft, KI-Mitarbeiter wirklich in deinen Alltag zu bringen. Der Marktplatz ist nur ein Baustein davon."
+          ),
+          h("div", { className: "mt-5 flex flex-wrap items-center gap-3" },
+            h("a", { href: "https://aiianer.de", target: "_blank", rel: "noreferrer", className: "inline-flex items-center rounded-md bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-400" }, "AIIANER Community entdecken ↗"),
+            h("span", { className: "text-xs text-neutral-400" }, "Tutorials, Austausch und Hilfe beim Umsetzen")
+          )
+        )
+      ),
       h(
         "div",
-        { className: "mb-4" },
-        h(
-          "h2",
-          { className: "text-lg font-semibold" },
-          "AIIANER Erweiterungen"
+        { className: "mb-5 flex flex-wrap items-end justify-between gap-3" },
+        h("div", null,
+          h("p", { className: "text-xs uppercase tracking-widest text-orange-300" }, "Dein Marktplatz"),
+          h("h2", { className: "mt-1 text-xl font-semibold" }, "AIIANER Erweiterungen"),
+          h("p", { className: "text-sm text-muted-foreground mt-1" }, "Installieren, aktuell halten und nach Hermes-Updates entspannt bleiben.")
         ),
-        h(
-          "p",
-          { className: "text-sm text-muted-foreground mt-1" },
-          "Deutsche Sprache und die AIIANER-Werkzeuge fuer Hermes. Was hier " +
-            "installiert wird, ueberlebt Hermes-Updates."
+        h("div", { className: "flex gap-2 text-xs text-muted-foreground" },
+          h(C.Badge, null, items.length + " Komponenten"),
+          h(C.Badge, null, installiert + " installiert"),
+          updates ? h(C.Badge, { className: "bg-orange-500/20 text-orange-200" }, updates + " Update" + (updates === 1 ? "" : "s")) : null
         )
       ),
 

@@ -230,10 +230,63 @@ function makePane(useCatalog, aktionen) {
       }, c.id)
     })
 
+    const installiert = items.filter(c => c.installed).length
+    const updates = items.filter(c => c.status === 'outdated').length
+
     return jsxs('div', {
-      className: 'p-3 space-y-3',
+      className: 'p-3 sm:p-4 space-y-4 max-w-5xl',
       children: [
-        jsx('p', { className: 'text-xs opacity-70', children: t('intro') }, 'intro'),
+        jsxs('section', {
+          className: 'rounded-xl border border-orange-500/40 bg-gradient-to-br from-orange-950/50 via-background to-background p-5 sm:p-7 space-y-3',
+          children: [
+            jsxs('div', {
+              className: 'flex flex-wrap items-center gap-2 text-xs uppercase tracking-widest text-orange-300',
+              children: [
+                jsx('span', { children: 'AIIANER Community' }, 'label'),
+                jsx(Badge, { children: 'Dein Außenposten für KI' }, 'badge')
+              ]
+            }, 'eyebrow'),
+            jsx('h1', { className: 'text-2xl sm:text-3xl font-semibold tracking-tight', children: 'KI zum Anwenden, nicht zum Hypen.' }, 'title'),
+            jsx('p', {
+              className: 'max-w-2xl text-sm sm:text-base opacity-80',
+              children: 'Kurse, Vorlagen, Live-Calls und eine Community, die dir hilft, KI-Mitarbeiter wirklich in deinen Alltag zu bringen. Der Marktplatz ist nur ein Baustein davon.'
+            }, 'copy'),
+            jsxs('div', {
+              className: 'flex flex-wrap items-center gap-3 pt-2',
+              children: [
+                jsx('a', {
+                  href: 'https://aiianer.de',
+                  target: '_blank',
+                  rel: 'noreferrer',
+                  className: 'inline-flex items-center rounded-md bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-400',
+                  children: 'AIIANER Community entdecken ↗'
+                }, 'link'),
+                jsx('span', { className: 'text-xs opacity-55', children: 'Tutorials, Austausch und Hilfe beim Umsetzen' }, 'hint')
+              ]
+            }, 'actions')
+          ]
+        }, 'community'),
+        jsxs('div', {
+          className: 'flex flex-wrap items-end justify-between gap-3',
+          children: [
+            jsxs('div', {
+              children: [
+                jsx('p', { className: 'text-xs uppercase tracking-widest text-orange-300', children: 'Dein Marktplatz' }, 'eyebrow'),
+                jsx('h2', { className: 'mt-1 text-xl font-semibold', children: t('title') }, 'title'),
+                jsx('p', { className: 'text-sm opacity-65 mt-1', children: 'Installieren, aktuell halten und nach Hermes-Updates entspannt bleiben.' }, 'copy')
+              ]
+            }, 'heading'),
+            jsxs('div', {
+              className: 'flex gap-2 text-xs opacity-70',
+              children: [
+                jsx(Badge, { children: `${items.length} Komponenten` }, 'count'),
+                jsx(Badge, { children: `${installiert} installiert` }, 'installed'),
+                updates ? jsx(Badge, { children: `${updates} Update${updates === 1 ? '' : 's'}` }, 'updates') : null
+              ]
+            }, 'stats')
+          ]
+        }, 'marketplace'),
+        jsx('p', { className: 'text-xs opacity-65', children: t('intro') }, 'intro'),
         ...karten
       ]
     })
@@ -285,7 +338,7 @@ export default {
         uninstalling: 'Wird entfernt ...',
         doneTitle: 'Fertig. Das ist jetzt zu tun:',
         doneBare: 'Fertig. Hermes neu starten, damit es greift.',
-        warnTitle: 'Diese Reste liessen sich nicht entfernen:',
+        warnTitle: 'Diese Reste ließen sich nicht entfernen:',
         failTitle: 'Das hat nicht geklappt:',
         afterwards: 'Danach nötig:',
         empty: 'Der Katalog ist leer',
