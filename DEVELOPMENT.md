@@ -50,7 +50,7 @@ aiianer-hermes-plugin-marketplace/     <- MAßGEBLICHER CLONE (Wahrheit)
 ├── install.sh                          <- Dispatcher: zeigt/ruft Komponenten-Installer
 ├── README.md                           <- Öffentliches Readme (Endnutzer-Ansicht)
 ├── SECURITY.md                         <- Meldeprozess für Sicherheitslücken
-├── LICENSING.md / LICENSE / NOTICE     <- Dual-Lizenz: AGPL-3.0 + kommerziell
+├── LICENSING.md / LICENSE / NOTICE     <- Open-Core: MIT-Basis, Premium + Services separat
 ├── ARCHITEKTUR-MARKTPLATZ.html         <- Visuelle Architekturdarstellung (Stand: frühe Phase)
 └── extensions/
     ├── aiianer-hub/                    <- DER Marktplatz selbst (Plugin + Wächter)

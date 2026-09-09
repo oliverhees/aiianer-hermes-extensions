@@ -3,7 +3,7 @@
 <p align="center"><strong>Alle AIIANER-Erweiterungen für Hermes Desktop. Eine installierst du mit einem Satz an deinen Hermes.</strong></p>
 
 <p align="center">
-  <a href="#lizenz"><img src="https://img.shields.io/badge/Lizenz-AGPL--3.0%20%2B%20Kommerziell-red" alt="Lizenz" /></a>
+  <a href="#lizenz"><img src="https://img.shields.io/badge/Lizenz-Open--Core%20(MIT%20Basis)-green" alt="Lizenz" /></a>
   <img src="https://img.shields.io/badge/Nur%20f%C3%BCr-Hermes%20Desktop-red" alt="Nur für Hermes" />
   <a href="https://aiianer.de"><img src="https://img.shields.io/badge/Community-AIIANER-black" alt="AIIANER Community" /></a>
 </p>
@@ -98,11 +98,13 @@ Programm-Checkout liegt. Deshalb gilt hier:
 
 ## Lizenz
 
-AIIANER Hermes Extensions ist **dual lizenziert**: **AGPL-3.0** (siehe
-[LICENSE](LICENSE)) für private Nutzung, Selbsthoster, Forschung und
-Copyleft-Projekte. Alternativ eine **kommerzielle Lizenz** für den Einsatz in
-geschlossenen Produkten, Details in [LICENSING.md](LICENSING.md), Anfragen an
-**support@aiianer.de** oder über die [AIIANER Community](https://aiianer.de).
+AIIANER Hermes Extensions folgt einem **Open-Core-Modell**: Die **Basis steht
+unter MIT** (siehe [LICENSE](LICENSE)) und ist damit für private wie
+kommerzielle Nutzung frei, ohne Copyleft. Der Verdienst liegt in
+**Premium-Komponenten im Katalog** (nur für Community-Mitglieder) und in
+**Wartungs- und Supportverträgen**. Details in [LICENSING.md](LICENSING.md),
+Anfragen an **support@aiianer.de** oder über die
+[AIIANER Community](https://aiianer.de).
 
 ## Sicherheit
 

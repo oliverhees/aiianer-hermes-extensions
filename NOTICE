@@ -1,15 +1,17 @@
 AIIANER Hermes Extensions
-Copyright (c) 2026 Oliver Hees aka Aiianer — https://aiianer.de
+Copyright (c) 2026 Oliver Hees aka Aiianer, https://aiianer.de
 
 Dieses Produkt ist Teil des AIIANER-Ökosystems.
 
-Lizenzierung: Dual-Lizenz (AGPL-3.0 / kommerziell) — siehe LICENSE und LICENSING.md.
+Lizenzierung: Open-Core-Modell. Die Basis in diesem Repo steht unter
+MIT-Lizenz (siehe LICENSE und LICENSING.md). Premium-Komponenten im Katalog
+sind separat lizenziert und nur für Community-Mitglieder verfügbar.
 
-Marken: "AIIANER", "Lokyy", "Lokyy Brain", "Datenschleuse" und "Sichtradar"
+Marken: „AIIANER", „Lokyy", „Lokyy Brain", „Datenschleuse" und „Sichtradar"
 sind Kennzeichen von Oliver Hees. Die Code-Lizenz gewährt keine Rechte an
 diesen Namen oder Logos.
 
-"Hermes" ist ein Open-Source-Projekt von Nous Research
+„Hermes" ist ein Open-Source-Projekt von Nous Research
 (github.com/NousResearch/hermes-agent). Die Erweiterungen in diesem Repo sind
 unabhängige Community-Projekte und stehen in keiner offiziellen Verbindung zu
 Nous Research.
