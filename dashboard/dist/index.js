@@ -314,7 +314,7 @@
         "section",
         { className: aktiverTab === "release-notes" ? "mb-5 rounded-xl border border-border bg-card p-4 sm:p-5" : "hidden" },
         h("p", { className: "text-xs uppercase tracking-widest text-accent" }, "Release Notes"),
-        h("h2", { className: "mt-1 text-xl font-semibold" }, "AIIANER Hub v1.3.3"),
+        h("h2", { className: "mt-1 text-xl font-semibold" }, "AIIANER EXTENSION HUB v1.3.4"),
         h("p", { className: "mt-1 text-sm text-muted-foreground" }, "Die Änderungen dieser Version auf einen Blick."),
         h("div", { className: "mt-5 space-y-4 text-sm" },
           h("div", null, h("p", { className: "font-medium" }, "Community-Link"), h("p", { className: "mt-1 text-muted-foreground" }, "Der Community-Link ist jetzt korrekt mit Hermes verdrahtet. Falls der normale Klick nicht öffnet, erklärt der Hinweis direkt am Button den Weg über das Rechtsklick-Menü.")),
@@ -330,7 +330,7 @@
           { className: "mb-5 flex flex-wrap items-end justify-between gap-3" },
           h("div", null,
             h("p", { className: "text-xs uppercase tracking-widest text-accent" }, "Dein Marktplatz"),
-            h("h2", { className: "mt-1 text-xl font-semibold" }, "AIIANER Erweiterungen"),
+            h("h2", { className: "mt-1 text-xl font-semibold" }, "AIIANER EXTENSION HUB"),
             h("p", { className: "text-sm text-muted-foreground mt-1" }, "Installieren, aktuell halten und nach Hermes-Updates entspannt bleiben.")
           ),
           h("div", { className: "flex gap-2 text-xs text-muted-foreground" },

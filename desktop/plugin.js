@@ -85,7 +85,7 @@ function ReleaseNotes() {
       jsxs('div', {
         children: [
           jsx('p', { className: 'text-xs uppercase tracking-widest text-accent', children: 'Release Notes' }, 'eyebrow'),
-          jsx('h2', { className: 'mt-1 text-xl font-semibold', children: 'AIIANER Hub v1.3.3' }, 'title'),
+          jsx('h2', { className: 'mt-1 text-xl font-semibold', children: 'AIIANER EXTENSION HUB v1.3.4' }, 'title'),
           jsx('p', { className: 'mt-1 text-sm opacity-65', children: 'Die Änderungen dieser Version auf einen Blick.' }, 'intro')
         ]
       }, 'heading'),
@@ -379,7 +379,7 @@ function makePane(useCatalog, aktionen, onCommunity) {
                 jsx('p', { className: 'mt-1 text-xs opacity-70', children: 'Öffne die jeweilige Karte und aktualisiere sie mit einem Klick. Danach Hermes neu starten, wenn es angezeigt wird.' }, 'copy')
               ]
             }, 'updates-panel') : null,
-            jsx('p', { className: 'text-sm opacity-70', children: t('intro') }, 'intro'),
+            jsx('p', { className: 'text-sm opacity-70', children: 'Deutsche Sprache und die AIIANER-Werkzeuge. Was du hier installierst, überlebt Hermes-Updates.' }, 'intro'),
             ...karten
           ]
         }, 'marketplace-content')
@@ -396,7 +396,7 @@ export default {
   register(ctx) {
     ctx.i18n.register({
       en: {
-        title: 'AIIANER Extensions',
+        title: 'AIIANER EXTENSION HUB',
         intro: 'German language and the AIIANER tools. What you install here survives Hermes updates.',
         install: 'Install',
         reinstall: 'Reinstall',
@@ -423,7 +423,7 @@ export default {
         lang: 'en'
       },
       de: {
-        title: 'AIIANER Erweiterungen',
+        title: 'AIIANER EXTENSION HUB',
         intro: 'Deutsche Sprache und die AIIANER-Werkzeuge. Was du hier installierst, überlebt Hermes-Updates.',
         install: 'Installieren',
         reinstall: 'Neu einspielen',
@@ -466,7 +466,7 @@ export default {
     // Eigene Seite
     ctx.register({
       id: 'aiianer-route',
-      title: 'AIIANER Erweiterungen',
+      title: 'AIIANER EXTENSION HUB',
       area: 'routes',
       data: { path: '/aiianer' },
       render: Pane
@@ -477,7 +477,7 @@ export default {
       id: 'aiianer-nav',
       area: 'sidebar.nav',
       order: 60,
-      data: { codicon: 'package', label: 'AIIANER Hub', path: '/aiianer' }
+      data: { codicon: 'package', label: 'AIIANER EXTENSION HUB', path: '/aiianer' }
     })
 
     // Ueber die Befehlspalette erreichbar

@@ -5,8 +5,8 @@
   "components": [
     {
       "id": "aiianer-hub",
-      "name": "AIIANER Marktplatz",
-      "version": "1.3.3",
+      "name": "AIIANER EXTENSION HUB",
+      "version": "1.3.4",
       "kind": "plugin",
       "premium": false,
       "summary": "Der Marktplatz selbst. Aktualisiert Oberfläche, Desktop-Plugin, Backend und Wächter in einem Schritt.",
