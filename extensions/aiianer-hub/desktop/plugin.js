@@ -69,7 +69,7 @@ function MarketplaceHero({ updates, installiert, total, onCommunity }) {
 }
 
 // -- Oberflaeche --------------------------------------------------------------
-function makePane(useCatalog, aktionen) {
+function makePane(useCatalog, aktionen, onCommunity) {
   return function Pane() {
     const t = usePluginI18n(ID)
     const { data, isLoading, error, refetch } = useCatalog()
@@ -380,7 +380,11 @@ export default {
     }
 
     const useCatalog = makeUseCatalog(fetchCatalog)
-    const Pane = makePane(useCatalog, aktionen)
+    const onCommunity = event => {
+      event.preventDefault()
+      void ctx.os.openExternal('https://aiianer.de')
+    }
+    const Pane = makePane(useCatalog, aktionen, onCommunity)
 
     // Eigene Seite
     ctx.register({
