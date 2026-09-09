@@ -11,12 +11,15 @@
  * keine JSX-Syntax. Vorbild: das mitgelieferte cron-costs.
  */
 
-// jsx kommt aus React selbst, NICHT aus dem Plugin-SDK. Das mitgelieferte
-// cron-costs macht es genauso. Ein Import von 'jsx' aus @hermes/plugin-sdk
-// laesst das Plugin beim Laden mit "does not provide an export named 'jsx'"
-// scheitern.
-import { useState } from 'react'
-import { jsx, jsxs } from 'react/jsx-runtime'
+// Nur den React-Hauptimport verwenden. Der separate Import von
+// Der separate JSX-Runtime-Import wird von Hermes' dynamischem Plugin-Loader
+// in einen Runtime-Blob umgeschrieben und kann dort bei einzelnen App-Versionen mit
+// "Unexpected token ']'" scheitern. Diese kleinen Wrapper liefern dieselbe
+// React.createElement-Semantik, ohne die fragile Importkante.
+import React, { useState } from 'react'
+
+const jsx = (type, props = {}, key) => React.createElement(type, { ...props, key })
+const jsxs = jsx
 
 import {
   Badge,
