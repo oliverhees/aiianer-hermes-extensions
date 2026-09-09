@@ -85,7 +85,7 @@ function ReleaseNotes() {
       jsxs('div', {
         children: [
           jsx('p', { className: 'text-xs uppercase tracking-widest text-accent', children: 'Release Notes' }, 'eyebrow'),
-          jsx('h2', { className: 'mt-1 text-xl font-semibold', children: 'AIIANER EXTENSION HUB v1.3.5' }, 'title'),
+          jsx('h2', { className: 'mt-1 text-xl font-semibold', children: 'AIIANER EXTENSION HUB v1.3.6' }, 'title'),
           jsx('p', { className: 'mt-1 text-sm opacity-65', children: 'Die Änderungen dieser Version auf einen Blick.' }, 'intro')
         ]
       }, 'heading'),
@@ -148,6 +148,13 @@ function makePane(useCatalog, aktionen, onCommunity) {
         .then(
           antwort => {
             setErgebnis(v => ({ ...v, [id]: { ok: true, ...antwort } }))
+            if (aktion === 'install' && (antwort.nextSteps || []).some(step => /neu starten|restart/i.test(step))) {
+              host.notify({
+                kind: 'warning',
+                title: 'Hermes-Neustart erforderlich',
+                message: 'Das Update ist installiert. Bitte Hermes komplett beenden und neu starten.'
+              })
+            }
             // Der Refetch haengt BEWUSST in einer eigenen Kette. Steckte er im
             // selben .then, landete sein Fehler im .catch unten und wuerde eine
             // geglueckte Installation als Fehlschlag anzeigen - samt Verlust
