@@ -444,7 +444,7 @@ export default {
       title: 'AIIANER Erweiterungen',
       area: 'routes',
       data: { path: '/aiianer' },
-      render: () => jsx(Pane, {})
+      render: Pane
     })
 
     // Eintrag in der Seitenleiste, der die Seite oeffnet
