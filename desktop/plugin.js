@@ -11,17 +11,17 @@
  * keine JSX-Syntax. Vorbild: das mitgelieferte cron-costs.
  */
 
-// Nur den React-Hauptimport verwenden. Der separate Import von
-// Der separate JSX-Runtime-Import wird von Hermes' dynamischem Plugin-Loader
-// in einen Runtime-Blob umgeschrieben und kann dort bei einzelnen App-Versionen mit
-// "Unexpected token ']'" scheitern. Diese kleinen Wrapper liefern dieselbe
-// React.createElement-Semantik, ohne die fragile Importkante.
-import React, { useState } from 'react'
+// Keine ESM-Imports: Hermes setzt diese Namespaces vor dem Plugin-Import als
+// Runtime-Globals. So muss der Loader weder React noch das SDK in Blob-Shims
+// umschreiben — genau dort entstand der Fehler "Unexpected token ']'".
+const ReactModule = globalThis.__HERMES_REACT__
+const React = ReactModule.default ?? ReactModule
+const { useState } = ReactModule
 
 const jsx = (type, props = {}, key) => React.createElement(type, { ...props, key })
 const jsxs = jsx
 
-import {
+const {
   Badge,
   cn,
   EmptyState,
@@ -30,7 +30,7 @@ import {
   Skeleton,
   useQuery,
   usePluginI18n
-} from '@hermes/plugin-sdk'
+} = globalThis.__HERMES_PLUGIN_SDK__
 
 const ID = 'aiianer-hub'
 
@@ -345,19 +345,17 @@ function makePane(useCatalog, aktionen, onCommunity) {
                 jsx(Badge, { children: `${installiert} installiert` }, 'installed'),
                 updates ? jsx(Badge, { children: `${updates} Update${updates === 1 ? '' : 's'}` }, 'updates') : null
               ]
-            }, 'stats')
-          ]
-        }, 'marketplace-heading'),
-        updates ? jsxs('section', {
-          className: 'rounded-2xl border border-accent/30 bg-accent/10 p-4 sm:p-5',
-          children: [
-            jsx('p', { className: 'text-xs uppercase tracking-widest text-accent', children: 'Updates im Außenposten' }, 'eyebrow'),
-            jsx('p', { className: 'mt-1 text-sm font-medium', children: updates === 1 ? 'Eine Erweiterung wartet auf ihr Update.' : `${updates} Erweiterungen warten auf ihr Update.` }, 'title'),
-            jsx('p', { className: 'mt-1 text-xs opacity-70', children: 'Öffne die jeweilige Karte und aktualisiere sie mit einem Klick. Danach Hermes neu starten, wenn es angezeigt wird.' }, 'copy')
-          ]
-        }, 'updates-panel') : null,
-        jsx('p', { className: 'text-sm opacity-70', children: t('intro') }, 'intro'),
-        ...karten
+            }, 'stats'),
+            updates ? jsxs('section', {
+              className: 'rounded-2xl border border-accent/30 bg-accent/10 p-4 sm:p-5',
+              children: [
+                jsx('p', { className: 'text-xs uppercase tracking-widest text-accent', children: 'Updates im Außenposten' }, 'eyebrow'),
+                jsx('p', { className: 'mt-1 text-sm font-medium', children: updates === 1 ? 'Eine Erweiterung wartet auf ihr Update.' : `${updates} Erweiterungen warten auf ihr Update.` }, 'title'),
+                jsx('p', { className: 'mt-1 text-xs opacity-70', children: 'Öffne die jeweilige Karte und aktualisiere sie mit einem Klick. Danach Hermes neu starten, wenn es angezeigt wird.' }, 'copy')
+              ]
+            }, 'updates-panel') : null,
+            jsx('p', { className: 'text-sm opacity-70', children: t('intro') }, 'intro'),
+            ...karten
           ]
         }, 'marketplace-content')
       ]
