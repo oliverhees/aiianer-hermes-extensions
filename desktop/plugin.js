@@ -16,7 +16,7 @@
 // umschreiben — genau dort entstand der Fehler "Unexpected token ']'".
 const ReactModule = globalThis.__HERMES_REACT__
 const React = ReactModule.default ?? ReactModule
-const { useState } = ReactModule
+const { useEffect, useState } = ReactModule
 
 const jsx = (type, props = {}, key) => React.createElement(type, { ...props, key })
 const jsxs = jsx
@@ -85,7 +85,7 @@ function ReleaseNotes() {
       jsxs('div', {
         children: [
           jsx('p', { className: 'text-xs uppercase tracking-widest text-accent', children: 'Release Notes' }, 'eyebrow'),
-          jsx('h2', { className: 'mt-1 text-xl font-semibold', children: 'AIIANER Hub v1.3.2' }, 'title'),
+          jsx('h2', { className: 'mt-1 text-xl font-semibold', children: 'AIIANER Hub v1.3.3' }, 'title'),
           jsx('p', { className: 'mt-1 text-sm opacity-65', children: 'Die Änderungen dieser Version auf einen Blick.' }, 'intro')
         ]
       }, 'heading'),
@@ -123,17 +123,20 @@ function makePane(useCatalog, aktionen, onCommunity) {
     const [ergebnis, setErgebnis] = useState({})
     const [aktiverTab, setAktiverTab] = useState('marketplace')
 
-    const updatesPruefen = () => {
-      void refetch().then(result => {
-        const anzahl = (result.data?.components || []).filter(c => c.status === 'outdated').length
+    useEffect(() => {
+      const anzahl = (data?.components || []).filter(c => c.status === 'outdated').length
+
+      if (anzahl) {
         host.notify({
-          kind: anzahl ? 'warning' : 'success',
-          title: anzahl ? 'Updates verfügbar' : 'Alles aktuell',
-          message: anzahl
-            ? `${anzahl} ${anzahl === 1 ? 'Erweiterung wartet' : 'Erweiterungen warten'} auf ein Update.`
-            : 'Keine Updates für deine AIIANER-Erweiterungen gefunden.'
+          kind: 'warning',
+          title: 'Updates verfügbar',
+          message: `${anzahl} ${anzahl === 1 ? 'Erweiterung wartet' : 'Erweiterungen warten'} auf ein Update.`
         })
-      }).catch(error => {
+      }
+    }, [data])
+
+    const updatesPruefen = () => {
+      void refetch().catch(error => {
         host.notifyError(error)
       })
     }
