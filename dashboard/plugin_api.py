@@ -302,6 +302,40 @@ def _load_catalog() -> dict:
         return json.loads(LOCAL_CATALOG.read_text())
 
 
+def _install_hub_from_root(source: Path) -> None:
+    """Installiert den Marktplatz aus dem Root eines Hybrid-Git-Plugins.
+
+    Der Hub ist keine Erweiterung unter ``extensions/aiianer-hub`` mehr.
+    Das war absichtlich entfernt worden, weil zwei Kataloge sonst gegeneinander
+    arbeiteten. Beim Selbst-Update kommen die Dateien daher direkt vom
+    heruntergeladenen Repository-Root in die drei Hermes-Ziele.
+    """
+    agent_target = PLUGINS / "aiianer-hub"
+    desktop_target = HERMES_HOME / "desktop-plugins" / "aiianer-hermes-extensions"
+    hook_target = HERMES_HOME / "hooks" / "aiianer-guard"
+    files = (
+        ("plugin.yaml", agent_target / "plugin.yaml"),
+        ("__init__.py", agent_target / "__init__.py"),
+        ("catalog.json", agent_target / "catalog.json"),
+        ("guard_check.py", agent_target / "guard_check.py"),
+        ("dashboard/manifest.json", agent_target / "dashboard" / "manifest.json"),
+        ("dashboard/plugin_api.py", agent_target / "dashboard" / "plugin_api.py"),
+        ("dashboard/dist/index.js", agent_target / "dashboard" / "dist" / "index.js"),
+        ("desktop/plugin.js", desktop_target / "plugin.js"),
+        ("guard/HOOK.yaml", hook_target / "HOOK.yaml"),
+        ("guard/handler.py", hook_target / "handler.py"),
+    )
+    missing = [relative for relative, _ in files if not (source / relative).is_file()]
+    if missing:
+        raise HTTPException(
+            status_code=500,
+            detail="Der heruntergeladene Hub ist unvollständig: " + ", ".join(missing),
+        )
+    for relative, target in files:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source / relative, target)
+
+
 # ---------------------------------------------------------------- Routen
 
 @router.get("/catalog")
@@ -379,36 +413,42 @@ async def install(body: dict) -> dict:
 
     with tempfile.TemporaryDirectory() as tmp:
         root = _download(tmp)
-        src = root / "extensions" / comp_id
-        if not src.is_dir():
-            raise HTTPException(
-                status_code=500, detail=f"{comp_id} fehlt im heruntergeladenen Repo"
+        install_log: list[str]
+        if comp_id == "aiianer-hub":
+            _install_hub_from_root(root)
+            install_log = ["AIIANER EXTENSION HUB aus dem Repository-Root aktualisiert"]
+        else:
+            src = root / "extensions" / comp_id
+            if not src.is_dir():
+                raise HTTPException(
+                    status_code=500, detail=f"{comp_id} fehlt im heruntergeladenen Repo"
+                )
+            installer = src / "install.sh"
+            if not installer.is_file():
+                raise HTTPException(status_code=500, detail=f"{comp_id} hat kein install.sh")
+            os.chmod(installer, 0o755)
+            proc = subprocess.run(
+                ["bash", str(installer)],
+                capture_output=True,
+                text=True,
+                timeout=180,
+                cwd=str(src),
             )
-        installer = src / "install.sh"
-        if not installer.is_file():
-            raise HTTPException(status_code=500, detail=f"{comp_id} hat kein install.sh")
-        os.chmod(installer, 0o755)
-        proc = subprocess.run(
-            ["bash", str(installer)],
-            capture_output=True,
-            text=True,
-            timeout=180,
-            cwd=str(src),
-        )
-        if proc.returncode != 0:
-            raise HTTPException(
-                status_code=500,
-                detail=(proc.stderr or proc.stdout or "Installation fehlgeschlagen")[-800:],
-            )
+            if proc.returncode != 0:
+                raise HTTPException(
+                    status_code=500,
+                    detail=(proc.stderr or proc.stdout or "Installation fehlgeschlagen")[-800:],
+                )
+            install_log = [z for z in (proc.stdout or "").splitlines() if z.strip()][-12:]
 
-        # Sprachdatei zusaetzlich als Quelle sichern, damit der Waechter sie
-        # nach einem Hermes-Update erneut einspielen kann.
-        if comp_id in ("german-language", "bot-mode-german", "group-chat-limits"):
-            STATE_DIR.mkdir(parents=True, exist_ok=True)
-            for name in ("de.ts", "apply-de.py", "de-bots.ts", "apply-bots-de.py",
-                         "aiianer-group-limits.ts", "apply-limits.py"):
-                if (src / name).is_file():
-                    shutil.copy2(src / name, STATE_DIR / name)
+            # Sprachdatei zusaetzlich als Quelle sichern, damit der Waechter sie
+            # nach einem Hermes-Update erneut einspielen kann.
+            if comp_id in ("german-language", "bot-mode-german", "group-chat-limits"):
+                STATE_DIR.mkdir(parents=True, exist_ok=True)
+                for name in ("de.ts", "apply-de.py", "de-bots.ts", "apply-bots-de.py",
+                             "aiianer-group-limits.ts", "apply-limits.py"):
+                    if (src / name).is_file():
+                        shutil.copy2(src / name, STATE_DIR / name)
 
     with _state_lock():
         state = _read_state()
@@ -421,7 +461,7 @@ async def install(body: dict) -> dict:
         "action": "update" if vorher else "install",
         "version": entry["version"],
         "previousVersion": vorher,
-        "log": [z for z in (proc.stdout or "").splitlines() if z.strip()][-12:],
+        "log": install_log,
         "nextSteps": _steps(comp_id, "install", entry),
     }
 

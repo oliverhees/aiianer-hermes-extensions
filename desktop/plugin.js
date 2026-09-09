@@ -85,7 +85,7 @@ function ReleaseNotes() {
       jsxs('div', {
         children: [
           jsx('p', { className: 'text-xs uppercase tracking-widest text-accent', children: 'Release Notes' }, 'eyebrow'),
-          jsx('h2', { className: 'mt-1 text-xl font-semibold', children: 'AIIANER EXTENSION HUB v1.3.8' }, 'title'),
+          jsx('h2', { className: 'mt-1 text-xl font-semibold', children: 'AIIANER EXTENSION HUB v1.3.9' }, 'title'),
           jsx('p', { className: 'mt-1 text-sm opacity-65', children: 'Die Änderungen dieser Version auf einen Blick.' }, 'intro')
         ]
       }, 'heading'),
@@ -377,7 +377,7 @@ function makePane(useCatalog, aktionen, onCommunity) {
             }, 'release-tab'),
             jsx('span', {
               className: 'ml-auto self-center pb-2 text-[10px] font-mono tracking-wider opacity-50',
-              children: 'v1.3.8'
+              children: 'v1.3.9'
             }, 'version')
           ]
         }, 'tabs'),
@@ -426,31 +426,28 @@ export default {
   register(ctx) {
     ctx.i18n.register({
       en: {
+        // Der Hub ist bewusst deutschsprachig. Dieser Fallback greift, wenn
+        // Hermes selbst englisch läuft, und verhindert eine Mischoberfläche.
         title: 'AIIANER EXTENSION HUB',
-        intro: 'German language and the AIIANER tools. What you install here survives Hermes updates.',
-        install: 'Install',
-        reinstall: 'Reinstall',
-        uninstall: 'Uninstall',
-        updateTo: v => `Update to v${v}`,
-        installedIs: v => `installed: v${v}`,
-        installing: 'Installing, please wait...',
-        uninstalling: 'Removing...',
-        doneTitle: 'Done. What to do next:',
-        doneBare: 'Done. Restart Hermes to apply it.',
-        warnTitle: 'Some leftovers could not be removed:',
-        failTitle: 'That did not work:',
-        afterwards: 'Afterwards:',
-        empty: 'Catalog is empty',
-        errTitle: 'Could not load the catalog',
-        // Geschachtelt, NICHT flach mit Punkt im Schluessel: resolvePath in
-        // i18n/runtime.ts laeuft den Punktpfad durch einen verschachtelten
-        // Baum. Ein flacher Schluessel 'status.missing' wird nie gefunden und
-        // translateFrom gibt dann den Schluessel selbst zurueck - im Badge
-        // stand woertlich "status.missing".
-        status: { current: 'current', outdated: 'update available', missing: 'not installed', unavailable: 'not available' },
-        unavailTitle: 'Cannot be installed right now:',
-        unavailableAction: 'Not available on this system',
-        lang: 'en'
+        intro: 'Deutsche Sprache und die AIIANER-Werkzeuge. Was du hier installierst, überlebt Hermes-Updates.',
+        install: 'Installieren',
+        reinstall: 'Neu einspielen',
+        uninstall: 'Deinstallieren',
+        updateTo: v => `Auf v${v} aktualisieren`,
+        installedIs: v => `installiert: v${v}`,
+        installing: 'Wird installiert, einen Moment ...',
+        uninstalling: 'Wird entfernt ...',
+        doneTitle: 'Fertig. Das ist jetzt zu tun:',
+        doneBare: 'Fertig. Hermes neu starten, damit es greift.',
+        warnTitle: 'Diese Reste ließen sich nicht entfernen:',
+        failTitle: 'Das hat nicht geklappt:',
+        afterwards: 'Danach nötig:',
+        empty: 'Der Katalog ist leer',
+        errTitle: 'Katalog konnte nicht geladen werden',
+        status: { current: 'aktuell', outdated: 'Update verfügbar', missing: 'nicht installiert', unavailable: 'zurzeit nicht möglich' },
+        unavailTitle: 'Lässt sich gerade nicht installieren:',
+        unavailableAction: 'Auf diesem System nicht verfügbar',
+        lang: 'de'
       },
       de: {
         title: 'AIIANER EXTENSION HUB',
