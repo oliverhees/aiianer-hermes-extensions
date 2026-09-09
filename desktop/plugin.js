@@ -85,7 +85,7 @@ function ReleaseNotes() {
       jsxs('div', {
         children: [
           jsx('p', { className: 'text-xs uppercase tracking-widest text-accent', children: 'Release Notes' }, 'eyebrow'),
-          jsx('h2', { className: 'mt-1 text-xl font-semibold', children: 'AIIANER EXTENSION HUB v1.3.6' }, 'title'),
+          jsx('h2', { className: 'mt-1 text-xl font-semibold', children: 'AIIANER EXTENSION HUB v1.3.8' }, 'title'),
           jsx('p', { className: 'mt-1 text-sm opacity-65', children: 'Die Änderungen dieser Version auf einen Blick.' }, 'intro')
         ]
       }, 'heading'),
@@ -123,20 +123,39 @@ function makePane(useCatalog, aktionen, onCommunity) {
     const [ergebnis, setErgebnis] = useState({})
     const [aktiverTab, setAktiverTab] = useState('marketplace')
 
-    useEffect(() => {
-      const anzahl = (data?.components || []).filter(c => c.status === 'outdated').length
-
-      if (anzahl) {
+    const updateNotification = anzahl => {
+      if (!anzahl) {
         host.notify({
-          kind: 'warning',
-          title: 'Updates verfügbar',
-          message: `${anzahl} ${anzahl === 1 ? 'Erweiterung wartet' : 'Erweiterungen warten'} auf ein Update.`
+          id: 'aiianer-updates',
+          kind: 'success',
+          title: 'AIIANER EXTENSION HUB',
+          message: 'Alles aktuell. Es gibt keine verfügbaren Updates.',
+          durationMs: 5000,
+          placement: 'default'
         })
+        return
       }
+
+      host.notify({
+        id: 'aiianer-updates',
+        kind: 'warning',
+        title: 'Updates verfügbar',
+        message: `${anzahl} ${anzahl === 1 ? 'Erweiterung wartet' : 'Erweiterungen warten'} auf ein Update.`,
+        detail: 'Öffne den AIIANER EXTENSION HUB und aktualisiere die rot markierten Buttons.',
+        durationMs: 0,
+        placement: 'default',
+        action: { label: 'Hub öffnen', onClick: () => host.navigate('/aiianer') }
+      })
+    }
+
+    useEffect(() => {
+      if (data) updateNotification((data.components || []).filter(c => c.status === 'outdated').length)
     }, [data])
 
     const updatesPruefen = () => {
-      void refetch().catch(error => {
+      void refetch().then(result => {
+        updateNotification((result.data?.components || []).filter(c => c.status === 'outdated').length)
+      }).catch(error => {
         host.notifyError(error)
       })
     }
@@ -358,7 +377,7 @@ function makePane(useCatalog, aktionen, onCommunity) {
             }, 'release-tab'),
             jsx('span', {
               className: 'ml-auto self-center pb-2 text-[10px] font-mono tracking-wider opacity-50',
-              children: 'v1.3.7'
+              children: 'v1.3.8'
             }, 'version')
           ]
         }, 'tabs'),
@@ -386,14 +405,6 @@ function makePane(useCatalog, aktionen, onCommunity) {
                 updates ? jsx(Badge, { children: `${updates} Update${updates === 1 ? '' : 's'}` }, 'updates') : null
               ]
             }, 'stats'),
-            updates ? jsxs('section', {
-              className: 'rounded-2xl border border-accent/30 bg-accent/10 p-4 sm:p-5',
-              children: [
-                jsx('p', { className: 'text-xs uppercase tracking-widest text-accent', children: 'Updates im Außenposten' }, 'eyebrow'),
-                jsx('p', { className: 'mt-1 text-sm font-medium', children: updates === 1 ? 'Eine Erweiterung wartet auf ihr Update.' : `${updates} Erweiterungen warten auf ihr Update.` }, 'title'),
-                jsx('p', { className: 'mt-1 text-xs opacity-70', children: 'Öffne die jeweilige Karte und aktualisiere sie mit einem Klick. Danach Hermes neu starten, wenn es angezeigt wird.' }, 'copy')
-              ]
-            }, 'updates-panel') : null,
             jsx('p', { className: 'text-sm opacity-70', children: 'Deutsche Sprache und die AIIANER-Werkzeuge. Was du hier installierst, überlebt Hermes-Updates.' }, 'intro'),
             ...karten
           ]

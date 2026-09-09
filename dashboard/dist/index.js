@@ -314,7 +314,7 @@
         "section",
         { className: aktiverTab === "release-notes" ? "mb-5 rounded-xl border border-border bg-card p-4 sm:p-5" : "hidden" },
         h("p", { className: "text-xs uppercase tracking-widest text-accent" }, "Release Notes"),
-        h("h2", { className: "mt-1 text-xl font-semibold" }, "AIIANER EXTENSION HUB v1.3.7"),
+        h("h2", { className: "mt-1 text-xl font-semibold" }, "AIIANER EXTENSION HUB v1.3.8"),
         h("p", { className: "mt-1 text-sm text-muted-foreground" }, "Die Änderungen dieser Version auf einen Blick."),
         h("div", { className: "mt-5 space-y-4 text-sm" },
           h("div", null, h("p", { className: "font-medium" }, "Community-Link"), h("p", { className: "mt-1 text-muted-foreground" }, "Der Community-Link ist jetzt korrekt mit Hermes verdrahtet. Falls der normale Klick nicht öffnet, erklärt der Hinweis direkt am Button den Weg über das Rechtsklick-Menü.")),
