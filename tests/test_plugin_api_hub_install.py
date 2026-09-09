@@ -50,8 +50,14 @@ class HubRootInstallTest(unittest.TestCase):
                 "name: aiianer-hub\nversion: 9.9.9\n",
             )
             self.assertTrue((hermes_home / "plugins" / "aiianer-hub" / "dashboard" / "plugin_api.py").is_file())
-            self.assertTrue(
-                (hermes_home / "desktop-plugins" / "aiianer-hermes-extensions" / "plugin.js").is_file()
+            expected_desktop = (source / "desktop" / "plugin.js").read_text()
+            self.assertEqual(
+                (hermes_home / "plugins" / "aiianer-hub" / "desktop" / "plugin.js").read_text(),
+                expected_desktop,
+            )
+            self.assertEqual(
+                (hermes_home / "desktop-plugins" / "aiianer-hermes-extensions" / "plugin.js").read_text(),
+                expected_desktop,
             )
             self.assertTrue((hermes_home / "hooks" / "aiianer-guard" / "handler.py").is_file())
 

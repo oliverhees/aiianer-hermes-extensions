@@ -77,15 +77,15 @@ function MarketplaceHero({ updates, installiert, total, onCommunity }) {
   })
 }
 
-// -- Release Notes ------------------------------------------------------------
-function ReleaseNotes() {
+// -- Versionshinweise ---------------------------------------------------------
+function Versionshinweise() {
   return jsxs('section', {
     className: 'rounded-xl border border-white/10 bg-black/10 p-4 sm:p-5 space-y-5',
     children: [
       jsxs('div', {
         children: [
-          jsx('p', { className: 'text-xs uppercase tracking-widest text-accent', children: 'Release Notes' }, 'eyebrow'),
-          jsx('h2', { className: 'mt-1 text-xl font-semibold', children: 'AIIANER EXTENSION HUB v1.3.9' }, 'title'),
+          jsx('p', { className: 'text-xs uppercase tracking-widest text-accent', children: 'Versionshinweise' }, 'eyebrow'),
+          jsx('h2', { className: 'mt-1 text-xl font-semibold', children: 'AIIANER EXTENSION HUB v1.3.10' }, 'title'),
           jsx('p', { className: 'mt-1 text-sm opacity-65', children: 'Die Änderungen dieser Version auf einen Blick.' }, 'intro')
         ]
       }, 'heading'),
@@ -373,15 +373,15 @@ function makePane(useCatalog, aktionen, onCommunity) {
             jsx('button', {
               className: aktiverTab === 'release-notes' ? 'border-b-2 border-accent px-3 py-2 text-xs font-medium text-accent' : 'px-3 py-2 text-xs opacity-60 hover:opacity-100',
               onClick: () => setAktiverTab('release-notes'),
-              children: 'Release Notes'
+              children: 'Versionshinweise'
             }, 'release-tab'),
             jsx('span', {
               className: 'ml-auto self-center pb-2 text-[10px] font-mono tracking-wider opacity-50',
-              children: 'v1.3.9'
+              children: 'v1.3.10'
             }, 'version')
           ]
         }, 'tabs'),
-        aktiverTab === 'release-notes' ? jsx(ReleaseNotes, {}, 'release-notes') : jsxs('div', {
+        aktiverTab === 'release-notes' ? jsx(Versionshinweise, {}, 'release-notes') : jsxs('div', {
           className: 'space-y-4',
           children: [
             jsx('button', {

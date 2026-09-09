@@ -308,13 +308,13 @@
         "div",
         { className: "mb-5 flex gap-2 border-b border-border" },
         h("button", { className: aktiverTab === "marketplace" ? "border-b-2 border-accent px-3 py-2 text-xs font-medium text-accent" : "px-3 py-2 text-xs text-muted-foreground hover:text-foreground", onClick: function () { setAktiverTab("marketplace"); } }, "Marktplatz"),
-        h("button", { className: aktiverTab === "release-notes" ? "border-b-2 border-accent px-3 py-2 text-xs font-medium text-accent" : "px-3 py-2 text-xs text-muted-foreground hover:text-foreground", onClick: function () { setAktiverTab("release-notes"); } }, "Release Notes")
+        h("button", { className: aktiverTab === "release-notes" ? "border-b-2 border-accent px-3 py-2 text-xs font-medium text-accent" : "px-3 py-2 text-xs text-muted-foreground hover:text-foreground", onClick: function () { setAktiverTab("release-notes"); } }, "Versionshinweise")
       ),
       h(
         "section",
         { className: aktiverTab === "release-notes" ? "mb-5 rounded-xl border border-border bg-card p-4 sm:p-5" : "hidden" },
-        h("p", { className: "text-xs uppercase tracking-widest text-accent" }, "Release Notes"),
-        h("h2", { className: "mt-1 text-xl font-semibold" }, "AIIANER EXTENSION HUB v1.3.9"),
+        h("p", { className: "text-xs uppercase tracking-widest text-accent" }, "Versionshinweise"),
+        h("h2", { className: "mt-1 text-xl font-semibold" }, "AIIANER EXTENSION HUB v1.3.10"),
         h("p", { className: "mt-1 text-sm text-muted-foreground" }, "Die Änderungen dieser Version auf einen Blick."),
         h("div", { className: "mt-5 space-y-4 text-sm" },
           h("div", null, h("p", { className: "font-medium" }, "Community-Link"), h("p", { className: "mt-1 text-muted-foreground" }, "Der Community-Link ist jetzt korrekt mit Hermes verdrahtet. Falls der normale Klick nicht öffnet, erklärt der Hinweis direkt am Button den Weg über das Rechtsklick-Menü.")),

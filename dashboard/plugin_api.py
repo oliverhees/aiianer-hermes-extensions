@@ -321,6 +321,9 @@ def _install_hub_from_root(source: Path) -> None:
         ("dashboard/manifest.json", agent_target / "dashboard" / "manifest.json"),
         ("dashboard/plugin_api.py", agent_target / "dashboard" / "plugin_api.py"),
         ("dashboard/dist/index.js", agent_target / "dashboard" / "dist" / "index.js"),
+        # Hermes lädt Hybrid-Plugins sowohl über die Unified-Tür als auch über
+        # desktop-plugins. Beide müssen denselben deutschen UI-Stand tragen.
+        ("desktop/plugin.js", agent_target / "desktop" / "plugin.js"),
         ("desktop/plugin.js", desktop_target / "plugin.js"),
         ("guard/HOOK.yaml", hook_target / "HOOK.yaml"),
         ("guard/handler.py", hook_target / "handler.py"),
