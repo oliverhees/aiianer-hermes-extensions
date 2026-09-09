@@ -18,24 +18,26 @@ und die Sprachdatei nach jedem Update erneut einspielt. Du merkst davon nichts.
 
 ## Installation
 
-**Der einfache Weg.** Kopiere den Satz aus [PROMPT.md](PROMPT.md) in deinen
-Hermes-Chat. Hermes hat Terminal-Zugriff und installiert sich das selbst.
+Installiere das Plugin direkt in Hermes über **Settings → Plugins → Install from Git**.
 
-**Oder im Terminal.** Welcher Befehl gilt, hängt vom System ab.
+Repository:
 
-Linux, macOS und Windows mit WSL:
-
-```bash
-curl -sL https://raw.githubusercontent.com/oliverhees/aiianer-hermes-extensions/main/install.sh | bash -s aiianer-hub
+```text
+https://github.com/oliverhees/aiianer-hermes-extensions
 ```
 
-Windows nativ, also in PowerShell ohne WSL:
+Hermes erkennt das Root-Manifest als Hybrid-Plugin und installiert Dashboard,
+Desktop-Oberfläche, Backend und Wächter gemeinsam. Danach **Hermes komplett neu
+starten**.
 
-```powershell
-irm https://raw.githubusercontent.com/oliverhees/aiianer-hermes-extensions/main/extensions/aiianer-hub/install.ps1 | iex
-```
+## Release Notes
 
-Danach **Hermes komplett neu starten**.
+### v1.3.0
+
+- Community-Hinweis unter dem Button, inklusive Rechtsklick-Weg zum externen Browser.
+- Marketplace-Oberfläche auf die aktiven Hermes-Theme-Farben umgestellt.
+- Header erklärt Hermes als Basis des AIIANER-KI-Betriebssystems.
+- Neuer Tab **Release Notes** in Desktop-App und Web-Dashboard.
 
 ## Marktplatz aktualisieren
 

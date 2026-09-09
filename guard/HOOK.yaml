@@ -1,0 +1,6 @@
+name: aiianer-guard
+description: >
+  Prueft beim Start des Gateways, ob die AIIANER-Erweiterungen ein
+  Hermes-Update ueberlebt haben, und spielt Fehlendes erneut ein.
+events:
+  - gateway:startup

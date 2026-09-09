@@ -1,6 +1,6 @@
 <h1 align="center">AIIANER Hermes Extensions</h1>
 
-<p align="center"><strong>Alle AIIANER-Erweiterungen für Hermes Desktop. Eine installierst du mit einem Satz an deinen Hermes.</strong></p>
+<p align="center"><strong>Erweiterungen für Hermes Desktop — direkt aus GitHub installierbar.</strong></p>
 
 <p align="center">
   <a href="#lizenz"><img src="https://img.shields.io/badge/Lizenz-Open--Core%20(MIT%20Basis)-green" alt="Lizenz" /></a>
@@ -12,99 +12,70 @@
 
 ## Was ist das?
 
-Das zentrale Repo für alle Erweiterungen, die wir bei [AIIANER](https://aiianer.de)
-für Hermes Desktop bauen: Provider-Plugins, Sprachdateien, Werkzeuge. Jede
-Komponente bringt ihren eigenen Installer mit, und dazu ihren
-**Installations-Satz**: eine Nachricht, die du einfach in deinen Hermes-Chat
-kopierst. Hermes ist ein Agent mit Terminal-Zugriff und installiert die
-Komponente dann selbst, prüft das Ergebnis und sagt dir, was noch zu tun ist.
-Kein git, kein Terminal-Wissen nötig.
+Das zentrale Repo für die AIIANER-Erweiterungen von Hermes: der AIIANER-Marktplatz,
+deutsche Sprachpakete, Bot-Mode-Texte, Gruppenchat-Grenzen und weitere Werkzeuge.
 
-**Teil des AIIANER-Ökosystems:** Bei [AIIANER](https://aiianer.de) bauen wir
-ein KI-Betriebssystem, das [Hermes Desktop](https://github.com/NousResearch/hermes-agent)
-als Grundlage nutzt. Hermes selbst ist ein Open-Source-Projekt von
-**Nous Research**. Die Erweiterungen hier sind unabhängige Community-Projekte
-und stehen in keiner offiziellen Verbindung zu Nous Research.
+Der Marktplatz ist ein **Hybrid-Plugin**: Er bringt die Dashboard- und Desktop-
+Oberfläche gemeinsam mit seinem Backend in einem Paket mit. Über seine Oberfläche
+installierst und aktualisierst du die übrigen AIIANER-Erweiterungen.
 
 ## Komponenten
 
-| Komponente | Was sie tut | Installations-Satz |
-| --- | --- | --- |
-| **aiianer-hub** | **Der Marktplatz.** Ein Reiter in Hermes, aus dem du alle Komponenten unten installierst und aktuell hältst. Bringt einen Wächter mit, der nach jedem Hermes-Update prüft, ob noch alles sitzt, und Fehlendes selbst nachlegt. [Anleitung](extensions/aiianer-hub/README.md) | [PROMPT.md](extensions/aiianer-hub/PROMPT.md) |
-| **eurouter-provider** | EU Router (eurouter.ai) als Provider: EU-Compliance-Routen statt roher Modelle im Picker, DSGVO-konformes Routing. Eigenes Repo: [hermes-eurouter-plugin](https://github.com/oliverhees/hermes-eurouter-plugin) | [PROMPT.md](extensions/eurouter-provider/PROMPT.md) |
-| **german-language** | Deutsche Sprachdatei für Hermes Desktop (eigenständiger Installer, trägt Deutsch als Sprache in Hermes ein) | [PROMPT.md](extensions/german-language/PROMPT.md) |
-| **bot-mode-german** | Deutsche Texte für **Bot Mode**: Liste, Gruppenchats, Avatare, Zeitpläne. 194 Bausteine, eingetragen in den plugin-eigenen Nachrichtenkatalog von Bot Mode. Setzt `german-language` voraus | [PROMPT.md](extensions/bot-mode-german/PROMPT.md) |
-
-| **group-chat-limits** | Runden, Nachrichten, Fortsetzungen und Verlauf pro Gruppenchat selbst festlegen, inklusive „aus“ mit abschaltbarer Bremse. Hermes deckelt hart bei 3 Runden und 10 Nachrichten, wobei die Zehn bei 6 Bots immer zuerst greift | [PROMPT.md](extensions/group-chat-limits/PROMPT.md) |
-
-Weitere Komponenten folgen, jede nach demselben Muster: `install.sh` plus `PROMPT.md`.
+| Komponente | Was sie tut |
+| --- | --- |
+| **aiianer-hub** | **Der Marktplatz.** Ein Reiter in Hermes zum Installieren und Aktualisieren der AIIANER-Erweiterungen. Enthält außerdem den Wächter, der die Erweiterungen nach Hermes-Updates prüft und bei Bedarf repariert. |
+| **eurouter-provider** | EU Router als Provider mit EU-Compliance-Routen im Modell-Picker. |
+| **german-language** | Deutsche Oberfläche für Hermes Desktop. Wird nach Hermes-Updates automatisch erneut eingespielt. |
+| **bot-mode-german** | Deutsche Texte für Bot Mode: Liste, Gruppenchats, Avatare und Zeitpläne. Setzt `german-language` voraus. |
+| **group-chat-limits** | Eigene Runden-, Nachrichten-, Fortsetzungs- und Verlaufsgrenzen pro Gruppenchat. |
 
 ## Installation
 
-**Empfohlen: erst den Marktplatz.** Installierst du `aiianer-hub`, brauchst du
-danach kein Terminal mehr. Alles Weitere wählst du im Reiter „AIIANER" direkt in
-Hermes aus, inklusive Updates.
+Der **einzige Installationsweg** führt über Hermes selbst:
 
-Linux, macOS, WSL:
+1. Öffne in Hermes **Settings → Plugins → Install from Git**.
+2. Trage dieses Repository ein:
 
-```bash
-curl -sL https://raw.githubusercontent.com/oliverhees/aiianer-hermes-extensions/main/install.sh | bash -s aiianer-hub
-```
+   ```text
+   https://github.com/oliverhees/aiianer-hermes-extensions
+   ```
 
-Windows nativ, in PowerShell:
+3. Prüfe die angezeigten Plugin-Inhalte und installiere das Plugin.
+4. Aktiviere **AIIANER** anschließend, falls Hermes danach fragt, und starte den
+   Gateway bzw. Hermes neu.
 
-```powershell
-irm https://raw.githubusercontent.com/oliverhees/aiianer-hermes-extensions/main/extensions/aiianer-hub/install.ps1 | iex
-```
+Das Repo enthält `plugin.yaml` im Root sowie die Dashboard- und Desktop-Hälften.
+Hermes erkennt es deshalb direkt als Hybrid-Plugin; kein zusätzlicher Installer,
+Terminal-Befehl oder Prompt ist nötig.
 
-Danach Hermes neu starten. Die [Anleitung](extensions/aiianer-hub/README.md)
-erklärt den Rest.
+Nach dem Neustart erscheint **AIIANER** in der Seitenleiste beziehungsweise als
+Dashboard-Reiter. Die weiteren Komponenten installierst du dort mit den jeweiligen
+Buttons.
 
-**Einzelne Komponente ohne Marktplatz:** Öffne die `PROMPT.md` der Komponente und
-kopiere den Satz in deinen Hermes-Chat. Hermes erledigt den Rest.
+## Update und Entfernen
 
-**Oder im Terminal**, eine Komponente direkt:
+Git-installierte Plugins verwaltest du in Hermes unter **Settings → Plugins**.
+Dort kannst du das Plugin aktualisieren, deaktivieren oder entfernen. Der
+Marktplatz kann sich nicht über seine eigene Oberfläche deinstallieren; nutze dafür
+den normalen Plugin-Manager von Hermes.
 
-```bash
-curl -sL https://raw.githubusercontent.com/oliverhees/aiianer-hermes-extensions/main/install.sh | bash -s german-language
-```
+## Update-Sicherheit
 
-Ohne Argument listet der Installer alle verfügbaren Komponenten:
+Hermes aktualisiert sein eigenes Programmverzeichnis regelmäßig. Der Marktplatz
+liegt deshalb vollständig in den vorgesehenen Plugin-Verzeichnissen außerhalb des
+Hermes-Checkouts. Die deutsche Sprachdatei und andere notwendige Anpassungen
+werden über den Wächter nach einem Hermes-Update erneut eingespielt.
 
-```bash
-curl -sL https://raw.githubusercontent.com/oliverhees/aiianer-hermes-extensions/main/install.sh | bash
-```
-
-## Update-Sicherheit, das Designprinzip
-
-Hermes aktualisiert sich täglich und räumt dabei alles weg, was im
-Programm-Checkout liegt. Deshalb gilt hier:
-
-1. **Komponenten installieren an update-sichere Orte** (z. B.
-   `~/.hermes/plugins/model-providers/`), wo immer Hermes das offiziell vorsieht.
-2. **Muss eine Komponente in den Checkout** (wie die Sprachdatei), arbeitet der
-   Installer mit gezielten, wiederholbaren Einfügungen an stabilen Ankern:
-   alles-oder-nichts mit Backup, laute Fehlermeldung statt halbem Zustand.
-   Nach einem Update, das die Änderung entfernt: denselben Satz einfach nochmal
-   an Hermes schicken.
-3. **Nimm den offiziellen Weg, wo es einen gibt.** Bot Mode zum Beispiel
-   bringt seit dem Umbau einen eigenen Nachrichtenkatalog mit. Da tragen wir
-   nur noch ein deutsches Bündel ein, statt Dateien zu ersetzen. Solche Türen
-   halten, weil sie dafür gedacht sind.
-
-> Tutorials, Setups und Support gibt es in der
-> [AIIANER Community](https://aiianer.de), inklusive KI-Coach.
-> Fragen zu einer Komponente? Log-Zeilen mitschicken, dann schauen wir gemeinsam drauf.
+Der Wächter arbeitet mit Sicherungen und wiederholbaren Ankern. Wenn ein Hermes-
+Umbau einen Ankerpunkt unbrauchbar macht, meldet der Marktplatz die Ursache,
+statt still einen halben Zustand zu hinterlassen.
 
 ## Lizenz
 
-AIIANER Hermes Extensions folgt einem **Open-Core-Modell**: Die **Basis steht
-unter MIT** (siehe [LICENSE](LICENSE)) und ist damit für private wie
-kommerzielle Nutzung frei, ohne Copyleft. Der Verdienst liegt in
-**Premium-Komponenten im Katalog** (nur für Community-Mitglieder installierbar)
-und in **Support- und Setup-Services**. Details in [LICENSING.md](LICENSING.md),
-Anfragen an **support@aiianer.de** oder über die
-[AIIANER Community](https://aiianer.de).
+AIIANER Hermes Extensions folgt einem **Open-Core-Modell**: Die Basis steht unter
+**MIT** (siehe [LICENSE](LICENSE)) und ist für private wie kommerzielle Nutzung
+frei. Details stehen in [LICENSING.md](LICENSING.md). Support gibt es unter
+**support@aiianer.de** oder in der [AIIANER Community](https://aiianer.de).
 
 ## Sicherheit
 
@@ -114,15 +85,11 @@ Sicherheitslücken bitte **nicht** als öffentliches Issue melden, siehe
 ## Marken
 
 „AIIANER", „Lokyy", „Lokyy Brain", „Datenschleuse" und „Sichtradar" sind
-Kennzeichen von Oliver Hees aka Aiianer. Die Lizenz des Quellcodes gewährt
-**keine** Rechte an diesen Namen oder Logos. Forks müssen unter eigenem Namen
-auftreten.
+Kennzeichen von Oliver Hees aka Aiianer. Die Lizenz des Quellcodes gewährt keine
+Rechte an diesen Namen oder Logos. Forks müssen unter eigenem Namen auftreten.
 
-„Hermes" ist ein Open-Source-Projekt von **Nous Research**
-([github.com/NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent)).
-„EU Router" / eurouter.ai ist ein Angebot des jeweiligen Betreibers.
-Die Erweiterungen hier sind unabhängige Community-Projekte ohne offizielle
-Verbindung zu Nous Research oder eurouter.ai.
+„Hermes" und „EU Router" sind Produkt- beziehungsweise Angebotsnamen der jeweiligen
+Betreiber. Diese Erweiterungen sind unabhängige Community-Projekte.
 
 ---
 
