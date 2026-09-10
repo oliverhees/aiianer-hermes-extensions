@@ -25,9 +25,10 @@ Automationen direkt in Hermes.
 
 **Tagline:** KI zum Anwenden, nicht zum Hypen.
 
-Der Marktplatz ist ein **Desktop-Plugin** für Hermes. Es bringt die
-Desktop-Oberfläche und das zugehörige Marktplatz-Backend in einem Paket mit.
-Über seine Oberfläche installierst und aktualisierst du die übrigen AIIANER-
+Der Marktplatz ist ein **Hybrid-Plugin** für Hermes: Agent-Backend und
+Desktop-Oberfläche gehören zusammen. Das Backend stellt die Installations-,
+Update- und Backup-API bereit; die Desktop-Hälfte liefert die Bedienoberfläche.
+Über diese Oberfläche installierst und aktualisierst du die übrigen AIIANER-
 Erweiterungen.
 
 ## Komponenten
@@ -59,9 +60,10 @@ Der **einzige Installationsweg** führt über Hermes selbst:
 3. Prüfe die angezeigten Plugin-Inhalte und installiere das Plugin.
 4. Aktiviere **AIIANER** anschließend, falls Hermes danach fragt, und beende Hermes vollständig. Starte Hermes danach komplett neu.
 
-Das Repo enthält `plugin.yaml` im Root sowie die Desktop-Hälfte und das
-zugehörige Marktplatz-Backend. Hermes erkennt es als Desktop-Plugin; ein
-zusätzlicher Agent-Einstieg ist nicht nötig.
+Das Repo enthält `plugin.yaml` im Root sowie die Agent-, Desktop- und
+Backend-Hälfte. Hermes erkennt es deshalb als Hybrid-Plugin. Der Agent-Teil ist
+für das Backend erforderlich; ohne ihn sind Katalog, Installation, Updates und
+Backup im Desktop nicht verfügbar.
 
 Nach dem Neustart erscheint **AIIANER** in der Seitenleiste beziehungsweise als
 Dashboard-Reiter. Die weiteren Komponenten installierst du dort mit den jeweiligen
