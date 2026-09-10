@@ -20,14 +20,8 @@ const { useEffect, useState } = ReactModule
 const jsx = (type, props = {}, key) => React.createElement(type, { ...props, key })
 const jsxs = jsx
 
-const {
-  Badge,
-  cn,
-  EmptyState,
-  ErrorState,
-  host,
-  Skeleton
-} = HermesSdk
+const { host } = HermesSdk
+const cn = (...values) => values.filter(Boolean).join(' ')
 
 const ID = 'aiianer-hub'
 
@@ -122,14 +116,14 @@ function Versionshinweise({ daten, laedt, fehler }) {
           jsx('p', { className: 'mt-1 text-sm opacity-65', children: `Versionierte Hinweise aus ${quelle}.` }, 'intro')
         ]
       }, 'heading'),
-      laedt ? jsx(Skeleton, { className: 'h-24' }, 'loading') : null,
+      laedt ? jsx('div', { className: 'h-24 animate-pulse rounded-lg bg-white/10' }, 'loading') : null,
       !laedt && fehler ? jsx('p', { className: 'text-sm text-red-300', children: 'Versionshinweise konnten nicht geladen werden.' }, 'error') : null,
       !laedt && !fehler && !releases.length ? jsx('p', { className: 'text-sm opacity-65', children: 'Noch keine veröffentlichten Versionshinweise vorhanden.' }, 'empty') : null,
       !laedt && !fehler && releases.map(release => jsxs('article', {
         className: 'border-t border-white/10 pt-4 first:border-t-0 first:pt-0',
         children: [
           jsxs('div', { className: 'flex flex-wrap items-center gap-2', children: [
-            jsx(Badge, { children: release.tagName }, 'tag'),
+            jsx('span', { className: 'rounded border border-accent/40 px-2 py-0.5 text-xs', children: release.tagName }, 'tag'),
             datum(release.publishedAt) ? jsx('span', { className: 'text-xs opacity-50', children: datum(release.publishedAt) }, 'date') : null
           ] }, 'meta'),
           jsx('h3', { className: 'mt-2 text-base font-semibold', children: release.name || release.tagName }, 'name'),
@@ -150,10 +144,10 @@ function Roadmap({ daten, laedt, fehler }) {
       jsx('h2', { className: 'mt-1 text-xl font-semibold', children: 'Was als Nächstes andockt' }, 'title'),
       jsx('p', { className: 'mt-1 text-sm opacity-65', children: `Geplante Erweiterungen aus ${quelle}.` }, 'intro')
     ] }, 'heading'),
-    laedt ? jsx(Skeleton, { className: 'h-24' }, 'loading') : null,
+    laedt ? jsx('div', { className: 'h-24 animate-pulse rounded-lg bg-white/10' }, 'loading') : null,
     !laedt && fehler ? jsx('p', { className: 'text-sm text-red-300', children: 'Roadmap konnte nicht geladen werden.' }, 'error') : null,
     !laedt && !fehler && items.map(item => jsxs('article', { className: 'rounded-lg border border-white/10 p-3', children: [
-      jsxs('div', { className: 'flex flex-wrap items-center justify-between gap-2', children: [jsx('h3', { className: 'font-semibold', children: item.name }, 'name'), jsx(Badge, { children: item.status }, 'status')] }, 'meta'),
+      jsxs('div', { className: 'flex flex-wrap items-center justify-between gap-2', children: [jsx('h3', { className: 'font-semibold', children: item.name }, 'name'), jsx('span', { className: 'rounded border border-accent/40 px-2 py-0.5 text-xs', children: item.status }, 'status')] }, 'meta'),
       jsx('p', { className: 'mt-2 text-sm leading-6 opacity-75', children: item.summary }, 'summary'),
       item.value ? jsx('p', { className: 'mt-1 text-xs leading-5 opacity-60', children: item.value }, 'value') : null,
       item.link ? jsx('a', { href: item.link, target: '_blank', rel: 'noreferrer', className: 'mt-2 inline-block text-xs text-accent hover:underline', children: 'Mehr dazu auf GitHub ↗' }, 'link') : null
@@ -314,16 +308,16 @@ function makePane(useCatalog, useReleases, useRoadmap, aktionen, onCommunity, tr
         .finally(() => setLaufend(v => ({ ...v, [id]: null })))
     }
 
-    if (isLoading) return jsx(Skeleton, { className: 'h-24 m-3' })
+    if (isLoading) return jsx('div', { className: 'h-24 m-3 animate-pulse rounded-lg bg-white/10' })
     if (error) {
-      return jsx(ErrorState, {
-        title: t('errTitle'),
-        description: String(error && error.message ? error.message : error)
-      })
+      return jsxs('div', { className: 'm-3 rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm', children: [
+        jsx('strong', { children: t('errTitle') }),
+        jsx('p', { className: 'mt-2 opacity-75', children: String(error && error.message ? error.message : error) })
+      ] })
     }
 
     const items = (data && data.components) || []
-    if (!items.length) return jsx(EmptyState, { title: t('empty') })
+    if (!items.length) return jsx('p', { className: 'm-3 p-4 text-sm opacity-70', children: t('empty') })
 
     const knopf = (schluessel, beschriftung, opts) =>
       jsx('button', {
@@ -350,8 +344,8 @@ function makePane(useCatalog, useReleases, useRoadmap, aktionen, onCommunity, tr
         className: 'flex items-center gap-2 flex-wrap',
         children: [
           jsx('span', { className: 'font-medium text-sm', children: c.name }, 'n'),
-          jsx(Badge, { children: 'v' + c.version }, 'v'),
-          jsx(Badge, { children: c.available === false ? t('status.unavailable') : t('status.' + c.status) }, 's'),
+          jsx('span', { className: 'rounded border border-accent/40 px-2 py-0.5 text-xs', children: 'v' + c.version }, 'v'),
+          jsx('span', { className: 'rounded border border-accent/40 px-2 py-0.5 text-xs', children: c.available === false ? t('status.unavailable') : t('status.' + c.status) }, 's'),
           c.installed && c.installed !== c.version
             ? jsx('span', {
                 className: 'text-xs opacity-60',
@@ -563,7 +557,7 @@ function makePane(useCatalog, useReleases, useRoadmap, aktionen, onCommunity, tr
                 jsx('p', { children: `Status: ${backup.state}${backup.lastErrorCode ? ` · Backup: ${backup.lastErrorCode}` : ''}${backup.scheduleErrorCode ? ` · Zeitplan: ${backup.scheduleErrorCode}` : ''}` }),
                 backup.lastArchive ? jsx('p', { children: `Letztes Archiv: ${backup.lastArchive.name} · ${backup.lastArchive.fileCount || '?'} Dateien` }) : null,
                 jsx('p', { children: `${backup.archiveCount || 0} veröffentlichte Archive im Zielordner.` })
-              ] }) : jsx(Skeleton, { className: 'h-12' }),
+              ] }) : jsx('div', { className: 'h-12 animate-pulse rounded-lg bg-white/10' }),
               jsxs('div', { className: 'rounded-md border border-white/10 p-3', children: [
                 jsx('h3', { className: 'text-sm font-medium', children: 'Laufprotokoll' }),
                 backup && backup.history && backup.history.length ? jsx('div', { className: 'mt-2 space-y-1 text-xs', children: backup.history.map((entry, index) => jsx('p', { className: entry.state === 'success' ? 'text-emerald-300' : 'text-red-300', children: `${entry.state === 'success' ? '✓' : '✕'} ${new Date(entry.at).toLocaleString('de-DE')} · ${entry.state === 'success' ? (entry.archive && entry.archive.name ? entry.archive.name : 'Sicherung erfolgreich') : (entry.errorCode || 'Fehler')}` }, `${entry.at}-${index}`)) }) : jsx('p', { className: 'mt-2 text-xs opacity-60', children: 'Noch kein Backup-Lauf protokolliert.' })
@@ -613,9 +607,9 @@ function makePane(useCatalog, useReleases, useRoadmap, aktionen, onCommunity, tr
             jsxs('div', {
               className: 'flex gap-2 text-xs opacity-70',
               children: [
-                jsx(Badge, { children: `${items.length} Komponenten` }, 'count'),
-                jsx(Badge, { children: `${installiert} installiert` }, 'installed'),
-                updates ? jsx(Badge, { children: `${updates} Update${updates === 1 ? '' : 's'}` }, 'updates') : null
+                jsx('span', { className: 'rounded border border-accent/40 px-2 py-0.5 text-xs', children: `${items.length} Komponenten` }, 'count'),
+                jsx('span', { className: 'rounded border border-accent/40 px-2 py-0.5 text-xs', children: `${installiert} installiert` }, 'installed'),
+                updates ? jsx('span', { className: 'rounded border border-accent/40 px-2 py-0.5 text-xs', children: `${updates} Update${updates === 1 ? '' : 's'}` }, 'updates') : null
               ]
             }, 'stats'),
             jsx('p', { className: 'text-sm opacity-70', children: 'Deutsche Sprache und die AIIANER-Werkzeuge. Was du hier installierst, überlebt Hermes-Updates.' }, 'intro'),
