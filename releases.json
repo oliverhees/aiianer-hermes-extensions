@@ -1,6 +1,13 @@
 {
   "releases": [
     {
+      "tagName": "v1.3.15",
+      "name": "v1.3.15 · Beta-Feedback und Marktplatz-Auftritt",
+      "publishedAt": "2026-09-10T16:30:00Z",
+      "body": "Beta-Status im Marktplatz und in der README sichtbar. Feedback, Fehler und Feature-Ideen führen direkt zu passenden GitHub-Issue-Vorlagen. Der Backup-Außenposten zeigt Restore-Anleitung und verfügbare Archive mit Integritätsstatus. Die geplante GitHub-Backup-Integration steht transparent auf der Roadmap.",
+      "url": "https://github.com/oliverhees/aiianer-hermes-extensions/releases/tag/v1.3.15"
+    },
+    {
       "tagName": "v1.3.12",
       "name": "v1.3.12 · Frische Versionsanzeige und GitHub-Hinweise",
       "publishedAt": "2026-09-09T20:30:00Z",

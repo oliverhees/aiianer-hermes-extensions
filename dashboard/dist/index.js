@@ -310,7 +310,10 @@
           "div",
           { className: "relative flex flex-wrap items-center justify-between gap-x-5 gap-y-3" },
           h("div", { className: "min-w-0" },
-            h("h1", { className: "text-xl font-bold tracking-tight sm:text-2xl" }, "AIIANER COMMUNITY"),
+            h("div", { className: "flex items-center gap-2" }, [
+              h("h1", { className: "text-xl font-bold tracking-tight sm:text-2xl" }, "AIIANER COMMUNITY"),
+              h("span", { className: "rounded border border-amber-300/70 bg-amber-400/15 px-2 py-0.5 text-[10px] font-bold tracking-wider text-amber-200" }, "🚧 BETA")
+            ]),
             h("div", { className: "mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1" },
               h("span", { className: "font-mono text-[10px] uppercase tracking-[0.22em] text-accent" }, "KI zum Anwenden, nicht zum Hypen."),
               h("span", { className: "hidden text-[10px] opacity-45 sm:inline" }, "Dein Außenposten für KI, die arbeitet.")

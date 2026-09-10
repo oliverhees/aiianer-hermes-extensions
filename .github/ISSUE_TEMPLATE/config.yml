@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🔒 Sicherheitslücke melden
+    url: mailto:hi@aiianer.de?subject=%5BSECURITY%5D%20aiianer-hermes-extensions
+    about: Sicherheitsprobleme bitte vertraulich per E-Mail melden, nicht als öffentliches Issue.
+  - name: 🌍 AIIANER Community
+    url: https://aiianer.de
+    about: Austausch, Tutorials und Hilfe rund um KI zum Anwenden.

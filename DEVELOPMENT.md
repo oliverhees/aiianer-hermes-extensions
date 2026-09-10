@@ -423,7 +423,7 @@ Die drei Komponenten des Sicherheitsmodells:
    kein SDK-Tool auf, das blind Credentials auslesen könnte.
 
 Zusätzlich: `SECURITY.md` im Repo beschreibt den Meldeprozess für Lücken
-(support@aiianer.de, nicht öffentlich, 72-Stunden-Erstantwort).
+(hi@aiianer.de, nicht öffentlich, 72-Stunden-Erstantwort).
 
 ---
 

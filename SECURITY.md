@@ -13,7 +13,7 @@ Bitte melde Sicherheitslücken **nicht** über öffentliche GitHub-Issues.
 
 **So geht's richtig:**
 
-1. Schreib eine E-Mail an **support@aiianer.de** mit dem Betreff
+1. Schreib eine E-Mail an **hi@aiianer.de** mit dem Betreff
    `[SECURITY] aiianer-hermes-extensions`.
 2. Beschreibe die Lücke so konkret wie möglich: betroffene Komponente,
    Schritte zur Reproduktion, mögliche Auswirkung.
@@ -34,4 +34,4 @@ Bitte melde Sicherheitslücken **nicht** über öffentliche GitHub-Issues.
 
 ---
 
-© 2026 Oliver Hees aka Aiianer · [aiianer.de](https://aiianer.de)
+© 2026 Oliver Hees aka Aiianer · [aiianer.de](https://aiianer.de) · Kontakt: [hi@aiianer.de](mailto:hi@aiianer.de)

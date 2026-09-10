@@ -64,7 +64,10 @@ function MarketplaceHero({ updates, installiert, total, onCommunity }) {
       jsx('div', { className: 'pointer-events-none absolute inset-y-0 left-0 w-1 bg-accent' }, 'accent'),
       jsxs('div', { className: 'relative flex flex-wrap items-center justify-between gap-x-5 gap-y-3', children: [
         jsxs('div', { className: 'min-w-0', children: [
-          jsx('h1', { className: 'text-xl font-bold tracking-tight text-foreground sm:text-2xl', children: 'AIIANER COMMUNITY' }, 'brand'),
+          jsxs('div', { className: 'flex items-center gap-2', children: [
+            jsx('h1', { className: 'text-xl font-bold tracking-tight text-foreground sm:text-2xl', children: 'AIIANER COMMUNITY' }, 'brand'),
+            jsx('span', { className: 'rounded border border-amber-300/70 bg-amber-400/15 px-2 py-0.5 text-[10px] font-bold tracking-wider text-amber-200', children: '🚧 BETA' }, 'beta')
+          ] }, 'brand-row'),
           jsxs('div', { className: 'mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1', children: [
             jsx('span', { className: 'font-mono text-[10px] uppercase tracking-[0.22em] text-accent', children: 'KI zum Anwenden, nicht zum Hypen.' }, 'tagline'),
             jsx('span', { className: 'hidden text-[10px] opacity-45 sm:inline', children: 'Dein Außenposten für KI, die arbeitet.' }, 'subline')

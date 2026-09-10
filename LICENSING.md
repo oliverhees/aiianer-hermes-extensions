@@ -36,7 +36,7 @@ AIIANER Hermes Extensions nicht selbst aufsetzen kann oder will, dem
 Konfiguration, einsatzbereit übergeben. Plus Anpassungen und Prioritäts-Support
 direkt vom Entwickler.
 
-Anfrage an **support@aiianer.de** oder über die
+Anfrage an **hi@aiianer.de** oder über die
 [AIIANER Community](https://aiianer.de). Kostenloser Community-Support
 (Fragen, Tutorials, KI-Coach) ist für Mitglieder enthalten.
 
