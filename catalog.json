@@ -53,15 +53,6 @@
       "summary": "Vollständige Hermes-Backups in einen externen lokalen Ordner. Keine Uploads, kein GitHub.",
       "note": "Nach der Installation in Hermes Desktop → AIIANER Extension Hub → Tab „Backups“ konfigurieren. Wiederherstellung ist ausdrücklich manuell.",
       "nextSteps": {"install": ["Öffne Hermes Desktop → AIIANER Extension Hub → Tab „Backups“ und lege einen externen lokalen Zielordner fest."], "uninstall": []}
-    },
-    {
-      "id": "group-chat-limits",
-      "name": "Gruppenchat-Grenzen",
-      "version": "2.0.1",
-      "kind": "patch",
-      "premium": false,
-      "summary": "Runden und Nachrichten pro Gruppenchat selbst festlegen, statt Hermes' harter 3 und 10.",
-      "note": "Kompatibilitätsfix für aktuelle Hermes-Versionen: patcht Rundenschleife und Mitglied-Turns. Eingestellt wird in ~/.hermes/aiianer/gruppen-grenzen.json, danach „Neu einspielen“ und Hermes neu starten."
     }
   ]
 }
