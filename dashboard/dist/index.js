@@ -331,7 +331,8 @@
           ),
           h("div", { className: "flex flex-col items-stretch gap-1 shrink-0" },
             h("a", { href: "https://aiianer.de", target: "_blank", rel: "noreferrer", className: "rounded-md border border-accent bg-accent px-3 py-2 text-xs font-semibold text-accent-foreground transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-accent" }, "Community öffnen ↗"),
-            h("span", { className: "max-w-52 text-[10px] leading-4 text-muted-foreground" }, "Falls der Klick nicht öffnet: Rechtsklick auf den Button und „Link im externen Browser öffnen“ wählen.")
+            h("span", { className: "max-w-52 text-[10px] leading-4 text-muted-foreground" }, "Falls der Klick nicht öffnet: Rechtsklick auf den Button und „Link im externen Browser öffnen“ wählen."),
+            h("a", { href: "https://www.eurouter.ai?ref=06ZUHPBK", target: "_blank", rel: "noreferrer", className: "text-[10px] text-accent hover:underline" }, "EUrouter.ai · Affiliate-Link ↗")
           )
         ),
       ),

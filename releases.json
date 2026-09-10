@@ -1,6 +1,13 @@
 {
   "releases": [
     {
+      "tagName": "v1.3.18",
+      "name": "v1.3.18 · EUrouter-Hinweis und Repository-Aufräumen",
+      "publishedAt": "2026-09-10T18:00:00Z",
+      "body": "EUrouter.ai ist im Marktplatz und in der README sichtbar als Affiliate-Link verlinkt. DEVELOPMENT.md bleibt lokal verfügbar, wird aber nicht mehr im öffentlichen Repository geführt.",
+      "url": "https://github.com/oliverhees/aiianer-hermes-extensions/releases/tag/v1.3.18"
+    },
+    {
       "tagName": "v1.3.17",
       "name": "v1.3.17 · Roadmap für neue AIIANER-Werkzeuge",
       "publishedAt": "2026-09-10T17:30:00Z",

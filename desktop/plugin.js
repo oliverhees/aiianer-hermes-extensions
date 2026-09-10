@@ -89,7 +89,9 @@ function MarketplaceHero({ updates, installiert, total, onCommunity }) {
           ] }, 'stats'),
           jsxs('div', { className: 'flex flex-col items-stretch gap-1', children: [
             jsx('a', { href: 'https://aiianer.de', target: '_blank', rel: 'noreferrer', onClick: onCommunity, className: 'rounded-md border border-accent bg-accent px-3 py-2 text-xs font-semibold text-accent-foreground transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-accent', children: 'Community öffnen ↗' }, 'cta'),
-            jsx('span', { className: 'max-w-44 text-[10px] leading-4 opacity-60', children: 'Rechtsklick auf den Button und „Link im externen Browser öffnen“ wählen.' }, 'open-help')
+            jsx('span', { className: 'max-w-44 text-[10px] leading-4 opacity-60', children: 'Rechtsklick auf den Button und „Link im externen Browser öffnen“ wählen.' }, 'open-help'),
+            jsx('span', { className: 'max-w-44 text-[10px] leading-4 opacity-60', children: 'EUrouter.ai · Affiliate-Link' }, 'affiliate'),
+            jsx('a', { href: 'https://www.eurouter.ai?ref=06ZUHPBK', target: '_blank', rel: 'noreferrer', className: 'text-[10px] text-accent hover:underline', children: 'EUrouter.ai ansehen ↗' }, 'affiliate-link'),
           ] }, 'cta-wrap')
         ] })
       ] }, 'content')

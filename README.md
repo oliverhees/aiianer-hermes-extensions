@@ -40,6 +40,10 @@ installierst und aktualisierst du die übrigen AIIANER-Erweiterungen.
 | **group-chat-limits** | Eigene Runden-, Nachrichten-, Fortsetzungs- und Verlaufsgrenzen pro Gruppenchat. |
 | **aiianer-backup** | Lokale vollständige Hermes-Backups in einem externen Ordner. V1 mit Planung, Laufprotokoll, Archivliste und sicherem Restore. GitHub-Backup steht auf der Roadmap. |
 
+## EUrouter.ai
+
+Für EU-basierte Modellrouten gibt es im Marktplatz die Erweiterung **EU-Router**. Mehr über EUrouter.ai: [eurouter.ai](https://www.eurouter.ai?ref=06ZUHPBK) **(Affiliate-Link)**.
+
 ## Installation
 
 Der **einzige Installationsweg** führt über Hermes selbst:
