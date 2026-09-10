@@ -137,8 +137,13 @@ def _liegt_noch(comp_id: str) -> bool:
         ziel = agent / "apps/desktop/src/plugins/hermes-bots/group-rounds.ts"
         if not ziel.is_file():
             return False
+        mitglieder = agent / "apps/desktop/src/plugins/hermes-bots/group-round-members.ts"
         try:
-            return "aiianerCaps(group)" in ziel.read_text(errors="ignore")
+            return (
+                "aiianerCaps(group)" in ziel.read_text(errors="ignore")
+                and "aiianer-group-limits-history" in mitglieder.read_text(errors="ignore")
+                and "aiianerCaps(context.group).history" in mitglieder.read_text(errors="ignore")
+            )
         except Exception:
             return False
 

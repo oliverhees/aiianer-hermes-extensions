@@ -29,16 +29,19 @@ HERE = Path(__file__).resolve().parent
 AGENT = Path(sys.argv[1]) if len(sys.argv) > 1 else Path.home() / ".hermes" / "hermes-agent"
 BOTS = AGENT / "apps" / "desktop" / "src" / "plugins" / "hermes-bots"
 ZIEL = BOTS / "group-rounds.ts"
+MITGLIEDER = BOTS / "group-round-members.ts"
 
 MARKE = "aiianer-group-limits"
+HISTORY_MARKE = "aiianer-group-limits-history"
 
-# Die vier Konstanten und ihr Ersatz. Reihenfolge egal, die Namen sind
-# eindeutig genug fuer eine wortweise Ersetzung.
+# Diese drei Deckel werden in der Rundenschleife verwendet. Die Verlaufsgrenze
+# lebt in aktuellen Hermes-Staenden dagegen in group-round-members.ts. Der
+# Installer muss beide Dateien kennen: sie gehoeren zu demselben Lauf, sind aber
+# keine identische Naht.
 ERSATZ = {
     "GROUP_CHAT_MAX_ROUNDS": "aiianerGrenzen.rounds",
     "GROUP_CHAT_MAX_MESSAGES": "aiianerGrenzen.messages",
     "GROUP_CHAT_MAX_CONTINUATIONS": "aiianerGrenzen.continuations",
-    "GROUP_CHAT_HISTORY_LIMIT": "aiianerGrenzen.history",
 }
 
 ANKER_FN = "export async function runGroupChatRounds(group: string, members: GroupMember[], thread: string) {"
@@ -80,10 +83,12 @@ def schreibe_daten(zustandsordner: Path) -> int:
 
 
 def main() -> None:
-    if not ZIEL.is_file():
+    if not ZIEL.is_file() or not MITGLIEDER.is_file():
+        fehlende = [str(p) for p in (ZIEL, MITGLIEDER) if not p.is_file()]
         fail(
-            f"Rundenschleife nicht gefunden unter {ZIEL}. "
-            "Ist Hermes Desktop installiert und aktuell?"
+            "Datei(en) der Gruppenchat-Schleife nicht gefunden: "
+            + ", ".join(fehlende)
+            + ". Ist Hermes Desktop installiert und aktuell?"
         )
     for name in ("aiianer-group-limits.ts",):
         if not (HERE / name).is_file():
@@ -96,6 +101,7 @@ def main() -> None:
     shutil.copy2(HERE / "aiianer-group-limits.ts", BOTS / "aiianer-group-limits.ts")
 
     inhalt = ZIEL.read_text()
+    mitglieder_inhalt = MITGLIEDER.read_text()
 
     # Erstsicherung: einmalig, und nur von einem nachweislich unveraenderten
     # Stand. Ein spaeterer Lauf darf sie nie ueberschreiben.
@@ -103,8 +109,8 @@ def main() -> None:
     if not orig.exists() and MARKE not in inhalt:
         shutil.copy2(ZIEL, orig)
 
-    if MARKE in inhalt:
-        # Schon verdrahtet. Nur die Werte wurden neu erzeugt, das reicht.
+    if MARKE in inhalt and HISTORY_MARKE in mitglieder_inhalt:
+        # Schon vollstaendig verdrahtet. Nur die Werte wurden neu erzeugt.
         print(f"OK: Grenzen aktualisiert ({anzahl} Raeume konfiguriert)")
         print("Hinweis: Hermes Desktop neu starten, damit die Werte greifen.")
         return
@@ -167,11 +173,42 @@ def main() -> None:
         if not re.search(rf"\b{alt}\b", neu[neu.index(ANKER_FN):]):
             neu = re.sub(rf"^\s*{alt},\n", "", neu, count=1, flags=re.M)
 
+    # Die Verlaufsgrenze liegt in aktuellen Hermes-Versionen im separaten
+    # Mitglied-Turn-Modul. Dort wird sie raumbezogen aufgeloest; die drei
+    # Laufdeckel bleiben oben in group-rounds.ts und werden einmal je Lauf
+    # eingefroren.
+    mitglieder_neu = mitglieder_inhalt
+    if HISTORY_MARKE not in mitglieder_neu:
+        mitglieder_neu = (
+            "// AIIANER: einstellbare Verlaufsgrenze pro Gruppenchat.\n"
+            + "import { aiianerCaps } from './aiianer-group-limits'\n"
+            + mitglieder_neu
+        )
+        mitglieder_neu = re.sub(
+            r"\bGROUP_CHAT_HISTORY_LIMIT\b",
+            "aiianerCaps(context.group).history",
+            mitglieder_neu,
+        )
+        mitglieder_neu = re.sub(
+            r"^\s*GROUP_CHAT_HISTORY_LIMIT,\n",
+            "",
+            mitglieder_neu,
+            count=1,
+            flags=re.M,
+        )
+        mitglieder_neu = (
+            "// " + HISTORY_MARKE + "\n" + mitglieder_neu
+        )
+
     bak = ZIEL.with_suffix(".ts.aiianer-bak")
+    mitglieder_bak = MITGLIEDER.with_suffix(".ts.aiianer-bak")
     shutil.copy2(ZIEL, bak)
+    shutil.copy2(MITGLIEDER, mitglieder_bak)
     try:
         ZIEL.write_text(neu)
+        MITGLIEDER.write_text(mitglieder_neu)
         gepr = ZIEL.read_text()
+        mitglieder_gepr = MITGLIEDER.read_text()
         # Am Ergebnis pruefen, nicht an der Abwesenheit: die Konstanten
         # duerfen in Kommentaren stehen bleiben, dort sind sie richtig.
         koerper_neu = gepr[gepr.index(ANKER_FN):]
@@ -185,7 +222,9 @@ def main() -> None:
             "aiianerCaps(group)" in gepr
             and MARKE in gepr
             and not rest
-            and len(re.findall(r"\baiianerGrenzen\.", koerper_neu)) >= 8
+            and "aiianerCaps(context.group).history" in mitglieder_neu
+            and HISTORY_MARKE in mitglieder_neu
+            and len(re.findall(r"\baiianerGrenzen\.", koerper_neu)) >= 4
         )
         if not ok and rest:
             raise RuntimeError("nicht ersetzt: " + ", ".join(rest))
@@ -193,7 +232,8 @@ def main() -> None:
             raise RuntimeError("Verifikation nach dem Schreiben fehlgeschlagen")
     except Exception as exc:
         shutil.copy2(bak, ZIEL)
-        fail(f"Einhaengen fehlgeschlagen, Datei wiederhergestellt: {exc}")
+        shutil.copy2(mitglieder_bak, MITGLIEDER)
+        fail(f"Einhaengen fehlgeschlagen, Dateien wiederhergestellt: {exc}")
 
     print(f"OK: Grenzen eingehaengt ({anzahl} Raeume konfiguriert)")
     print(f"Konfiguration: {zustand / 'gruppen-grenzen.json'}")

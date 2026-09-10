@@ -57,11 +57,11 @@
     {
       "id": "group-chat-limits",
       "name": "Gruppenchat-Grenzen",
-      "version": "2.0.0",
+      "version": "2.0.1",
       "kind": "patch",
       "premium": false,
       "summary": "Runden und Nachrichten pro Gruppenchat selbst festlegen, statt Hermes' harter 3 und 10.",
-      "note": "Ein einziger Eingriff in die Rundenschleife. Eingestellt wird in ~/.hermes/aiianer/gruppen-grenzen.json, danach „Neu einspielen“ und Hermes neu starten."
+      "note": "Kompatibilitätsfix für aktuelle Hermes-Versionen: patcht Rundenschleife und Mitglied-Turns. Eingestellt wird in ~/.hermes/aiianer/gruppen-grenzen.json, danach „Neu einspielen“ und Hermes neu starten."
     }
   ]
 }
