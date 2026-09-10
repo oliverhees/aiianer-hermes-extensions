@@ -2,14 +2,16 @@
 # AIIANER Hermes Extensions - Dispatcher.
 #   ./install.sh                   verfuegbare Komponenten anzeigen
 #   ./install.sh <komponente>      eine Komponente installieren
-# Remote:
-#   curl -sL https://raw.githubusercontent.com/oliverhees/aiianer-hermes-extensions/main/install.sh | bash -s <komponente>
+# Remote-Start: Installer als Datei laden und anschließend explizit ausführen.
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]:-.}")" 2>/dev/null && pwd)"
 
 if [ ! -d "$HERE/extensions" ]; then
-  TMP_DIR="$(mktemp -d)"; trap 'rm -rf "$TMP_DIR"' EXIT
-  curl -sL "https://github.com/oliverhees/aiianer-hermes-extensions/archive/refs/heads/main.tar.gz" | tar -xz -C "$TMP_DIR"
+  TMP_DIR="$(mktemp -d)"
+  trap 'rm -rf "$TMP_DIR"' EXIT
+  ARCHIVE="$TMP_DIR/repo.tar.gz"
+  curl --fail --silent --show-error --location "https://github.com/oliverhees/aiianer-hermes-extensions/archive/refs/heads/main.tar.gz" --output "$ARCHIVE"
+  tar -xzf "$ARCHIVE" -C "$TMP_DIR"
   INNER="$(find "$TMP_DIR" -maxdepth 2 -name install.sh | head -1)"
   [ -n "$INNER" ] || { echo "FEHLER: Download fehlgeschlagen." >&2; exit 1; }
   exec bash "$INNER" "$@"

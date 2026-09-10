@@ -1,6 +1,13 @@
 {
   "releases": [
     {
+      "tagName": "v1.3.23",
+      "name": "v1.3.23 · Sicherheits-Scan bereinigt",
+      "publishedAt": "2026-09-10T20:30:00Z",
+      "body": "Die Installer verwenden keine Shell-Pipelines mehr für Remote-Bootstraps. Der getrackte GitHub-Payload wird vom Hermes-Sicherheits-Scanner jetzt als SAFE bewertet; notwendige lokale Hermes-CLI-Aufrufe bleiben transparent nachvollziehbar.",
+      "url": "https://github.com/oliverhees/aiianer-hermes-extensions/releases/tag/v1.3.23"
+    },
+    {
       "tagName": "v1.3.22",
       "name": "v1.3.22 · Backup-Deinstallation repariert",
       "publishedAt": "2026-09-10T20:00:00Z",

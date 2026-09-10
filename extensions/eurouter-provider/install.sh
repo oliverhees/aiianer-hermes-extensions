@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
-# Delegiert an den kanonischen Installer des eigenstaendigen Plugin-Repos —
-# eine Quelle der Wahrheit, keine dritte Kopie des Plugin-Codes.
+# Installiert den kanonischen EU-Router-Installer ohne Shell-Pipeline.
 set -euo pipefail
-curl -sL https://raw.githubusercontent.com/oliverhees/hermes-eurouter-plugin/main/install.sh | bash -s -- "$@"
+TMP_DIR="$(mktemp -d)"
+trap 'rm -rf "$TMP_DIR"' EXIT
+INSTALLER="$TMP_DIR/eurouter-install.sh"
+URL="https://raw.githubusercontent.com/oliverhees/hermes-eurouter-plugin/main/install.sh"
+
+curl --fail --silent --show-error --location "$URL" --output "$INSTALLER"
+test -s "$INSTALLER"
+exec bash "$INSTALLER" "$@"

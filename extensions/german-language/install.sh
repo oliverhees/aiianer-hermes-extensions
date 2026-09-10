@@ -8,14 +8,12 @@ HERMES_HOME_DIR="${HERMES_HOME:-$HOME/.hermes}"
 AGENT_DIR="${HERMES_AGENT_DIR:-$HERMES_HOME_DIR/hermes-agent}"
 STORE="$HERMES_HOME_DIR/aiianer-extensions/german-language"
 
-# Remote-Bootstrap (curl | bash): Payload aus dem Repo-Tarball holen
+# Remote-Bootstrap wird nicht benötigt: Der Marktplatz lädt den Repository-Tarball
+# bereits sicher herunter und führt diesen Installer aus. Ein direkter Aufruf
+# arbeitet deshalb ausschließlich mit der lokalen Payload.
 if [ ! -f "$HERE/de.ts.gz" ]; then
-  echo "Kein lokaler Clone gefunden - lade AIIANER Hermes Extensions von GitHub ..."
-  TMP_DIR="$(mktemp -d)"; trap 'rm -rf "$TMP_DIR"' EXIT
-  curl -sL "https://github.com/oliverhees/aiianer-hermes-extensions/archive/refs/heads/main.tar.gz" | tar -xz -C "$TMP_DIR"
-  INNER="$(find "$TMP_DIR" -path "*extensions/german-language/install.sh" | head -1)"
-  [ -n "$INNER" ] || { echo "FEHLER: Download fehlgeschlagen." >&2; exit 1; }
-  exec bash "$INNER" "$@"
+  echo "FEHLER: Lokale Sprach-Payload fehlt. Bitte den Installer aus dem AIIANER-Repository starten." >&2
+  exit 1
 fi
 
 # Der Scanner von Hermes behandelt einzelne harmlose Übersetzungstexte als
