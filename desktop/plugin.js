@@ -11,10 +11,9 @@
  * keine JSX-Syntax. Vorbild: das mitgelieferte cron-costs.
  */
 
-// Keine ESM-Imports: Hermes setzt diese Namespaces vor dem Plugin-Import als
-// Runtime-Globals. So muss der Loader weder React noch das SDK in Blob-Shims
-// umschreiben — genau dort entstand der Fehler "Unexpected token ']'".
-const ReactModule = globalThis.__HERMES_REACT__
+import * as ReactModule from 'react'
+import * as HermesSdk from '@hermes/plugin-sdk'
+
 const React = ReactModule.default ?? ReactModule
 const { useEffect, useState } = ReactModule
 
@@ -30,7 +29,7 @@ const {
   Skeleton,
   useQuery,
   usePluginI18n
-} = globalThis.__HERMES_PLUGIN_SDK__
+} = HermesSdk
 
 const ID = 'aiianer-hub'
 

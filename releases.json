@@ -1,6 +1,13 @@
 {
   "releases": [
     {
+      "tagName": "v1.3.26",
+      "name": "v1.3.26 · Hermes-Update-Kompatibilität",
+      "publishedAt": "2026-09-10T23:00:00Z",
+      "body": "Der Desktop-Hub nutzt jetzt die offizielle Hermes-Import-Schnittstelle statt veralteter Runtime-Globals. Zusätzlich wird eine verwaiste Legacy-Installation nicht mehr benötigt.",
+      "url": "https://github.com/oliverhees/aiianer-hermes-extensions/releases/tag/v1.3.26"
+    },
+    {
       "tagName": "v1.3.25",
       "name": "v1.3.25 · Versionszustand nach Neuinstallation korrigiert",
       "publishedAt": "2026-09-10T22:00:00Z",
