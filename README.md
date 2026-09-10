@@ -126,7 +126,9 @@ noch nicht Bestandteil der aktuellen V1.
 - [x] Externe lokale Backups mit Zeitplan, Laufprotokoll und sicherem Restore
 - [x] Feedback- und Issue-Prozess direkt über GitHub
 - [ ] GitHub-Integration für verschlüsselte Backup-Assets mit Prüfsumme
-- [ ] Weitere deutsche Community-Werkzeuge
+- [ ] **AIIANER Datenschleuse** — PII-Schutz für KI-Anfragen, lokal und DSGVO-first
+- [ ] **ADHS-Aufgabenplaner** — Fokus-Blöcke, kleinster nächster Schritt und Parkplatz
+- [ ] Geprüfter AIIANER MCP-Werkzeugkasten und Community-Workflows
 
 ---
 

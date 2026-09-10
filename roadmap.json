@@ -1,0 +1,46 @@
+{
+  "roadmapVersion": "1",
+  "updated": "2026-09-10",
+  "items": [
+    {
+      "id": "datenschleuse",
+      "name": "AIIANER Datenschleuse",
+      "status": "geplant",
+      "summary": "Ein selbst-hostbarer PII-Schutz für KI-Anfragen: personenbezogene Daten lokal erkennen, maskieren und nur geschützt an Modelle weitergeben.",
+      "value": "Sicherer Hermes-Einsatz mit DSGVO-first-Fokus, deutschen Erkennungsmustern und transparenter Fail-closed-Policy.",
+      "link": "https://github.com/oliverhees/datenschleuse"
+    },
+    {
+      "id": "adhs-aufgabenplaner",
+      "name": "ADHS-Aufgabenplaner",
+      "status": "geplant",
+      "summary": "Ein fokussierter Aufgabenplaner für eine Sache zur Zeit: kleinste nächste Schritte, Fokus-Blöcke, Parkplatz und sichtbare Erfolge.",
+      "value": "Nicht noch ein überladenes Projektmanagement-Cockpit, sondern ein externer Anker für Menschen mit vielen offenen Tabs im Kopf.",
+      "link": "https://github.com/oliverhees/aiianer-hermes-extensions/issues"
+    },
+    {
+      "id": "github-backup",
+      "name": "GitHub-Backup für den Backup-Außenposten",
+      "status": "später",
+      "summary": "Optionaler Remote-Speicher für verschlüsselte, versionierte Backup-Archive mit Prüfsumme und sicherem Restore.",
+      "value": "Erst nach stabiler lokaler V1 — kein Klartext-Upload und keine automatische Löschung vorhandener Archive.",
+      "link": "https://github.com/oliverhees/aiianer-hermes-extensions/issues"
+    },
+    {
+      "id": "mcp-werkzeugkasten",
+      "name": "AIIANER MCP-Werkzeugkasten",
+      "status": "Idee",
+      "summary": "Geprüfte, deutsch dokumentierte MCP-Anbindungen für typische Aufgaben im Alltag und in der Community.",
+      "value": "Ein Anschluss, viele sinnvolle Werkzeuge — mit klarer Herkunft, Berechtigungsumfang und Datenschutz-Hinweisen.",
+      "link": "https://github.com/oliverhees/aiianer-hermes-extensions/issues"
+    },
+    {
+      "id": "community-workflows",
+      "name": "Community-Workflows",
+      "status": "Idee",
+      "summary": "Wiederverwendbare Vorlagen für Content, Recherche, Wochenplanung und den Betrieb kleiner KI-Außenposten.",
+      "value": "Praktische Startpunkte statt Prompt-Zirkus: importieren, anpassen, anwenden.",
+      "link": "https://github.com/oliverhees/aiianer-hermes-extensions/issues"
+    }
+  ]
+}

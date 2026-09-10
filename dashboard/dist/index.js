@@ -205,6 +205,10 @@
     var releaseData = rs[0];
     var setReleaseData = rs[1];
 
+    var rms = useState(null);
+    var roadmapData = rms[0];
+    var setRoadmapData = rms[1];
+
     var ts = useState("marketplace");
     var aktiverTab = ts[0];
     var setAktiverTab = ts[1];
@@ -236,7 +240,10 @@
           // ehrliche leere Fassung statt die Seite zu blockieren.
           setReleaseData({ releases: [], source: "lokal" });
         });
-      return Promise.all([a, b, r]);
+      var rm = SDK.fetchJSON(API + "/roadmap")
+        .then(setRoadmapData)
+        .catch(function () { setRoadmapData({ items: [], source: "lokal" }); });
+      return Promise.all([a, b, r, rm]);
     }
 
     useEffect(function () {
@@ -293,6 +300,8 @@
     var updates = items.filter(function (c) { return c.status === "outdated"; }).length;
     var releases = (releaseData && releaseData.releases) || [];
     var releaseQuelle = releaseData && releaseData.source === "github" ? "GitHub-Releases" : "lokalen Rückfall";
+    var roadmapItems = (roadmapData && roadmapData.items) || [];
+    var roadmapQuelle = roadmapData && roadmapData.source === "github" ? "GitHub" : "lokalen Rückfall";
     function releaseDatum(wert) {
       if (!wert) return "";
       var parsed = new Date(wert);
@@ -330,7 +339,23 @@
         "div",
         { className: "mb-5 flex gap-2 border-b border-border" },
         h("button", { className: aktiverTab === "marketplace" ? "border-b-2 border-accent px-3 py-2 text-xs font-medium text-accent" : "px-3 py-2 text-xs text-muted-foreground hover:text-foreground", onClick: function () { setAktiverTab("marketplace"); } }, "Marktplatz"),
-        h("button", { className: aktiverTab === "release-notes" ? "border-b-2 border-accent px-3 py-2 text-xs font-medium text-accent" : "px-3 py-2 text-xs text-muted-foreground hover:text-foreground", onClick: function () { setAktiverTab("release-notes"); } }, "Versionshinweise")
+        h("button", { className: aktiverTab === "release-notes" ? "border-b-2 border-accent px-3 py-2 text-xs font-medium text-accent" : "px-3 py-2 text-xs text-muted-foreground hover:text-foreground", onClick: function () { setAktiverTab("release-notes"); } }, "Versionshinweise"),
+        h("button", { className: aktiverTab === "roadmap" ? "border-b-2 border-accent px-3 py-2 text-xs font-medium text-accent" : "px-3 py-2 text-xs text-muted-foreground hover:text-foreground", onClick: function () { setAktiverTab("roadmap"); } }, "Roadmap")
+      ),
+      h(
+        "section",
+        { className: aktiverTab === "roadmap" ? "mb-5 rounded-xl border border-border bg-card p-4 sm:p-5" : "hidden" },
+        h("p", { className: "text-xs uppercase tracking-widest text-accent" }, "Roadmap"),
+        h("h2", { className: "mt-1 text-xl font-semibold" }, "Was als Nächstes andockt"),
+        h("p", { className: "mt-1 text-sm text-muted-foreground" }, "Geplante Erweiterungen aus " + roadmapQuelle + "."),
+        h("div", { className: "mt-5 space-y-3" }, roadmapItems.length ? roadmapItems.map(function (item) {
+          return h("article", { key: item.id, className: "rounded-lg border border-border p-3" },
+            h("div", { className: "flex flex-wrap items-center justify-between gap-2" }, h("h3", { className: "font-semibold" }, item.name), h(C.Badge, null, item.status)),
+            h("p", { className: "mt-2 text-sm leading-6 text-muted-foreground" }, item.summary),
+            item.value ? h("p", { className: "mt-1 text-xs leading-5 text-muted-foreground" }, item.value) : null,
+            item.link ? h("a", { href: item.link, target: "_blank", rel: "noreferrer", className: "mt-2 inline-block text-xs text-accent hover:underline" }, "Mehr dazu auf GitHub ↗") : null
+          );
+        }) : h("p", { className: "text-sm text-muted-foreground" }, "Noch keine Roadmap-Einträge vorhanden.") )
       ),
       h(
         "section",

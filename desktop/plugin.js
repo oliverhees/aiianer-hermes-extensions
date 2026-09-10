@@ -56,6 +56,12 @@ function makeUseReleases(fetchReleases) {
   }
 }
 
+function makeUseRoadmap(fetchRoadmap) {
+  return function useRoadmap() {
+    return useQuery({ queryKey: [ID, 'roadmap'], queryFn: fetchRoadmap, staleTime: 300000 })
+  }
+}
+
 // -- AIIANER-Community-Banner -------------------------------------------------
 function MarketplaceHero({ updates, installiert, total, onCommunity }) {
   return jsxs('section', {
@@ -130,12 +136,34 @@ function Versionshinweise({ daten, laedt, fehler }) {
   })
 }
 
+function Roadmap({ daten, laedt, fehler }) {
+  const items = (daten && daten.items) || []
+  const quelle = daten && daten.source === 'github' ? 'GitHub' : 'lokalen Rückfall'
+  return jsxs('section', { className: 'rounded-xl border border-white/10 bg-black/10 p-4 sm:p-5 space-y-4', children: [
+    jsxs('div', { children: [
+      jsx('p', { className: 'text-xs uppercase tracking-widest text-accent', children: 'Roadmap' }, 'eyebrow'),
+      jsx('h2', { className: 'mt-1 text-xl font-semibold', children: 'Was als Nächstes andockt' }, 'title'),
+      jsx('p', { className: 'mt-1 text-sm opacity-65', children: `Geplante Erweiterungen aus ${quelle}.` }, 'intro')
+    ] }, 'heading'),
+    laedt ? jsx(Skeleton, { className: 'h-24' }, 'loading') : null,
+    !laedt && fehler ? jsx('p', { className: 'text-sm text-red-300', children: 'Roadmap konnte nicht geladen werden.' }, 'error') : null,
+    !laedt && !fehler && items.map(item => jsxs('article', { className: 'rounded-lg border border-white/10 p-3', children: [
+      jsxs('div', { className: 'flex flex-wrap items-center justify-between gap-2', children: [jsx('h3', { className: 'font-semibold', children: item.name }, 'name'), jsx(Badge, { children: item.status }, 'status')] }, 'meta'),
+      jsx('p', { className: 'mt-2 text-sm leading-6 opacity-75', children: item.summary }, 'summary'),
+      item.value ? jsx('p', { className: 'mt-1 text-xs leading-5 opacity-60', children: item.value }, 'value') : null,
+      item.link ? jsx('a', { href: item.link, target: '_blank', rel: 'noreferrer', className: 'mt-2 inline-block text-xs text-accent hover:underline', children: 'Mehr dazu auf GitHub ↗' }, 'link') : null
+    ] }, item.id)),
+    !laedt && !fehler && !items.length ? jsx('p', { className: 'text-sm opacity-65', children: 'Noch keine Roadmap-Einträge vorhanden.' }, 'empty') : null
+  ] })
+}
+
 // -- Oberflaeche --------------------------------------------------------------
-function makePane(useCatalog, useReleases, aktionen, onCommunity) {
+function makePane(useCatalog, useReleases, useRoadmap, aktionen, onCommunity) {
   return function Pane() {
     const t = usePluginI18n(ID)
     const { data, isLoading, isFetching, error, refetch } = useCatalog()
     const { data: releaseDaten, isLoading: releasesLaden, error: releasesFehler } = useReleases()
+    const { data: roadmapDaten, isLoading: roadmapLaden, error: roadmapFehler } = useRoadmap()
 
     // laufend[id] = 'install' | 'uninstall'; ergebnis[id] = Antwort oder Fehler.
     // Ohne den laufend-Zustand wirkt der Klick stumm, bis der Refetch kommt -
@@ -473,6 +501,11 @@ function makePane(useCatalog, useReleases, aktionen, onCommunity) {
               children: 'Versionshinweise'
             }, 'release-tab'),
             jsx('button', {
+              className: aktiverTab === 'roadmap' ? 'border-b-2 border-accent px-3 py-2 text-xs font-medium text-accent' : 'px-3 py-2 text-xs opacity-60 hover:opacity-100',
+              onClick: () => setAktiverTab('roadmap'),
+              children: 'Roadmap'
+            }, 'roadmap-tab'),
+            jsx('button', {
               className: aktiverTab === 'backups' ? 'border-b-2 border-accent px-3 py-2 text-xs font-medium text-accent' : 'px-3 py-2 text-xs opacity-60 hover:opacity-100',
               onClick: () => setAktiverTab('backups'),
               children: 'Backups'
@@ -548,6 +581,8 @@ function makePane(useCatalog, useReleases, aktionen, onCommunity) {
             ] }, 'backups-content')
           : aktiverTab === 'release-notes'
           ? jsx(Versionshinweise, { daten: releaseDaten, laedt: releasesLaden, fehler: releasesFehler }, 'release-notes')
+          : aktiverTab === 'roadmap'
+          ? jsx(Roadmap, { daten: roadmapDaten, laedt: roadmapLaden, fehler: roadmapFehler }, 'roadmap')
           : jsxs('div', {
           className: 'space-y-4',
           children: [
@@ -642,6 +677,7 @@ export default {
 
     const fetchCatalog = () => ctx.rest('/catalog')
     const fetchReleases = () => ctx.rest('/releases')
+    const fetchRoadmap = () => ctx.rest('/roadmap')
     // PluginRestOptions kennt method/body/upload/timeoutMs. KEIN headers, und
     // body ist ein Objekt - die Bruecke serialisiert selbst. Ein
     // JSON.stringify hier wuerde dem Backend einen String statt eines
@@ -659,11 +695,12 @@ export default {
 
     const useCatalog = makeUseCatalog(fetchCatalog)
     const useReleases = makeUseReleases(fetchReleases)
+    const useRoadmap = makeUseRoadmap(fetchRoadmap)
     const onCommunity = event => {
       event.preventDefault()
       void ctx.os.openExternal('https://aiianer.de')
     }
-    const Pane = makePane(useCatalog, useReleases, aktionen, onCommunity)
+    const Pane = makePane(useCatalog, useReleases, useRoadmap, aktionen, onCommunity)
 
     // Eigene Seite
     ctx.register({

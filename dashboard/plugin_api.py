@@ -33,6 +33,7 @@ REPO = "oliverhees/aiianer-hermes-extensions"
 TARBALL = f"https://github.com/{REPO}/archive/refs/heads/main.tar.gz"
 CATALOG_URL = f"https://raw.githubusercontent.com/{REPO}/main/catalog.json"
 RELEASES_URL = f"https://api.github.com/repos/{REPO}/releases"
+ROADMAP_URL = f"https://raw.githubusercontent.com/{REPO}/main/roadmap.json"
 
 def hermes_home() -> Path:
     """Wo Hermes seine Daten haelt, plattformuebergreifend.
@@ -59,6 +60,7 @@ STATE_DIR = HERMES_HOME / "aiianer"
 STATE_FILE = STATE_DIR / "installed.json"
 LOCAL_CATALOG = Path(__file__).resolve().parent.parent / "catalog.json"
 LOCAL_RELEASES = Path(__file__).resolve().parent.parent / "releases.json"
+LOCAL_ROADMAP = Path(__file__).resolve().parent.parent / "roadmap.json"
 AGENT_DIR = Path(os.environ.get("HERMES_AGENT_DIR") or (HERMES_HOME / "hermes-agent"))
 I18N_DIR = AGENT_DIR / "apps" / "desktop" / "src" / "i18n"
 BOTS_DIR = AGENT_DIR / "apps" / "desktop" / "src" / "plugins" / "hermes-bots"
@@ -343,6 +345,39 @@ def _load_releases() -> tuple[list[dict], str]:
     except Exception:
         pass
     return _normalize_releases(json.loads(LOCAL_RELEASES.read_text(encoding="utf-8"))), "lokal"
+
+
+def _normalize_roadmap(payload: object) -> list[dict]:
+    """Reduziert Roadmap-Daten auf sichere, UI-taugliche Einträge."""
+    raw_items = payload.get("items", []) if isinstance(payload, dict) else []
+    if not isinstance(raw_items, list):
+        raise ValueError("Roadmap hat kein gültiges Listenformat")
+    items = []
+    for item in raw_items[:20]:
+        if not isinstance(item, dict) or not str(item.get("id", "")).strip():
+            continue
+        items.append({
+            "id": str(item["id"]).strip()[:80],
+            "name": str(item.get("name", item["id"])).strip()[:180],
+            "status": str(item.get("status", "geplant")).strip()[:40],
+            "summary": str(item.get("summary", "")).strip()[:1000],
+            "value": str(item.get("value", "")).strip()[:1000],
+            "link": str(item.get("link", "")).strip()[:500],
+        })
+    return items
+
+
+def _load_roadmap() -> tuple[list[dict], str]:
+    """Lädt die Roadmap aus GitHub; lokale Fassung ist Rückfall."""
+    request = urllib.request.Request(ROADMAP_URL, headers={"Accept": "application/json"})
+    try:
+        with urllib.request.urlopen(request, timeout=8) as resp:
+            items = _normalize_roadmap(json.loads(resp.read().decode("utf-8")))
+            if items:
+                return items, "github"
+    except Exception:
+        pass
+    return _normalize_roadmap(json.loads(LOCAL_ROADMAP.read_text(encoding="utf-8"))), "lokal"
 
 
 def _atomic_copy(source: Path, target: Path) -> None:
@@ -690,6 +725,13 @@ async def releases() -> dict:
     """Versionierte GitHub-Hinweise, mit lokaler Fassung für Offline-Betrieb."""
     items, source = _load_releases()
     return {"releases": items, "source": source}
+
+
+@router.get("/roadmap")
+async def roadmap() -> dict:
+    """Geplante Marktplatz-Erweiterungen aus GitHub, mit lokalem Rückfall."""
+    items, source = _load_roadmap()
+    return {"items": items, "source": source}
 
 
 def _guard():

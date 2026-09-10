@@ -1,6 +1,21 @@
 {
   "releases": [
     {
+      "tagName": "v1.3.17",
+      "name": "v1.3.17 · Roadmap für neue AIIANER-Werkzeuge",
+      "publishedAt": "2026-09-10T17:30:00Z",
+      "body": "Roadmap-Tab im Marktplatz ergänzt. Geplant sind die AIIANER Datenschleuse, ein ADHS-Aufgabenplaner, verschlüsselte GitHub-Backups sowie ein geprüfter MCP-Werkzeugkasten.",
+      "url": "https://github.com/oliverhees/aiianer-hermes-extensions/releases/tag/v1.3.17"
+    },
+    {
+      "tagName": "v1.3.16",
+      "name": "v1.3.16 · Neuer Marktplatz-Hero",
+      "publishedAt": "2026-09-10T17:00:00Z",
+      "body": "Neues README-Hero-Asset im klaren schwarz/neon-grünen AIIANER-Marktplatz-Stil.",
+      "url": "https://github.com/oliverhees/aiianer-hermes-extensions/releases/tag/v1.3.16"
+    },
+    {
+
       "tagName": "v1.3.15",
       "name": "v1.3.15 · Beta-Feedback und Marktplatz-Auftritt",
       "publishedAt": "2026-09-10T16:30:00Z",
