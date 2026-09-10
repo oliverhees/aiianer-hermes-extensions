@@ -133,6 +133,7 @@ noch nicht Bestandteil der aktuellen V1.
 - [ ] GitHub-Integration für verschlüsselte Backup-Assets mit Prüfsumme
 - [ ] **AIIANER Datenschleuse** — PII-Schutz für KI-Anfragen, lokal und DSGVO-first
 - [ ] **ADHS-Aufgabenplaner** — Fokus-Blöcke, kleinster nächster Schritt und Parkplatz
+- [ ] **Backup beim Beenden von Hermes** — sichere Ausführung über einen offiziellen App-Shutdown-Hook
 - [ ] Geprüfter AIIANER MCP-Werkzeugkasten und Community-Workflows
 
 ---

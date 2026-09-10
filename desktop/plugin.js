@@ -481,7 +481,7 @@ function makePane(useCatalog, useReleases, useRoadmap, aktionen, onCommunity) {
     const hubVersion = (hub && (hub.installed || hub.version)) || '—'
 
     return jsxs('div', {
-      className: 'p-4 sm:p-6 lg:p-8 space-y-6 max-w-6xl',
+      className: 'min-w-0 w-full max-w-6xl overflow-x-hidden p-4 sm:p-6 lg:p-8 space-y-6',
       children: [
         jsx(MarketplaceHero, {
           updates,
@@ -522,7 +522,7 @@ function makePane(useCatalog, useReleases, useRoadmap, aktionen, onCommunity) {
           ? jsxs('section', { className: 'rounded-xl border border-white/10 bg-black/10 p-4 sm:p-5 space-y-5', children: [
               jsx('p', { className: 'text-xs uppercase tracking-widest text-accent', children: 'AIIANER BACKUP-AUSSENPOSTEN' }),
               jsx('h2', { className: 'text-xl font-semibold', children: 'Backups · lokal und außerhalb von Hermes' }),
-              jsx('p', { className: 'text-sm opacity-70', children: 'Deine Daten verlassen diesen Rechner nicht. Wähle den Zielordner einfach aus — innerhalb von HERMES_HOME ist absichtlich gesperrt.' }),
+              jsx('p', { className: 'break-words whitespace-normal text-sm leading-5 opacity-70', children: 'Deine Daten verlassen diesen Rechner nicht. Wähle den Zielordner einfach aus — innerhalb von HERMES_HOME ist absichtlich gesperrt.' }),
               jsxs('div', { className: 'space-y-2', children: [
                 jsx('label', { className: 'text-xs font-medium opacity-75', children: 'Speicherort' }),
                 jsxs('div', { className: 'flex gap-2', children: [
@@ -540,9 +540,10 @@ function makePane(useCatalog, useReleases, useRoadmap, aktionen, onCommunity) {
                   backupBrowser.directories && backupBrowser.directories.length ? jsx('div', { className: 'grid max-h-52 grid-cols-1 gap-1 overflow-auto sm:grid-cols-2', children: backupBrowser.directories.map(folder => jsx('button', { className: 'truncate rounded px-2 py-1 text-left text-xs hover:bg-white/10', onClick: () => browseBackup(folder.path), children: `📁 ${folder.name}` }, folder.path)) }) : jsx('p', { className: 'text-xs opacity-60', children: 'Keine Unterordner. Du kannst diesen Ordner direkt wählen.' })
                 ] })
               ] }) : null,
-              jsx('p', { className: 'text-xs leading-5 opacity-70', children: 'Hier stellst du die automatische Backup-Routine ein. Nach dem Speichern legt Hermes einen eigenen Zeitplan an. Ohne Zielordner wird nichts ausgeführt.' }),
+              jsx('p', { className: 'break-words whitespace-normal text-xs leading-5 opacity-70', children: 'Hier stellst du die automatische Backup-Routine ein. Nach dem Speichern legt Hermes einen eigenen Zeitplan an. Ohne Zielordner wird nichts ausgeführt.' }),
+              jsx('p', { className: 'break-words whitespace-normal text-xs leading-5 text-amber-200/75', children: 'Backup beim Schließen von Hermes ist in V1 noch nicht verfügbar. Diese Option folgt erst mit einem verlässlichen App-Shutdown-Hook.' }),
               jsxs('div', { className: 'grid gap-3 rounded-md border border-white/10 p-3 sm:grid-cols-3', children: [
-                jsxs('label', { className: 'space-y-1 text-xs', children: [jsx('span', { className: 'font-medium opacity-75', children: 'Automatisches Backup' }), jsx('select', { className: 'w-full rounded border border-white/15 bg-black/20 px-2 py-2', value: backupSchedule, onChange: event => setBackupSchedule(event.target.value), children: [jsx('option', { value: 'manual', children: 'Aus · nur manuell' }), jsx('option', { value: 'daily', children: 'Täglich' }), jsx('option', { value: 'weekly', children: 'Wöchentlich' })] })] }),
+                jsxs('label', { className: 'min-w-0 space-y-1 text-xs', children: [jsx('span', { className: 'font-medium opacity-75', children: 'Automatisches Backup' }), jsx('select', { className: 'w-full min-w-0 rounded border border-white/15 bg-background px-2 py-2 text-foreground', style: { colorScheme: 'dark' }, value: backupSchedule, onChange: event => setBackupSchedule(event.target.value), children: [jsx('option', { className: 'bg-background text-foreground', value: 'manual', children: 'Aus · nur manuell' }), jsx('option', { className: 'bg-background text-foreground', value: 'daily', children: 'Täglich' }), jsx('option', { className: 'bg-background text-foreground', value: 'weekly', children: 'Wöchentlich' })] })] }),
                 jsxs('label', { className: 'space-y-1 text-xs', children: [jsx('span', { className: 'font-medium opacity-75', children: 'Uhrzeit' }), jsx('input', { className: 'w-full rounded border border-white/15 bg-black/20 px-2 py-2', type: 'time', value: backupTime, disabled: backupSchedule === 'manual', onChange: event => setBackupTime(event.target.value) })] }),
                 backupSchedule === 'weekly' ? jsxs('label', { className: 'space-y-1 text-xs', children: [jsx('span', { className: 'font-medium opacity-75', children: 'Wochentag' }), jsx('select', { className: 'w-full rounded border border-white/15 bg-black/20 px-2 py-2', value: backupWeekday, onChange: event => setBackupWeekday(Number(event.target.value)), children: ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'].map((name, day) => jsx('option', { value: day, children: name }, day)) })] }) : jsx('div', { className: 'text-xs self-end opacity-55', children: backupSchedule === 'daily' ? 'Läuft jeden Tag zur gewählten Uhrzeit.' : 'Manuelle Sicherungen bleiben jederzeit möglich.' })
               ] }),

@@ -27,6 +27,14 @@
       "link": "https://github.com/oliverhees/aiianer-hermes-extensions/issues"
     },
     {
+      "id": "backup-on-exit",
+      "name": "Backup beim Beenden von Hermes",
+      "status": "später",
+      "summary": "Optionales Backup beim vollständigen Beenden von Hermes.",
+      "value": "Benötigt einen verlässlichen Hermes-App-Shutdown-Hook, damit der Lauf nicht mitten im Schreiben abgebrochen wird.",
+      "link": "https://github.com/oliverhees/aiianer-hermes-extensions/issues"
+    },
+    {
       "id": "mcp-werkzeugkasten",
       "name": "AIIANER MCP-Werkzeugkasten",
       "status": "Idee",

@@ -1,6 +1,13 @@
 {
   "releases": [
     {
+      "tagName": "v1.3.21",
+      "name": "v1.3.21 · Backup-Layout und Beenden-Roadmap",
+      "publishedAt": "2026-09-10T19:30:00Z",
+      "body": "Backup-Tab auf schmalen Fenstern repariert: Texte umbrechen sauber und Auswahlmenüs bleiben lesbar. Die sichere tägliche/wöchentliche Routine bleibt auswählbar; Backup beim Hermes-Beenden ist transparent als spätere Erweiterung dokumentiert.",
+      "url": "https://github.com/oliverhees/aiianer-hermes-extensions/releases/tag/v1.3.21"
+    },
+    {
       "tagName": "v1.3.20",
       "name": "v1.3.20 · Neustart-Hinweise nach Updates",
       "publishedAt": "2026-09-10T19:00:00Z",
