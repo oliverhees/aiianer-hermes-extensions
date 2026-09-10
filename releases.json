@@ -1,6 +1,12 @@
 {
   "releases": [
     {
+      "tagName": "v1.3.27",
+      "name": "v1.3.27 · I18n-Renderpfad korrigiert",
+      "publishedAt": "2026-09-11T00:00:00Z",
+      "body": "Der Desktop-Hub verwendet für seine Übersetzungen den stabilen ctx.i18n.t-Zugang und ist damit kompatibel mit dem aktuellen Hermes-Runtime-SDK."
+    },
+    {
       "tagName": "v1.3.26",
       "name": "v1.3.26 · Hermes-Update-Kompatibilität",
       "publishedAt": "2026-09-10T23:00:00Z",

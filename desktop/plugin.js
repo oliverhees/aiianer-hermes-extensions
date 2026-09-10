@@ -27,8 +27,7 @@ const {
   ErrorState,
   host,
   Skeleton,
-  useQuery,
-  usePluginI18n
+  useQuery
 } = HermesSdk
 
 const ID = 'aiianer-hub'
@@ -159,9 +158,9 @@ function Roadmap({ daten, laedt, fehler }) {
 }
 
 // -- Oberflaeche --------------------------------------------------------------
-function makePane(useCatalog, useReleases, useRoadmap, aktionen, onCommunity) {
+function makePane(useCatalog, useReleases, useRoadmap, aktionen, onCommunity, translate) {
   return function Pane() {
-    const t = usePluginI18n(ID)
+    const t = translate
     const { data, isLoading, isFetching, error, refetch } = useCatalog()
     const { data: releaseDaten, isLoading: releasesLaden, error: releasesFehler } = useReleases()
     const { data: roadmapDaten, isLoading: roadmapLaden, error: roadmapFehler } = useRoadmap()
@@ -707,7 +706,8 @@ export default {
       event.preventDefault()
       void ctx.os.openExternal('https://aiianer.de')
     }
-    const Pane = makePane(useCatalog, useReleases, useRoadmap, aktionen, onCommunity)
+    const translate = ctx.i18n.t.bind(ctx.i18n)
+    const Pane = makePane(useCatalog, useReleases, useRoadmap, aktionen, onCommunity, translate)
 
     // Eigene Seite
     ctx.register({
