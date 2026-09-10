@@ -69,6 +69,18 @@ class HubRootInstallTest(unittest.TestCase):
             self.assertTrue((hermes_home / "hooks" / "aiianer-guard" / "handler.py").is_file())
 
 
+class HubVersionSourceTest(unittest.TestCase):
+    def test_live_manifest_wins_over_stale_installed_state(self):
+        api = load_api_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp) / "hermes"
+            manifest = home / "plugins" / "aiianer-hub" / "plugin.yaml"
+            manifest.parent.mkdir(parents=True)
+            manifest.write_text("name: aiianer-hub\nversion: 1.3.24\n")
+            api.HERMES_HOME = home
+            self.assertEqual(api._local_plugin_version("aiianer-hub", {"aiianer-hub": {"version": "1.3.21"}}), "1.3.24")
+
+
 class ReleaseNormalizationTest(unittest.TestCase):
     def test_normalizes_github_and_local_release_shapes(self):
         api = load_api_module()
@@ -262,7 +274,7 @@ class HubCatalogUpdateStatusTest(unittest.TestCase):
 
         hub = next(component for component in result["components"] if component["id"] == "aiianer-hub")
         self.assertEqual(hub["installed"], "1.3.12")
-        self.assertEqual(hub["version"], "1.3.24")
+        self.assertEqual(hub["version"], "1.3.25")
         self.assertEqual(hub["status"], "outdated")
 
 

@@ -276,9 +276,6 @@ def _local_plugin_version(comp_id: str, state: dict) -> str | None:
     """
     if comp_id != "aiianer-hub":
         return state.get(comp_id, {}).get("version")
-    version = state.get(comp_id, {}).get("version")
-    if version:
-        return version
     manifest = HERMES_HOME / "plugins" / "aiianer-hub" / "plugin.yaml"
     try:
         for line in manifest.read_text(encoding="utf-8").splitlines():
@@ -286,7 +283,7 @@ def _local_plugin_version(comp_id: str, state: dict) -> str | None:
                 return line.split(":", 1)[1].strip()
     except OSError:
         pass
-    return None
+    return state.get(comp_id, {}).get("version")
 
 
 def _write_state(state: dict) -> None:

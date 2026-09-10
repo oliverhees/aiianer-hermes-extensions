@@ -1,6 +1,13 @@
 {
   "releases": [
     {
+      "tagName": "v1.3.25",
+      "name": "v1.3.25 · Versionszustand nach Neuinstallation korrigiert",
+      "publishedAt": "2026-09-10T22:00:00Z",
+      "body": "Der Marktplatz verwendet für den Hub jetzt das tatsächlich installierte Live-Manifest als Versionsquelle. Ein veralteter installed.json-Eintrag kann nach einer Neuinstallation nicht mehr fälschlich ein Update anzeigen.",
+      "url": "https://github.com/oliverhees/aiianer-hermes-extensions/releases/tag/v1.3.25"
+    },
+    {
       "tagName": "v1.3.24",
       "name": "v1.3.24 · Backup-Tab nur bei installiertem Plugin",
       "publishedAt": "2026-09-10T21:00:00Z",
