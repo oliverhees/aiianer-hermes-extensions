@@ -1,6 +1,12 @@
 {
   "releases": [
     {
+      "tagName": "v1.3.28",
+      "name": "v1.3.28 · SDK-Hook-Abhängigkeiten entfernt",
+      "publishedAt": "2026-09-11T00:30:00Z",
+      "body": "Der Desktop-Hub verwendet beim Laden des Katalogs nur noch stabile React-Basis-Hooks und ist damit unabhängig von optionalen Runtime-SDK-Hooks."
+    },
+    {
       "tagName": "v1.3.27",
       "name": "v1.3.27 · I18n-Renderpfad korrigiert",
       "publishedAt": "2026-09-11T00:00:00Z",

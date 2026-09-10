@@ -26,38 +26,43 @@ const {
   EmptyState,
   ErrorState,
   host,
-  Skeleton,
-  useQuery
+  Skeleton
 } = HermesSdk
 
 const ID = 'aiianer-hub'
 
 // -- Daten --------------------------------------------------------------------
 
-function makeUseCatalog(fetchCatalog) {
-  return function useCatalog() {
-    return useQuery({
-      queryKey: [ID, 'catalog'],
-      queryFn: fetchCatalog,
-      staleTime: 30000
-    })
+function makeUseRest(fetcher) {
+  return function useRest() {
+    const [state, setState] = useState({ data: null, isLoading: true, isFetching: false, error: null })
+    const load = () => {
+      setState(previous => ({ ...previous, isFetching: true, error: null }))
+      return fetcher()
+        .then(data => {
+          setState({ data, isLoading: false, isFetching: false, error: null })
+          return data
+        })
+        .catch(error => {
+          setState(previous => ({ ...previous, isLoading: false, isFetching: false, error }))
+          throw error
+        })
+    }
+    useEffect(() => { void load() }, [])
+    return { ...state, refetch: load }
   }
+}
+
+function makeUseCatalog(fetchCatalog) {
+  return makeUseRest(fetchCatalog)
 }
 
 function makeUseReleases(fetchReleases) {
-  return function useReleases() {
-    return useQuery({
-      queryKey: [ID, 'releases'],
-      queryFn: fetchReleases,
-      staleTime: 300000
-    })
-  }
+  return makeUseRest(fetchReleases)
 }
 
 function makeUseRoadmap(fetchRoadmap) {
-  return function useRoadmap() {
-    return useQuery({ queryKey: [ID, 'roadmap'], queryFn: fetchRoadmap, staleTime: 300000 })
-  }
+  return makeUseRest(fetchRoadmap)
 }
 
 // -- AIIANER-Community-Banner -------------------------------------------------
