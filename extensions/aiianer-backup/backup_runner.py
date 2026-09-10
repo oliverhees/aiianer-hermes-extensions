@@ -82,7 +82,10 @@ def run(home: Path, config: dict) -> dict:
     partial=None
     try:
         stamp=dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-        final=target/f"{PREFIX}{stamp}.zip"; partial=target/(f".{final.name}.{os.getpid()}.partial")
+        final=target/f"{PREFIX}{stamp}.zip"
+        # ``hermes backup`` appends .zip when its output lacks that suffix. Keep the
+        # hidden staging path zip-suffixed so the CLI writes exactly where we verify it.
+        partial=target/(f".{final.stem}.{os.getpid()}.partial.zip")
         cmd=[shutil.which("hermes") or "hermes", "backup", "--output", str(partial), "--keep", "0"]
         try:
             proc=subprocess.run(cmd, cwd=str(home), capture_output=True, text=True, timeout=3600, shell=False)
