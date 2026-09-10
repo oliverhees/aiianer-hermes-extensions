@@ -479,6 +479,10 @@ function makePane(useCatalog, useReleases, useRoadmap, aktionen, onCommunity) {
     // Refetch deshalb gemeinsam mit ihr.
     const hub = items.find(c => c.id === ID)
     const hubVersion = (hub && (hub.installed || hub.version)) || '—'
+    const backupInstalled = items.some(c => c.id === 'aiianer-backup' && c.installed)
+    useEffect(() => {
+      if (!backupInstalled && aktiverTab === 'backups') setAktiverTab('marketplace')
+    }, [backupInstalled, aktiverTab])
 
     return jsxs('div', {
       className: 'min-w-0 w-full max-w-6xl overflow-x-hidden p-4 sm:p-6 lg:p-8 space-y-6',
@@ -507,18 +511,18 @@ function makePane(useCatalog, useReleases, useRoadmap, aktionen, onCommunity) {
               onClick: () => setAktiverTab('roadmap'),
               children: 'Roadmap'
             }, 'roadmap-tab'),
-            jsx('button', {
+            backupInstalled ? jsx('button', {
               className: aktiverTab === 'backups' ? 'border-b-2 border-accent px-3 py-2 text-xs font-medium text-accent' : 'px-3 py-2 text-xs opacity-60 hover:opacity-100',
               onClick: () => setAktiverTab('backups'),
               children: 'Backups'
-            }, 'backups-tab'),
+            }, 'backups-tab') : null,
             jsx('span', {
               className: 'ml-auto self-center pb-2 text-[10px] font-mono tracking-wider opacity-50',
               children: 'v' + hubVersion
             }, 'version')
           ]
         }, 'tabs'),
-        aktiverTab === 'backups'
+        aktiverTab === 'backups' && backupInstalled
           ? jsxs('section', { className: 'rounded-xl border border-white/10 bg-black/10 p-4 sm:p-5 space-y-5', children: [
               jsx('p', { className: 'text-xs uppercase tracking-widest text-accent', children: 'AIIANER BACKUP-AUSSENPOSTEN' }),
               jsx('h2', { className: 'text-xl font-semibold', children: 'Backups · lokal und außerhalb von Hermes' }),

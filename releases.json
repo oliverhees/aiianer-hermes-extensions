@@ -1,6 +1,13 @@
 {
   "releases": [
     {
+      "tagName": "v1.3.24",
+      "name": "v1.3.24 · Backup-Tab nur bei installiertem Plugin",
+      "publishedAt": "2026-09-10T21:00:00Z",
+      "body": "Der Backups-Tab erscheint jetzt nur noch, wenn der AIIANER Backup-Außenposten tatsächlich installiert ist. Nach der Deinstallation wird ein geöffneter Backup-Tab automatisch geschlossen.",
+      "url": "https://github.com/oliverhees/aiianer-hermes-extensions/releases/tag/v1.3.24"
+    },
+    {
       "tagName": "v1.3.23",
       "name": "v1.3.23 · Sicherheits-Scan bereinigt",
       "publishedAt": "2026-09-10T20:30:00Z",
