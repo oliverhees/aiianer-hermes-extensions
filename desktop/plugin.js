@@ -22,6 +22,10 @@ const jsxs = jsx
 
 const { host } = HermesSdk
 const cn = (...values) => values.filter(Boolean).join(' ')
+const notify = payload => typeof host?.notify === 'function' ? host.notify(payload) : undefined
+const notifyError = error => typeof host?.notifyError === 'function' ? host.notifyError(error) : undefined
+const navigate = path => typeof host?.navigate === 'function' ? host.navigate(path) : undefined
+const restartGateway = () => typeof host?.restartGateway === 'function' ? host.restartGateway() : Promise.resolve()
 
 const ID = 'aiianer-hub'
 
@@ -232,7 +236,7 @@ function makePane(fetchCatalog, fetchReleases, fetchRoadmap, aktionen, onCommuni
 
     const updateNotification = anzahl => {
       if (!anzahl) {
-        host.notify({
+        notify({
           id: 'aiianer-updates',
           kind: 'success',
           title: 'AIIANER EXTENSION HUB',
@@ -243,7 +247,7 @@ function makePane(fetchCatalog, fetchReleases, fetchRoadmap, aktionen, onCommuni
         return
       }
 
-      host.notify({
+      notify({
         id: 'aiianer-updates',
         kind: 'warning',
         title: 'Updates verfügbar',
@@ -251,7 +255,7 @@ function makePane(fetchCatalog, fetchReleases, fetchRoadmap, aktionen, onCommuni
         detail: 'Öffne den AIIANER EXTENSION HUB und aktualisiere die rot markierten Buttons.',
         durationMs: 0,
         placement: 'default',
-        action: { label: 'Hub öffnen', onClick: () => host.navigate('/aiianer') }
+        action: { label: 'Hub öffnen', onClick: () => navigate('/aiianer') }
       })
     }
 
@@ -263,7 +267,7 @@ function makePane(fetchCatalog, fetchReleases, fetchRoadmap, aktionen, onCommuni
       void refetch().then(result => {
         updateNotification((result.data?.components || []).filter(c => c.status === 'outdated').length)
       }).catch(error => {
-        host.notifyError(error)
+        notifyError(error)
       })
     }
 
@@ -276,15 +280,15 @@ function makePane(fetchCatalog, fetchReleases, fetchRoadmap, aktionen, onCommuni
             setErgebnis(v => ({ ...v, [id]: { ok: true, ...antwort } }))
             const gatewayNeustart = aktion === 'install' && antwort.requiresGatewayRestart === true
             if (gatewayNeustart) {
-              host.notify({
+              notify({
                 kind: 'warning',
                 title: 'Hub wird neu geladen',
                 message: 'Der neue Hub-Stand ist installiert. Das Hermes-Backend wird jetzt neu gestartet.'
               })
-              if (typeof host.restartGateway === 'function') {
-                return host.restartGateway()
+              if (typeof host?.restartGateway === 'function') {
+                return restartGateway()
                   .then(() => {
-                    host.notify({
+                    notify({
                       kind: 'success',
                       title: 'Hub aktualisiert',
                       message: 'Backend und Katalog laufen jetzt mit dem neuen Stand. Bitte Hermes komplett beenden und neu starten, damit die Desktop-Oberfläche den neuen Plugin-Code lädt.'
@@ -302,7 +306,7 @@ function makePane(fetchCatalog, fetchReleases, fetchRoadmap, aktionen, onCommuni
               }
             }
             if (aktion === 'install' && (antwort.nextSteps || []).some(step => /neu starten|restart/i.test(step))) {
-              host.notify({
+              notify({
                 kind: 'warning',
                 title: 'Hermes-Neustart erforderlich',
                 message: 'Das Update ist installiert. Bitte Hermes komplett beenden und neu starten.'
@@ -746,7 +750,7 @@ export default {
         id: 'aiianer.open',
         label: 'AIIANER: Erweiterungen oeffnen',
         keywords: ['aiianer', 'marktplatz', 'deutsch', 'erweiterungen'],
-        run: () => host.navigate('/aiianer')
+        run: () => navigate('/aiianer')
       }
     })
   }

@@ -1,6 +1,12 @@
 {
   "releases": [
     {
+      "tagName": "v1.3.32",
+      "name": "v1.3.32 · Optionale Host-API abgesichert",
+      "publishedAt": "2026-09-11T02:30:00Z",
+      "body": "Benachrichtigungen, Navigation und Gateway-Neustart fallen bei fehlenden optionalen Host-Funktionen sicher zurück, statt den Hub-Renderpfad zu beenden."
+    },
+    {
       "tagName": "v1.3.31",
       "name": "v1.3.31 · Hook-Reihenfolge vollständig stabilisiert",
       "publishedAt": "2026-09-11T02:00:00Z",

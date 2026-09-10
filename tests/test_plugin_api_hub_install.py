@@ -274,7 +274,7 @@ class HubCatalogUpdateStatusTest(unittest.TestCase):
 
         hub = next(component for component in result["components"] if component["id"] == "aiianer-hub")
         self.assertEqual(hub["installed"], "1.3.12")
-        self.assertEqual(hub["version"], "1.3.31")
+        self.assertEqual(hub["version"], "1.3.32")
         self.assertEqual(hub["status"], "outdated")
 
 
