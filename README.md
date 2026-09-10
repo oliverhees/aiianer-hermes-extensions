@@ -28,6 +28,7 @@ installierst und aktualisierst du die übrigen AIIANER-Erweiterungen.
 | **german-language** | Deutsche Oberfläche für Hermes Desktop. Wird nach Hermes-Updates automatisch erneut eingespielt. |
 | **bot-mode-german** | Deutsche Texte für Bot Mode: Liste, Gruppenchats, Avatare und Zeitpläne. Setzt `german-language` voraus. |
 | **group-chat-limits** | Eigene Runden-, Nachrichten-, Fortsetzungs- und Verlaufsgrenzen pro Gruppenchat. |
+| **aiianer-backup** | Lokale vollständige Hermes-Backups in einem externen Ordner. V1 ohne Upload/GitHub; Wiederherstellung nur nach expliziter Bestätigung. |
 
 ## Installation
 

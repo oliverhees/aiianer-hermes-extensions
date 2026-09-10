@@ -405,6 +405,167 @@ def _install_hub_from_root(source: Path) -> None:
         shutil.rmtree(legacy_desktop_target)
 
 
+# ---------------------------------------------------------------- Backup-Außenposten
+
+def _backup_state_file() -> Path: return STATE_DIR / "backup-state.json"
+def _backup_runner() -> Path: return HERMES_HOME / "scripts" / "aiianer-backup-runner.py"
+RESTORE_CONFIRM = "HERMES-IMPORT {name} ÜBERSCHREIBEN"
+
+def _backup_state() -> dict:
+    try:
+        value = json.loads(_backup_state_file().read_text(encoding="utf-8"))
+        return value if isinstance(value, dict) else {}
+    except (OSError, ValueError):
+        return {"schemaVersion": 1, "enabled": False, "target_dir": "", "schedule": "manual", "retention": {"enabled": False, "keep": 5}, "state": "never_run", "lastRun": None, "lastArchive": None, "lastErrorCode": None}
+
+def _backup_save(value: dict) -> None:
+    _write_json_atomic(_backup_state_file(), value)
+
+def _write_json_atomic(path: Path, value: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            json.dump(value, fh, indent=2, sort_keys=True); fh.write("\n"); fh.flush(); os.fsync(fh.fileno())
+        os.replace(tmp, path)
+    finally:
+        try: os.unlink(tmp)
+        except FileNotFoundError: pass
+
+def _backup_target(raw: str, create: bool = True) -> Path:
+    if not isinstance(raw, str) or not raw.strip(): raise ValueError("TARGET_REQUIRED")
+    p = Path(raw).expanduser()
+    if not p.is_absolute() or ".." in p.parts: raise ValueError("TARGET_ABSOLUTE_REQUIRED")
+    if create: p.mkdir(parents=True, exist_ok=True)
+    target = p.resolve(strict=True); home = hermes_home().resolve(strict=False)
+    try: target.relative_to(home)
+    except ValueError: pass
+    else: raise ValueError("TARGET_INSIDE_HERMES_HOME")
+    if not target.is_dir() or not os.access(target, os.W_OK): raise ValueError("TARGET_NOT_WRITABLE")
+    if os.name == "nt" and str(target).startswith("\\\\"): raise ValueError("TARGET_NETWORK_OR_UNSUPPORTED")
+    return target
+
+def _backup_public(state: dict) -> dict:
+    retention = state.get("retention") if isinstance(state.get("retention"), dict) else {}
+    return {"configured": bool(state.get("target_dir")), "enabled": bool(state.get("enabled")), "targetDir": state.get("target_dir") or None, "schedule": state.get("schedule", "manual"), "retention": {"enabled": bool(retention.get("enabled")), "keep": int(retention.get("keep", 5))}, "state": state.get("state", "never_run"), "lastRun": state.get("lastRun"), "lastArchive": state.get("lastArchive"), "lastErrorCode": state.get("lastErrorCode"), "nextRun": None, "archiveCount": _archive_count(state.get("target_dir"))}
+
+def _archive_count(raw) -> int:
+    try: return sum(1 for p in _backup_target(raw, False).iterdir() if p.is_file() and p.name.startswith("aiianer-backup-") and p.name.endswith(".zip"))
+    except (ValueError, OSError, TypeError): return 0
+
+@router.get("/backup/status")
+async def backup_status() -> dict: return _backup_public(_backup_state())
+
+@router.get("/backup/config")
+async def backup_config() -> dict: return _backup_public(_backup_state())
+
+def _backup_cron_args(schedule: str, action: str, job_id: str | None = None) -> list[str]:
+    interval = "24h" if schedule == "daily" else "168h"
+    base = [shutil.which("hermes") or "hermes", "cron", action]
+    if job_id: base.append(job_id)
+    base.extend([interval, "--name", "aiianer-backup", "--script", "aiianer-backup-runner.py", "--no-agent", "--deliver", "local"])
+    if action == "edit":
+        base.remove(interval)
+        base.extend(["--schedule", interval])
+    return base
+
+
+def _ensure_backup_cron(schedule: str) -> None:
+    try:
+        listed = subprocess.run([shutil.which("hermes") or "hermes", "cron", "list", "--all"], capture_output=True, text=True, timeout=30, shell=False, check=False)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise RuntimeError("CRON_SETUP_FAILED") from exc
+    if listed.returncode != 0:
+        raise RuntimeError("CRON_SETUP_FAILED")
+    job_id = None
+    matches = list(re.finditer(r"(?m)^[ \t]*([0-9a-f]{12}) \[(?:active|paused)\]", listed.stdout or ""))
+    for index, match in enumerate(matches):
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(listed.stdout or "")
+        block = (listed.stdout or "")[match.start():end]
+        if re.search(r"(?m)^[ \t]*Name:[ \t]+aiianer-backup[ \t]*$", block):
+            job_id = match.group(1)
+            break
+    action = "edit" if job_id else "create"
+    argv = _backup_cron_args(schedule, action, job_id)
+    try:
+        result = subprocess.run(argv, capture_output=True, text=True, timeout=30, shell=False, check=False)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise RuntimeError("CRON_SETUP_FAILED") from exc
+    if result.returncode != 0:
+        raise RuntimeError("CRON_SETUP_FAILED")
+
+
+@router.put("/backup/settings")
+async def backup_settings(body: dict) -> dict:
+    body = body or {}; schedule = body.get("schedule", "manual")
+    if schedule not in {"manual", "daily", "weekly"}: raise HTTPException(422, "SCHEDULE_INVALID")
+    retention = body.get("retention") or {}; keep = retention.get("keep", 5)
+    if not isinstance(keep, int) or isinstance(keep, bool) or not 1 <= keep <= 100: raise HTTPException(422, "RETENTION_INVALID")
+    target = body.get("target_dir", body.get("targetDir", ""))
+    try: canonical = str(_backup_target(target)) if target else ""
+    except ValueError as exc: raise HTTPException(422, str(exc))
+    state = {**_backup_state(), "schemaVersion": 1, "enabled": bool(body.get("enabled", False)), "target_dir": canonical, "schedule": schedule, "retention": {"enabled": bool(retention.get("enabled", False)), "keep": keep}}
+    _backup_save(state)
+    if state["enabled"] and schedule != "manual":
+        try:
+            _ensure_backup_cron(schedule)
+        except RuntimeError:
+            state["lastErrorCode"] = "CRON_SETUP_FAILED"; _backup_save(state)
+    return _backup_public(_backup_state())
+
+@router.get("/backup/archives")
+async def backup_archives() -> dict:
+    state = _backup_state(); result=[]
+    try:
+        for p in sorted(_backup_target(state.get("target_dir"), False).glob("aiianer-backup-*.zip"), key=lambda x:x.stat().st_mtime, reverse=True):
+            if p.is_file(): result.append({"name": p.name, "bytes": p.stat().st_size, "modified": datetime.datetime.fromtimestamp(p.stat().st_mtime, datetime.timezone.utc).isoformat()})
+    except (ValueError, OSError, TypeError): pass
+    return {"archives": result}
+
+@router.post("/backup/run")
+async def backup_run() -> dict:
+    state = _backup_state()
+    if not state.get("target_dir"): raise HTTPException(409, "NOT_CONFIGURED")
+    if not _backup_runner().is_file(): raise HTTPException(500, "RUNNER_NOT_INSTALLED")
+    try:
+        proc = subprocess.run([sys.executable, str(_backup_runner())], capture_output=True, text=True, timeout=3600, shell=False)
+    except subprocess.TimeoutExpired: raise HTTPException(504, "BACKUP_TIMEOUT")
+    if proc.returncode != 0:
+        fresh = _backup_state(); return {"ok": False, **_backup_public(fresh)}
+    fresh = _backup_state(); return {"ok": True, **_backup_public(fresh)}
+
+@router.post("/backup/restore/prepare")
+async def backup_restore_prepare(body: dict) -> dict:
+    name = (body or {}).get("name", "")
+    if not re.fullmatch(r"aiianer-backup-[A-Za-z0-9T_-]+\.zip", name): raise HTTPException(422, "ARCHIVE_INVALID_NAME")
+    state = _backup_state()
+    try:
+        target = _backup_target(state.get("target_dir"), False).resolve()
+        archive = (target / name).resolve(strict=True)
+        archive.relative_to(target)
+    except (ValueError, OSError): raise HTTPException(404, "ARCHIVE_MISSING_OR_INVALID")
+    if not archive.is_file(): raise HTTPException(404, "ARCHIVE_MISSING_OR_INVALID")
+    nonce = os.urandom(16).hex()
+    state["restoreNonce"] = nonce
+    _backup_save(state)
+    return {"name": name, "bytes": archive.stat().st_size, "targetHome": str(hermes_home()), "confirmationText": RESTORE_CONFIRM.format(name=name), "confirmationToken": nonce, "warning": "Der Import kann bestehende Hermes-Daten überschreiben."}
+
+@router.post("/backup/restore/confirm")
+async def backup_restore_confirm(body: dict) -> dict:
+    body = body or {}; name = body.get("name", ""); state = _backup_state()
+    if not isinstance(name, str) or not re.fullmatch(r"aiianer-backup-[A-Za-z0-9T_-]+\.zip", name): raise HTTPException(422, "ARCHIVE_INVALID_NAME")
+    expected = RESTORE_CONFIRM.format(name=name)
+    if not state.get("restoreNonce") or body.get("confirmationToken") != state.get("restoreNonce") or body.get("confirmationText") != expected or not body.get("acknowledged"): raise HTTPException(409, "RESTORE_CONFIRMATION_REQUIRED")
+    try:
+        target = _backup_target(state.get("target_dir"), False).resolve()
+        archive = (target / name).resolve(strict=True)
+        archive.relative_to(target)
+    except (ValueError, OSError): raise HTTPException(404, "ARCHIVE_MISSING_OR_INVALID")
+    proc = subprocess.run([shutil.which("hermes") or "hermes", "import", "--force", str(archive)], capture_output=True, text=True, timeout=3600, shell=False)
+    state.pop("restoreNonce", None); state["state"] = "success" if proc.returncode == 0 else "failed"; state["lastErrorCode"] = None if proc.returncode == 0 else "RESTORE_FAILED"; _backup_save(state)
+    if proc.returncode != 0: raise HTTPException(500, "RESTORE_FAILED")
+    return {"ok": True, **_backup_public(_backup_state())}
+
 # ---------------------------------------------------------------- Routen
 
 @router.get("/catalog")

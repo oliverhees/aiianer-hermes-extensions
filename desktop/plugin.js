@@ -140,6 +140,20 @@ function makePane(useCatalog, useReleases, aktionen, onCommunity) {
     const [laufend, setLaufend] = useState({})
     const [ergebnis, setErgebnis] = useState({})
     const [aktiverTab, setAktiverTab] = useState('marketplace')
+    const [backup, setBackup] = useState(null)
+    const [backupTarget, setBackupTarget] = useState('')
+    const [backupBusy, setBackupBusy] = useState(false)
+    useEffect(() => {
+      if (aktiverTab === 'backups') aktionen.backupStatus().then(setBackup).catch(() => setBackup({ state: 'failed', lastErrorCode: 'STATUS_UNAVAILABLE' }))
+    }, [aktiverTab])
+    const saveBackup = () => {
+      setBackupBusy(true)
+      aktionen.backupSettings({ enabled: true, target_dir: backupTarget, schedule: 'daily', retention: { enabled: false, keep: 5 } })
+        .then(setBackup).finally(() => setBackupBusy(false))
+    }
+    const runBackup = () => {
+      setBackupBusy(true); aktionen.backupRun().then(setBackup).finally(() => setBackupBusy(false))
+    }
 
     const updateNotification = anzahl => {
       if (!anzahl) {
@@ -425,13 +439,31 @@ function makePane(useCatalog, useReleases, aktionen, onCommunity) {
               onClick: () => setAktiverTab('release-notes'),
               children: 'Versionshinweise'
             }, 'release-tab'),
+            jsx('button', {
+              className: aktiverTab === 'backups' ? 'border-b-2 border-accent px-3 py-2 text-xs font-medium text-accent' : 'px-3 py-2 text-xs opacity-60 hover:opacity-100',
+              onClick: () => setAktiverTab('backups'),
+              children: 'Backups'
+            }, 'backups-tab'),
             jsx('span', {
               className: 'ml-auto self-center pb-2 text-[10px] font-mono tracking-wider opacity-50',
               children: 'v' + hubVersion
             }, 'version')
           ]
         }, 'tabs'),
-        aktiverTab === 'release-notes'
+        aktiverTab === 'backups'
+          ? jsxs('section', { className: 'rounded-xl border border-white/10 bg-black/10 p-4 sm:p-5 space-y-4', children: [
+              jsx('p', { className: 'text-xs uppercase tracking-widest text-accent', children: 'AIIANER BACKUP-AUSSENPOSTEN' }),
+              jsx('h2', { className: 'text-xl font-semibold', children: 'Backups · V1 nur lokal' }),
+              jsx('p', { className: 'text-sm opacity-70', children: 'Deine Daten verlassen diesen Rechner nicht. Der Zielordner muss außerhalb von HERMES_HOME liegen.' }),
+              jsx('input', { className: 'w-full rounded-md border border-white/15 bg-white/5 px-3 py-2 text-sm', value: backupTarget || (backup && backup.targetDir) || '', placeholder: '/mnt/backup', onChange: event => setBackupTarget(event.target.value) }),
+              jsxs('div', { className: 'flex gap-2 flex-wrap', children: [
+                jsx('button', { className: 'rounded-md border border-accent px-3 py-2 text-xs', disabled: backupBusy || !backupTarget, onClick: saveBackup, children: backupBusy ? 'Arbeite ...' : 'Einstellungen speichern' }),
+                jsx('button', { className: 'rounded-md border border-white/15 px-3 py-2 text-xs', disabled: backupBusy || !(backup && backup.configured), onClick: runBackup, children: 'Jetzt sichern' })
+              ] }),
+              backup ? jsxs('p', { className: 'text-xs opacity-70', children: ['Status: ', backup.state, backup.lastErrorCode ? ` · ${backup.lastErrorCode}` : '', backup.lastArchive ? ` · ${backup.lastArchive.name}` : ''] }) : jsx(Skeleton, { className: 'h-6' }),
+              jsx('p', { className: 'text-xs text-amber-300/80', children: 'Wiederherstellung ist in V1 nur vorbereitet; ein Import überschreibt möglicherweise bestehende Hermes-Daten und wird nicht automatisch ausgeführt.' })
+            ] }, 'backups-content')
+          : aktiverTab === 'release-notes'
           ? jsx(Versionshinweise, { daten: releaseDaten, laedt: releasesLaden, fehler: releasesFehler }, 'release-notes')
           : jsxs('div', {
           className: 'space-y-4',
@@ -533,8 +565,10 @@ export default {
     // Objekts schicken.
     const aktionen = {
       install: id => ctx.rest('/install', { method: 'POST', body: { id } }),
-      uninstall: id => ctx.rest('/uninstall', { method: 'POST', body: { id } })
-    }
+      uninstall: id => ctx.rest('/uninstall', { method: 'POST', body: { id } }),
+      backupStatus: () => ctx.rest('/backup/status'),
+      backupSettings: body => ctx.rest('/backup/settings', { method: 'PUT', body }),
+      backupRun: () => ctx.rest('/backup/run', { method: 'POST', body: {} })    }
 
     const useCatalog = makeUseCatalog(fetchCatalog)
     const useReleases = makeUseReleases(fetchReleases)

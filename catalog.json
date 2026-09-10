@@ -6,7 +6,7 @@
     {
       "id": "aiianer-hub",
       "name": "AIIANER EXTENSION HUB",
-      "version": "1.3.12",
+      "version": "1.3.13",
       "kind": "plugin",
       "premium": false,
       "summary": "Der Marktplatz selbst. Aktualisiert Oberfläche, Desktop-Plugin, Backend und Wächter in einem Schritt.",
@@ -43,6 +43,16 @@
       "premium": false,
       "summary": "Der Bot-Modus auf Deutsch: Liste, Gruppenchats, Avatare, Zeitpläne. 194 Texte.",
       "note": "Trägt ein deutsches Bündel in den Nachrichtenkatalog des Bot-Modus ein. Setzt „Deutsche Sprache“ voraus. Der Wächter spielt es nach einem Hermes-Update selbst wieder ein."
+    },
+    {
+      "id": "aiianer-backup",
+      "name": "AIIANER Backup-Außenposten",
+      "version": "1.0.0",
+      "kind": "plugin",
+      "premium": false,
+      "summary": "Vollständige Hermes-Backups in einen externen lokalen Ordner. Keine Uploads, kein GitHub.",
+      "note": "Nach der Installation in Hermes Desktop → AIIANER Extension Hub → Tab „Backups“ konfigurieren. Wiederherstellung ist ausdrücklich manuell.",
+      "nextSteps": {"install": ["Öffne Hermes Desktop → AIIANER Extension Hub → Tab „Backups“ und lege einen externen lokalen Zielordner fest."], "uninstall": []}
     },
     {
       "id": "group-chat-limits",

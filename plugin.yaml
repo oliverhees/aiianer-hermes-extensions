@@ -1,6 +1,6 @@
 name: aiianer-hub
 manifest_version: 1
-version: 1.3.12
+version: 1.3.13
 description: >
   AIIANER Marktplatz. Installiert und aktualisiert die deutschen
   Hermes-Erweiterungen und haelt die Sprachdatei nach jedem Update aktuell.
