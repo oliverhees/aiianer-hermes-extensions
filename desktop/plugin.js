@@ -323,6 +323,11 @@ function makePane(fetchCatalog, fetchReleases, fetchRoadmap, aktionen, onCommuni
         .finally(() => setLaufend(v => ({ ...v, [id]: null })))
     }
 
+    const backupInstalled = Boolean(data && (data.components || []).some(c => c.id === 'aiianer-backup' && c.installed))
+    useEffect(() => {
+      if (!backupInstalled && aktiverTab === 'backups') setAktiverTab('marketplace')
+    }, [backupInstalled, aktiverTab])
+
     if (isLoading) return jsx('div', { className: 'h-24 m-3 animate-pulse rounded-lg bg-white/10' })
     if (error) {
       return jsxs('div', { className: 'm-3 rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm', children: [
@@ -491,10 +496,6 @@ function makePane(fetchCatalog, fetchReleases, fetchRoadmap, aktionen, onCommuni
     // Refetch deshalb gemeinsam mit ihr.
     const hub = items.find(c => c.id === ID)
     const hubVersion = (hub && (hub.installed || hub.version)) || '—'
-    const backupInstalled = items.some(c => c.id === 'aiianer-backup' && c.installed)
-    useEffect(() => {
-      if (!backupInstalled && aktiverTab === 'backups') setAktiverTab('marketplace')
-    }, [backupInstalled, aktiverTab])
 
     return jsxs('div', {
       className: 'min-w-0 w-full max-w-6xl overflow-x-hidden p-4 sm:p-6 lg:p-8 space-y-6',

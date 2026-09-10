@@ -1,6 +1,12 @@
 {
   "releases": [
     {
+      "tagName": "v1.3.31",
+      "name": "v1.3.31 · Hook-Reihenfolge vollständig stabilisiert",
+      "publishedAt": "2026-09-11T02:00:00Z",
+      "body": "Der Backup-Tab-Hook wird nun vor allen frühen Lade-, Fehler- und Leerzustands-Rückgaben aufgerufen. Damit bleibt die React-Hook-Reihenfolge in jedem Renderzustand konstant."
+    },
+    {
       "tagName": "v1.3.30",
       "name": "v1.3.30 · React-Hook-Reihenfolge stabilisiert",
       "publishedAt": "2026-09-11T01:30:00Z",
