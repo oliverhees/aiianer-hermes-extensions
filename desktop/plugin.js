@@ -179,7 +179,7 @@ function makePane(useCatalog, useReleases, useRoadmap, aktionen, onCommunity) {
     const [restoreText, setRestoreText] = useState('')
     const [restoreAcknowledged, setRestoreAcknowledged] = useState(false)
     const [backupTarget, setBackupTarget] = useState('')
-    const [backupSchedule, setBackupSchedule] = useState('daily')
+    const [backupSchedule, setBackupSchedule] = useState('manual')
     const [backupTime, setBackupTime] = useState('02:00')
     const [backupWeekday, setBackupWeekday] = useState(0)
     const [backupBrowser, setBackupBrowser] = useState(null)
@@ -188,7 +188,7 @@ function makePane(useCatalog, useReleases, useRoadmap, aktionen, onCommunity) {
       setBackup(result)
       setBackupArchives(archives.archives || [])
       if (!backupTarget && result.targetDir) setBackupTarget(result.targetDir)
-      setBackupSchedule(result.schedule || 'daily')
+      setBackupSchedule(result.schedule || 'manual')
       setBackupTime(result.scheduleTime || '02:00')
       setBackupWeekday(Number.isInteger(result.scheduleWeekday) ? result.scheduleWeekday : 0)
       return result
@@ -540,6 +540,7 @@ function makePane(useCatalog, useReleases, useRoadmap, aktionen, onCommunity) {
                   backupBrowser.directories && backupBrowser.directories.length ? jsx('div', { className: 'grid max-h-52 grid-cols-1 gap-1 overflow-auto sm:grid-cols-2', children: backupBrowser.directories.map(folder => jsx('button', { className: 'truncate rounded px-2 py-1 text-left text-xs hover:bg-white/10', onClick: () => browseBackup(folder.path), children: `📁 ${folder.name}` }, folder.path)) }) : jsx('p', { className: 'text-xs opacity-60', children: 'Keine Unterordner. Du kannst diesen Ordner direkt wählen.' })
                 ] })
               ] }) : null,
+              jsx('p', { className: 'text-xs leading-5 opacity-70', children: 'Hier stellst du die automatische Backup-Routine ein. Nach dem Speichern legt Hermes einen eigenen Zeitplan an. Ohne Zielordner wird nichts ausgeführt.' }),
               jsxs('div', { className: 'grid gap-3 rounded-md border border-white/10 p-3 sm:grid-cols-3', children: [
                 jsxs('label', { className: 'space-y-1 text-xs', children: [jsx('span', { className: 'font-medium opacity-75', children: 'Automatisches Backup' }), jsx('select', { className: 'w-full rounded border border-white/15 bg-black/20 px-2 py-2', value: backupSchedule, onChange: event => setBackupSchedule(event.target.value), children: [jsx('option', { value: 'manual', children: 'Aus · nur manuell' }), jsx('option', { value: 'daily', children: 'Täglich' }), jsx('option', { value: 'weekly', children: 'Wöchentlich' })] })] }),
                 jsxs('label', { className: 'space-y-1 text-xs', children: [jsx('span', { className: 'font-medium opacity-75', children: 'Uhrzeit' }), jsx('input', { className: 'w-full rounded border border-white/15 bg-black/20 px-2 py-2', type: 'time', value: backupTime, disabled: backupSchedule === 'manual', onChange: event => setBackupTime(event.target.value) })] }),

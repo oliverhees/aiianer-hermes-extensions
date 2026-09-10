@@ -1,6 +1,13 @@
 {
   "releases": [
     {
+      "tagName": "v1.3.19",
+      "name": "v1.3.19 · Rote Beta-Grafik und Backup-Routine",
+      "publishedAt": "2026-09-10T18:30:00Z",
+      "body": "Neues schwarz/rotes README-Hero mit sichtbarer Kennzeichnung KI-generiert. Die Backup-Routine ist im Backups-Tab klar erklärt und startet erst nach dem Speichern einen Hermes-Cron-Zeitplan.",
+      "url": "https://github.com/oliverhees/aiianer-hermes-extensions/releases/tag/v1.3.19"
+    },
+    {
       "tagName": "v1.3.18",
       "name": "v1.3.18 · EUrouter-Hinweis und Repository-Aufräumen",
       "publishedAt": "2026-09-10T18:00:00Z",
