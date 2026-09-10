@@ -97,8 +97,8 @@ NEXT_STEPS = {
         ],
     },
     "bot-mode-german": {
-        "install": ["Hermes neu starten. Der Bot-Modus ist danach auf Deutsch."],
-        "uninstall": ["Hermes neu starten. Der Bot-Modus ist wieder englisch."],
+        "install": ["Hermes komplett beenden und neu starten. Der Bot-Modus ist danach auf Deutsch."],
+        "uninstall": ["Hermes komplett beenden und neu starten. Der Bot-Modus ist wieder englisch."],
     },
     "group-chat-limits": {
         "install": [
@@ -107,17 +107,17 @@ NEXT_STEPS = {
             "Voreingestellt sind 8 Runden und 40 Nachrichten für alle Räume statt Hermes' 3 und 10.",
         ],
         "uninstall": [
-            "Hermes neu starten. Es gelten wieder die eingebauten Grenzen.",
+            "Hermes komplett beenden und neu starten. Es gelten wieder die eingebauten Grenzen.",
             "Deine gruppen-grenzen.json bleibt liegen, falls du es dir anders überlegst.",
         ],
     },
     "eurouter-provider": {
         "install": [
-            "Hermes neu starten.",
+            "Hermes komplett beenden und neu starten.",
             "Der EU-Router taucht dann im Modell-Auswahlmenü als eigene Gruppe auf.",
         ],
         "uninstall": [
-            "Hermes neu starten.",
+            "Hermes komplett beenden und neu starten.",
             "Der Start-Helfer unter ~/.local/bin/hermes bleibt absichtlich liegen, weil er auch andere Reparaturen macht.",
         ],
     },

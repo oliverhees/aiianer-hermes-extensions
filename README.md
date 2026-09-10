@@ -56,8 +56,7 @@ Der **einzige Installationsweg** führt über Hermes selbst:
    ```
 
 3. Prüfe die angezeigten Plugin-Inhalte und installiere das Plugin.
-4. Aktiviere **AIIANER** anschließend, falls Hermes danach fragt, und starte den
-   Gateway bzw. Hermes neu.
+4. Aktiviere **AIIANER** anschließend, falls Hermes danach fragt, und beende Hermes vollständig. Starte Hermes danach komplett neu.
 
 Das Repo enthält `plugin.yaml` im Root sowie die Dashboard- und Desktop-Hälften.
 Hermes erkennt es deshalb direkt als Hybrid-Plugin; kein zusätzlicher Installer,
@@ -68,6 +67,8 @@ Dashboard-Reiter. Die weiteren Komponenten installierst du dort mit den jeweilig
 Buttons.
 
 ## Update und Entfernen
+
+Nach jeder Installation, jedem Update und jeder Deinstallation Hermes **vollständig beenden und neu starten**. Ein Gateway-Neustart oder ein Plugin-Reload reicht für die sichtbare Desktop-Oberfläche nicht zuverlässig aus.
 
 Git-installierte Plugins verwaltest du in Hermes unter **Settings → Plugins**.
 Dort kannst du das Plugin aktualisieren, deaktivieren oder entfernen. Der

@@ -143,7 +143,7 @@
           ? h(
               "p",
               { className: "mt-3 text-sm text-emerald-400" },
-              "Fertig. Hermes neu starten, damit es greift."
+              "Fertig. Hermes komplett beenden und neu starten, damit es greift."
             )
           : res && res.ok && (res.nextSteps || []).length
           ? h(
@@ -407,7 +407,7 @@
               { className: "p-4 sm:p-5" },
               h("p", { className: "text-xs uppercase tracking-widest text-accent" }, "Updates im Außenposten"),
               h("p", { className: "mt-1 text-sm font-medium" }, updates === 1 ? "Eine Erweiterung wartet auf ihr Update." : updates + " Erweiterungen warten auf ihr Update."),
-              h("p", { className: "mt-1 text-xs text-muted-foreground" }, "Öffne die jeweilige Karte und aktualisiere sie mit einem Klick. Danach Hermes neu starten, wenn es angezeigt wird.")
+              h("p", { className: "mt-1 text-xs text-muted-foreground" }, "Öffne die jeweilige Karte und aktualisiere sie mit einem Klick. Danach Hermes komplett beenden und neu starten — immer, auch wenn kein separater Hinweis erscheint.")
             )
           )
         : null,

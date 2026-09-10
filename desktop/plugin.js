@@ -275,7 +275,7 @@ function makePane(useCatalog, useReleases, useRoadmap, aktionen, onCommunity) {
                     host.notify({
                       kind: 'success',
                       title: 'Hub aktualisiert',
-                      message: 'Backend und Katalog laufen jetzt mit dem neuen Stand.'
+                      message: 'Backend und Katalog laufen jetzt mit dem neuen Stand. Bitte Hermes komplett beenden und neu starten, damit die Desktop-Oberfläche den neuen Plugin-Code lädt.'
                     })
                     return refetch().catch(() => {})
                   })
@@ -643,7 +643,7 @@ export default {
         installing: 'Wird installiert, einen Moment ...',
         uninstalling: 'Wird entfernt ...',
         doneTitle: 'Fertig. Das ist jetzt zu tun:',
-        doneBare: 'Fertig. Hermes neu starten, damit es greift.',
+        doneBare: 'Fertig. Hermes komplett beenden und neu starten, damit es greift.',
         warnTitle: 'Diese Reste ließen sich nicht entfernen:',
         failTitle: 'Das hat nicht geklappt:',
         afterwards: 'Danach nötig:',
@@ -665,7 +665,7 @@ export default {
         installing: 'Wird installiert, einen Moment ...',
         uninstalling: 'Wird entfernt ...',
         doneTitle: 'Fertig. Das ist jetzt zu tun:',
-        doneBare: 'Fertig. Hermes neu starten, damit es greift.',
+        doneBare: 'Fertig. Hermes komplett beenden und neu starten, damit es greift.',
         warnTitle: 'Diese Reste ließen sich nicht entfernen:',
         failTitle: 'Das hat nicht geklappt:',
         afterwards: 'Danach nötig:',

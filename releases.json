@@ -1,6 +1,13 @@
 {
   "releases": [
     {
+      "tagName": "v1.3.20",
+      "name": "v1.3.20 · Neustart-Hinweise nach Updates",
+      "publishedAt": "2026-09-10T19:00:00Z",
+      "body": "Nach Installation, Update oder Deinstallation weist der Marktplatz jetzt überall klar auf einen vollständigen Hermes-Neustart hin. Ein Gateway-Neustart oder Plugin-Reload reicht für die Desktop-Oberfläche nicht zuverlässig aus.",
+      "url": "https://github.com/oliverhees/aiianer-hermes-extensions/releases/tag/v1.3.20"
+    },
+    {
       "tagName": "v1.3.19",
       "name": "v1.3.19 · Rote Beta-Grafik und Backup-Routine",
       "publishedAt": "2026-09-10T18:30:00Z",
