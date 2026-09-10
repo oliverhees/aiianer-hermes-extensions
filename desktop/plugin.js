@@ -27,36 +27,41 @@ const ID = 'aiianer-hub'
 
 // -- Daten --------------------------------------------------------------------
 
-function makeUseRest(fetcher) {
-  return function useRest() {
-    const [state, setState] = useState({ data: null, isLoading: true, isFetching: false, error: null })
-    const load = () => {
-      setState(previous => ({ ...previous, isFetching: true, error: null }))
-      return fetcher()
-        .then(data => {
-          setState({ data, isLoading: false, isFetching: false, error: null })
-          return data
-        })
-        .catch(error => {
-          setState(previous => ({ ...previous, isLoading: false, isFetching: false, error }))
-          throw error
-        })
-    }
-    useEffect(() => { void load() }, [])
-    return { ...state, refetch: load }
+function useHubData(fetchCatalog, fetchReleases, fetchRoadmap) {
+  const [state, setState] = useState({
+    catalog: null,
+    releases: null,
+    roadmap: null,
+    isLoading: true,
+    isFetching: false,
+    error: null
+  })
+  const load = () => {
+    setState(previous => ({ ...previous, isFetching: true, error: null }))
+    return Promise.all([fetchCatalog(), fetchReleases(), fetchRoadmap()])
+      .then(([catalog, releases, roadmap]) => {
+        setState({ catalog, releases, roadmap, isLoading: false, isFetching: false, error: null })
+        return { data: catalog, releases, roadmap }
+      })
+      .catch(error => {
+        setState(previous => ({ ...previous, isLoading: false, isFetching: false, error }))
+        throw error
+      })
   }
-}
-
-function makeUseCatalog(fetchCatalog) {
-  return makeUseRest(fetchCatalog)
-}
-
-function makeUseReleases(fetchReleases) {
-  return makeUseRest(fetchReleases)
-}
-
-function makeUseRoadmap(fetchRoadmap) {
-  return makeUseRest(fetchRoadmap)
+  useEffect(() => { void load() }, [])
+  return {
+    data: state.catalog,
+    releaseDaten: state.releases,
+    roadmapDaten: state.roadmap,
+    isLoading: state.isLoading,
+    isFetching: state.isFetching,
+    error: state.error,
+    releasesLaden: state.isLoading,
+    roadmapLaden: state.isLoading,
+    releasesFehler: state.error,
+    roadmapFehler: state.error,
+    refetch: load
+  }
 }
 
 // -- AIIANER-Community-Banner -------------------------------------------------
@@ -157,12 +162,22 @@ function Roadmap({ daten, laedt, fehler }) {
 }
 
 // -- Oberflaeche --------------------------------------------------------------
-function makePane(useCatalog, useReleases, useRoadmap, aktionen, onCommunity, translate) {
+function makePane(fetchCatalog, fetchReleases, fetchRoadmap, aktionen, onCommunity, translate) {
   return function Pane() {
     const t = translate
-    const { data, isLoading, isFetching, error, refetch } = useCatalog()
-    const { data: releaseDaten, isLoading: releasesLaden, error: releasesFehler } = useReleases()
-    const { data: roadmapDaten, isLoading: roadmapLaden, error: roadmapFehler } = useRoadmap()
+    const {
+      data,
+      releaseDaten,
+      roadmapDaten,
+      isLoading,
+      releasesLaden,
+      roadmapLaden,
+      isFetching,
+      error,
+      releasesFehler,
+      roadmapFehler,
+      refetch
+    } = useHubData(fetchCatalog, fetchReleases, fetchRoadmap)
 
     // laufend[id] = 'install' | 'uninstall'; ergebnis[id] = Antwort oder Fehler.
     // Ohne den laufend-Zustand wirkt der Klick stumm, bis der Refetch kommt -
@@ -698,15 +713,12 @@ export default {
       backupRestoreConfirm: body => ctx.rest('/backup/restore/confirm', { method: 'POST', body }),
       backupRun: () => ctx.rest('/backup/run', { method: 'POST', body: {} })    }
 
-    const useCatalog = makeUseCatalog(fetchCatalog)
-    const useReleases = makeUseReleases(fetchReleases)
-    const useRoadmap = makeUseRoadmap(fetchRoadmap)
     const onCommunity = event => {
       event.preventDefault()
       void ctx.os.openExternal('https://aiianer.de')
     }
     const translate = ctx.i18n.t.bind(ctx.i18n)
-    const Pane = makePane(useCatalog, useReleases, useRoadmap, aktionen, onCommunity, translate)
+    const Pane = makePane(fetchCatalog, fetchReleases, fetchRoadmap, aktionen, onCommunity, translate)
 
     // Eigene Seite
     ctx.register({

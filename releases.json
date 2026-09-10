@@ -1,6 +1,12 @@
 {
   "releases": [
     {
+      "tagName": "v1.3.30",
+      "name": "v1.3.30 · React-Hook-Reihenfolge stabilisiert",
+      "publishedAt": "2026-09-11T01:30:00Z",
+      "body": "Der Desktop-Hub lädt Katalog, Versionshinweise und Roadmap über einen einzigen stabilen Daten-Hook. Damit bleibt die React-Hook-Reihenfolge über alle Ladezustände hinweg konstant."
+    },
+    {
       "tagName": "v1.3.29",
       "name": "v1.3.29 · Runtime-kompatibler Renderpfad",
       "publishedAt": "2026-09-11T01:00:00Z",
