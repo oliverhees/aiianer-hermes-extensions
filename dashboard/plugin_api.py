@@ -1149,6 +1149,34 @@ def _uninstall_eurouter(protokoll: list) -> None:
     protokoll.append("~/.local/bin/hermes bleibt absichtlich unberuehrt")
 
 
+def _uninstall_backup(protokoll: list) -> None:
+    """Entfernt den lokalen Runner, aber niemals externe Backup-Archive."""
+    try:
+        _pause_backup_cron()
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Backup-Rückbau abgebrochen: der Zeitplan ließ sich nicht pausieren: {exc}",
+        ) from exc
+
+    runner = _backup_runner()
+    _drop(runner, protokoll)
+    if runner.exists():
+        raise HTTPException(
+            status_code=500,
+            detail=f"Backup-Rückbau unvollständig: {runner} ließ sich nicht entfernen.",
+        )
+
+    # Konfiguration und Laufhistorie bleiben für eine spätere Neuinstallation
+    # erhalten; der Zeitplan ist aber sicher aus, solange der Runner fehlt.
+    state = _backup_state()
+    state["enabled"] = False
+    state["schedule"] = "manual"
+    _backup_save(state)
+    protokoll.append("Backup-Zeitplan pausiert und lokaler Runner entfernt")
+    protokoll.append("Externe Backup-Archive und Laufhistorie bleiben erhalten")
+
+
 def _run_uninstall(comp_id: str, protokoll: list) -> None:
     if comp_id == "german-language":
         _uninstall_german(protokoll)
@@ -1158,6 +1186,8 @@ def _run_uninstall(comp_id: str, protokoll: list) -> None:
         _uninstall_group_limits(protokoll)
     elif comp_id == "eurouter-provider":
         _uninstall_eurouter(protokoll)
+    elif comp_id == "aiianer-backup":
+        _uninstall_backup(protokoll)
     else:
         raise HTTPException(
             status_code=404, detail=f"Kein Rueckbau bekannt fuer: {comp_id}"

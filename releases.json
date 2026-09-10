@@ -1,6 +1,13 @@
 {
   "releases": [
     {
+      "tagName": "v1.3.22",
+      "name": "v1.3.22 · Backup-Deinstallation repariert",
+      "publishedAt": "2026-09-10T20:00:00Z",
+      "body": "Der Backup-Außenposten lässt sich jetzt korrekt deinstallieren. Der lokale Runner und der Zeitplan werden entfernt bzw. pausiert; externe Backup-Archive und die Laufhistorie bleiben erhalten.",
+      "url": "https://github.com/oliverhees/aiianer-hermes-extensions/releases/tag/v1.3.22"
+    },
+    {
       "tagName": "v1.3.21",
       "name": "v1.3.21 · Backup-Layout und Beenden-Roadmap",
       "publishedAt": "2026-09-10T19:30:00Z",

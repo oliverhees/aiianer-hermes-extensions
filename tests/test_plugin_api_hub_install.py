@@ -216,6 +216,34 @@ class BackupBrowserAndHistoryTest(unittest.TestCase):
         self.assertEqual(len(result["history"]), 2)
 
 
+class BackupUninstallTest(unittest.TestCase):
+    def test_backup_uninstall_removes_runner_but_preserves_external_archive(self):
+        api = load_api_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            api.HERMES_HOME = root / "hermes"
+            api.STATE_DIR = api.HERMES_HOME / "aiianer"
+            runner = api.HERMES_HOME / "scripts" / "aiianer-backup-runner.py"
+            runner.parent.mkdir(parents=True)
+            runner.write_text("# runner")
+            archive = root / "external" / "aiianer-backup-test.zip"
+            archive.parent.mkdir()
+            archive.write_bytes(b"keep")
+            api._backup_save({
+                "target_dir": str(archive.parent), "enabled": True, "schedule": "daily",
+                "history": [{"state": "success"}], "retention": {"enabled": False, "keep": 5},
+            })
+            log = []
+            with mock.patch.object(api, "_pause_backup_cron") as pause:
+                api._run_uninstall("aiianer-backup", log)
+            pause.assert_called_once_with()
+            self.assertFalse(runner.exists())
+            self.assertFalse(api._backup_state()["enabled"])
+            self.assertEqual(api._backup_state()["schedule"], "manual")
+            self.assertTrue(archive.exists())
+            self.assertIn({"state": "success"}, api._backup_state()["history"])
+
+
 class HubCatalogUpdateStatusTest(unittest.TestCase):
     def test_legacy_hub_manifest_is_reported_outdated_after_catalog_bump(self):
         api = load_api_module()
@@ -234,7 +262,7 @@ class HubCatalogUpdateStatusTest(unittest.TestCase):
 
         hub = next(component for component in result["components"] if component["id"] == "aiianer-hub")
         self.assertEqual(hub["installed"], "1.3.12")
-        self.assertEqual(hub["version"], "1.3.21")
+        self.assertEqual(hub["version"], "1.3.22")
         self.assertEqual(hub["status"], "outdated")
 
 
