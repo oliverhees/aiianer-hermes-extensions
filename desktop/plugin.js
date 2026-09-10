@@ -142,14 +142,30 @@ function makePane(useCatalog, useReleases, aktionen, onCommunity) {
     const [aktiverTab, setAktiverTab] = useState('marketplace')
     const [backup, setBackup] = useState(null)
     const [backupTarget, setBackupTarget] = useState('')
+    const [backupSchedule, setBackupSchedule] = useState('daily')
+    const [backupTime, setBackupTime] = useState('02:00')
+    const [backupWeekday, setBackupWeekday] = useState(0)
+    const [backupBrowser, setBackupBrowser] = useState(null)
     const [backupBusy, setBackupBusy] = useState(false)
+    const refreshBackup = () => aktionen.backupStatus().then(result => {
+      setBackup(result)
+      if (!backupTarget && result.targetDir) setBackupTarget(result.targetDir)
+      setBackupSchedule(result.schedule || 'daily')
+      setBackupTime(result.scheduleTime || '02:00')
+      setBackupWeekday(Number.isInteger(result.scheduleWeekday) ? result.scheduleWeekday : 0)
+      return result
+    })
     useEffect(() => {
-      if (aktiverTab === 'backups') aktionen.backupStatus().then(setBackup).catch(() => setBackup({ state: 'failed', lastErrorCode: 'STATUS_UNAVAILABLE' }))
+      if (aktiverTab === 'backups') refreshBackup().catch(() => setBackup({ state: 'failed', lastErrorCode: 'STATUS_UNAVAILABLE' }))
     }, [aktiverTab])
+    const browseBackup = path => {
+      setBackupBusy(true)
+      aktionen.backupBrowse({ path }).then(setBackupBrowser).catch(() => setBackupBrowser({ error: 'Ordner konnte nicht geöffnet werden.' })).finally(() => setBackupBusy(false))
+    }
     const saveBackup = () => {
       setBackupBusy(true)
-      aktionen.backupSettings({ enabled: true, target_dir: backupTarget, schedule: 'daily', retention: { enabled: false, keep: 5 } })
-        .then(setBackup).finally(() => setBackupBusy(false))
+      aktionen.backupSettings({ enabled: backupSchedule !== 'manual', target_dir: backupTarget, schedule: backupSchedule, scheduleTime: backupTime, scheduleWeekday: backupWeekday, retention: { enabled: false, keep: 5 } })
+        .then(result => { setBackup(result); setBackupBrowser(null) }).finally(() => setBackupBusy(false))
     }
     const runBackup = () => {
       setBackupBusy(true); aktionen.backupRun().then(setBackup).finally(() => setBackupBusy(false))
@@ -451,16 +467,46 @@ function makePane(useCatalog, useReleases, aktionen, onCommunity) {
           ]
         }, 'tabs'),
         aktiverTab === 'backups'
-          ? jsxs('section', { className: 'rounded-xl border border-white/10 bg-black/10 p-4 sm:p-5 space-y-4', children: [
+          ? jsxs('section', { className: 'rounded-xl border border-white/10 bg-black/10 p-4 sm:p-5 space-y-5', children: [
               jsx('p', { className: 'text-xs uppercase tracking-widest text-accent', children: 'AIIANER BACKUP-AUSSENPOSTEN' }),
-              jsx('h2', { className: 'text-xl font-semibold', children: 'Backups · V1 nur lokal' }),
-              jsx('p', { className: 'text-sm opacity-70', children: 'Deine Daten verlassen diesen Rechner nicht. Der Zielordner muss außerhalb von HERMES_HOME liegen.' }),
-              jsx('input', { className: 'w-full rounded-md border border-white/15 bg-white/5 px-3 py-2 text-sm', value: backupTarget || (backup && backup.targetDir) || '', placeholder: '/mnt/backup', onChange: event => setBackupTarget(event.target.value) }),
-              jsxs('div', { className: 'flex gap-2 flex-wrap', children: [
-                jsx('button', { className: 'rounded-md border border-accent px-3 py-2 text-xs', disabled: backupBusy || !backupTarget, onClick: saveBackup, children: backupBusy ? 'Arbeite ...' : 'Einstellungen speichern' }),
-                jsx('button', { className: 'rounded-md border border-white/15 px-3 py-2 text-xs', disabled: backupBusy || !(backup && backup.configured), onClick: runBackup, children: 'Jetzt sichern' })
+              jsx('h2', { className: 'text-xl font-semibold', children: 'Backups · lokal und außerhalb von Hermes' }),
+              jsx('p', { className: 'text-sm opacity-70', children: 'Deine Daten verlassen diesen Rechner nicht. Wähle den Zielordner einfach aus — innerhalb von HERMES_HOME ist absichtlich gesperrt.' }),
+              jsxs('div', { className: 'space-y-2', children: [
+                jsx('label', { className: 'text-xs font-medium opacity-75', children: 'Speicherort' }),
+                jsxs('div', { className: 'flex gap-2', children: [
+                  jsx('input', { className: 'min-w-0 flex-1 rounded-md border border-white/15 bg-white/5 px-3 py-2 text-sm', value: backupTarget, placeholder: '/home/deinname/Backups', onChange: event => setBackupTarget(event.target.value) }),
+                  jsx('button', { className: 'shrink-0 rounded-md border border-white/15 px-3 py-2 text-xs', disabled: backupBusy, onClick: () => browseBackup(backupTarget || undefined), children: 'Ordner auswählen' })
+                ] })
               ] }),
-              backup ? jsxs('p', { className: 'text-xs opacity-70', children: ['Status: ', backup.state, backup.lastErrorCode ? ` · ${backup.lastErrorCode}` : '', backup.lastArchive ? ` · ${backup.lastArchive.name}` : ''] }) : jsx(Skeleton, { className: 'h-6' }),
+              backupBrowser ? jsxs('div', { className: 'rounded-md border border-white/15 bg-white/[0.03] p-3 space-y-2', children: [
+                backupBrowser.error ? jsx('p', { className: 'text-xs text-red-300', children: backupBrowser.error }) : jsxs(React.Fragment, { children: [
+                  jsxs('div', { className: 'flex flex-wrap items-center gap-2', children: [
+                    jsx('button', { className: 'rounded border border-white/15 px-2 py-1 text-xs', disabled: !backupBrowser.parent || backupBusy, onClick: () => browseBackup(backupBrowser.parent), children: '← Hoch' }),
+                    jsx('button', { className: 'rounded border border-accent/60 px-2 py-1 text-xs text-accent', disabled: backupBusy, onClick: () => { setBackupTarget(backupBrowser.path); setBackupBrowser(null) }, children: 'Diesen Ordner wählen' }),
+                    jsx('span', { className: 'min-w-0 break-all text-[11px] opacity-60', children: backupBrowser.path })
+                  ] }),
+                  backupBrowser.directories && backupBrowser.directories.length ? jsx('div', { className: 'grid max-h-52 grid-cols-1 gap-1 overflow-auto sm:grid-cols-2', children: backupBrowser.directories.map(folder => jsx('button', { className: 'truncate rounded px-2 py-1 text-left text-xs hover:bg-white/10', onClick: () => browseBackup(folder.path), children: `📁 ${folder.name}` }, folder.path)) }) : jsx('p', { className: 'text-xs opacity-60', children: 'Keine Unterordner. Du kannst diesen Ordner direkt wählen.' })
+                ] })
+              ] }) : null,
+              jsxs('div', { className: 'grid gap-3 rounded-md border border-white/10 p-3 sm:grid-cols-3', children: [
+                jsxs('label', { className: 'space-y-1 text-xs', children: [jsx('span', { className: 'font-medium opacity-75', children: 'Automatisches Backup' }), jsx('select', { className: 'w-full rounded border border-white/15 bg-black/20 px-2 py-2', value: backupSchedule, onChange: event => setBackupSchedule(event.target.value), children: [jsx('option', { value: 'manual', children: 'Aus · nur manuell' }), jsx('option', { value: 'daily', children: 'Täglich' }), jsx('option', { value: 'weekly', children: 'Wöchentlich' })] })] }),
+                jsxs('label', { className: 'space-y-1 text-xs', children: [jsx('span', { className: 'font-medium opacity-75', children: 'Uhrzeit' }), jsx('input', { className: 'w-full rounded border border-white/15 bg-black/20 px-2 py-2', type: 'time', value: backupTime, disabled: backupSchedule === 'manual', onChange: event => setBackupTime(event.target.value) })] }),
+                backupSchedule === 'weekly' ? jsxs('label', { className: 'space-y-1 text-xs', children: [jsx('span', { className: 'font-medium opacity-75', children: 'Wochentag' }), jsx('select', { className: 'w-full rounded border border-white/15 bg-black/20 px-2 py-2', value: backupWeekday, onChange: event => setBackupWeekday(Number(event.target.value)), children: ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'].map((name, day) => jsx('option', { value: day, children: name }, day)) })] }) : jsx('div', { className: 'text-xs self-end opacity-55', children: backupSchedule === 'daily' ? 'Läuft jeden Tag zur gewählten Uhrzeit.' : 'Manuelle Sicherungen bleiben jederzeit möglich.' })
+              ] }),
+              jsxs('div', { className: 'flex gap-2 flex-wrap', children: [
+                jsx('button', { className: 'rounded-md border border-accent px-3 py-2 text-xs', disabled: backupBusy || !backupTarget, onClick: saveBackup, children: backupBusy ? 'Arbeite ...' : 'Speicherort & Plan sichern' }),
+                jsx('button', { className: 'rounded-md border border-white/15 px-3 py-2 text-xs', disabled: backupBusy || !(backup && backup.configured), onClick: runBackup, children: 'Jetzt sichern' }),
+                jsx('button', { className: 'rounded-md border border-white/15 px-3 py-2 text-xs', disabled: backupBusy, onClick: () => refreshBackup(), children: 'Status aktualisieren' })
+              ] }),
+              backup ? jsxs('div', { className: 'space-y-1 text-xs opacity-75', children: [
+                jsx('p', { children: `Status: ${backup.state}${backup.lastErrorCode ? ` · Backup: ${backup.lastErrorCode}` : ''}${backup.scheduleErrorCode ? ` · Zeitplan: ${backup.scheduleErrorCode}` : ''}` }),
+                backup.lastArchive ? jsx('p', { children: `Letztes Archiv: ${backup.lastArchive.name} · ${backup.lastArchive.fileCount || '?'} Dateien` }) : null,
+                jsx('p', { children: `${backup.archiveCount || 0} veröffentlichte Archive im Zielordner.` })
+              ] }) : jsx(Skeleton, { className: 'h-12' }),
+              jsxs('div', { className: 'rounded-md border border-white/10 p-3', children: [
+                jsx('h3', { className: 'text-sm font-medium', children: 'Laufprotokoll' }),
+                backup && backup.history && backup.history.length ? jsx('div', { className: 'mt-2 space-y-1 text-xs', children: backup.history.map((entry, index) => jsx('p', { className: entry.state === 'success' ? 'text-emerald-300' : 'text-red-300', children: `${entry.state === 'success' ? '✓' : '✕'} ${new Date(entry.at).toLocaleString('de-DE')} · ${entry.state === 'success' ? (entry.archive && entry.archive.name ? entry.archive.name : 'Sicherung erfolgreich') : (entry.errorCode || 'Fehler')}` }, `${entry.at}-${index}`)) }) : jsx('p', { className: 'mt-2 text-xs opacity-60', children: 'Noch kein Backup-Lauf protokolliert.' })
+              ] }),
               jsx('p', { className: 'text-xs text-amber-300/80', children: 'Wiederherstellung ist in V1 nur vorbereitet; ein Import überschreibt möglicherweise bestehende Hermes-Daten und wird nicht automatisch ausgeführt.' })
             ] }, 'backups-content')
           : aktiverTab === 'release-notes'
@@ -568,6 +614,7 @@ export default {
       uninstall: id => ctx.rest('/uninstall', { method: 'POST', body: { id } }),
       backupStatus: () => ctx.rest('/backup/status'),
       backupSettings: body => ctx.rest('/backup/settings', { method: 'PUT', body }),
+      backupBrowse: body => ctx.rest('/backup/browse', { method: 'POST', body }),
       backupRun: () => ctx.rest('/backup/run', { method: 'POST', body: {} })    }
 
     const useCatalog = makeUseCatalog(fetchCatalog)

@@ -76,6 +76,16 @@ def apply_retention(target: Path, keep: int) -> list[str]:
         except OSError: pass
     return removed
 
+
+def save_run_result(home: Path, result: dict) -> None:
+    state = load_state(home)
+    event = {"at": result.get("lastRun") or dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"), "state": result.get("state", "failed")}
+    if result.get("lastArchive"): event["archive"] = result["lastArchive"]
+    if result.get("lastErrorCode"): event["errorCode"] = result["lastErrorCode"]
+    history = state.get("history") if isinstance(state.get("history"), list) else []
+    atomic_json(state_path(home), {**state, **result, "history": [event, *history][:20]})
+
+
 def run(home: Path, config: dict) -> dict:
     target=validate_target(config.get("target_dir", ""), home)
     lock=home/".aiianer-backup.lock"; acquire_lock(lock)
@@ -95,7 +105,7 @@ def run(home: Path, config: dict) -> dict:
         os.replace(partial, final)
         removed=apply_retention(target, int(config.get("retention",{}).get("keep",5))) if config.get("retention",{}).get("enabled") else []
         result={"state":"success", "lastRun":dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"), "lastArchive":{"name":final.name,"bytes":size,"fileCount":count}, "lastErrorCode":None, "retentionDeleted":removed}
-        atomic_json(state_path(home), {**load_state(home), **result})
+        save_run_result(home, result)
         return result
     finally:
         if partial:
@@ -108,5 +118,5 @@ def main() -> int:
     home=Path(args.home).expanduser() if args.home else hermes_home(); state=load_state(home)
     try: result=run(home,state); print(json.dumps(result)); return 0
     except (ValueError,RuntimeError) as exc:
-        code=str(exc); atomic_json(state_path(home), {**state,"state":"failed","lastErrorCode":code}); print(json.dumps({"state":"failed","lastErrorCode":code})); return 2
+        code=str(exc); result={"state":"failed", "lastRun":dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"), "lastErrorCode":code}; save_run_result(home, result); print(json.dumps(result)); return 2
 if __name__ == "__main__": raise SystemExit(main())

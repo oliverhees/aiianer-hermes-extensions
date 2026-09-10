@@ -445,9 +445,37 @@ def _backup_target(raw: str, create: bool = True) -> Path:
     if os.name == "nt" and str(target).startswith("\\\\"): raise ValueError("TARGET_NETWORK_OR_UNSUPPORTED")
     return target
 
+
+def _backup_schedule_expression(schedule: str, at: str, weekday: int) -> str:
+    if not re.fullmatch(r"(?:[01]\d|2[0-3]):[0-5]\d", at):
+        raise ValueError("SCHEDULE_TIME_INVALID")
+    if not isinstance(weekday, int) or isinstance(weekday, bool) or not 0 <= weekday <= 6:
+        raise ValueError("SCHEDULE_WEEKDAY_INVALID")
+    hour, minute = at.split(":")
+    if schedule == "daily": return f"{int(minute)} {int(hour)} * * *"
+    if schedule == "weekly": return f"{int(minute)} {int(hour)} * * {weekday}"
+    raise ValueError("SCHEDULE_INVALID")
+
+
+def _backup_browse_path(raw: str | None) -> Path:
+    if not raw:
+        return Path.home().resolve()
+    candidate = Path(raw).expanduser()
+    if not candidate.is_absolute() or ".." in candidate.parts:
+        raise ValueError("BROWSER_PATH_INVALID")
+    path = candidate.resolve(strict=True)
+    home = HERMES_HOME.resolve(strict=False)
+    try: path.relative_to(home)
+    except ValueError: pass
+    else: raise ValueError("BROWSER_INSIDE_HERMES_HOME")
+    if not path.is_dir(): raise ValueError("BROWSER_PATH_INVALID")
+    return path
+
+
 def _backup_public(state: dict) -> dict:
     retention = state.get("retention") if isinstance(state.get("retention"), dict) else {}
-    return {"configured": bool(state.get("target_dir")), "enabled": bool(state.get("enabled")), "targetDir": state.get("target_dir") or None, "schedule": state.get("schedule", "manual"), "retention": {"enabled": bool(retention.get("enabled")), "keep": int(retention.get("keep", 5))}, "state": state.get("state", "never_run"), "lastRun": state.get("lastRun"), "lastArchive": state.get("lastArchive"), "lastErrorCode": state.get("lastErrorCode"), "nextRun": None, "archiveCount": _archive_count(state.get("target_dir"))}
+    history = state.get("history") if isinstance(state.get("history"), list) else []
+    return {"configured": bool(state.get("target_dir")), "enabled": bool(state.get("enabled")), "targetDir": state.get("target_dir") or None, "schedule": state.get("schedule", "manual"), "scheduleTime": state.get("scheduleTime", "02:00"), "scheduleWeekday": state.get("scheduleWeekday", 0), "retention": {"enabled": bool(retention.get("enabled")), "keep": int(retention.get("keep", 5))}, "state": state.get("state", "never_run"), "lastRun": state.get("lastRun"), "lastArchive": state.get("lastArchive"), "lastErrorCode": state.get("lastErrorCode"), "scheduleErrorCode": state.get("scheduleErrorCode"), "nextRun": None, "archiveCount": _archive_count(state.get("target_dir")), "history": history[:20]}
 
 def _archive_count(raw) -> int:
     try: return sum(1 for p in _backup_target(raw, False).iterdir() if p.is_file() and p.name.startswith("aiianer-backup-") and p.name.endswith(".zip"))
@@ -459,59 +487,101 @@ async def backup_status() -> dict: return _backup_public(_backup_state())
 @router.get("/backup/config")
 async def backup_config() -> dict: return _backup_public(_backup_state())
 
-def _backup_cron_args(schedule: str, action: str, job_id: str | None = None) -> list[str]:
-    interval = "24h" if schedule == "daily" else "168h"
+def _backup_cron_args(expression: str, action: str, job_id: str | None = None) -> list[str]:
     base = [shutil.which("hermes") or "hermes", "cron", action]
     if job_id: base.append(job_id)
-    base.extend([interval, "--name", "aiianer-backup", "--script", "aiianer-backup-runner.py", "--no-agent", "--deliver", "local"])
+    base.extend([expression, "--name", "aiianer-backup", "--script", "aiianer-backup-runner.py", "--no-agent", "--deliver", "local"])
     if action == "edit":
-        base.remove(interval)
-        base.extend(["--schedule", interval])
+        base.remove(expression)
+        base.extend(["--schedule", expression])
     return base
 
 
-def _ensure_backup_cron(schedule: str) -> None:
+def _backup_cron_job() -> tuple[str, str] | None:
     try:
         listed = subprocess.run([shutil.which("hermes") or "hermes", "cron", "list", "--all"], capture_output=True, text=True, timeout=30, shell=False, check=False)
     except (OSError, subprocess.TimeoutExpired) as exc:
         raise RuntimeError("CRON_SETUP_FAILED") from exc
-    if listed.returncode != 0:
-        raise RuntimeError("CRON_SETUP_FAILED")
-    job_id = None
-    matches = list(re.finditer(r"(?m)^[ \t]*([0-9a-f]{12}) \[(?:active|paused)\]", listed.stdout or ""))
+    if listed.returncode != 0: raise RuntimeError("CRON_SETUP_FAILED")
+    matches = list(re.finditer(r"(?m)^[ \t]*([0-9a-f]{12}) \[(active|paused)\]", listed.stdout or ""))
     for index, match in enumerate(matches):
         end = matches[index + 1].start() if index + 1 < len(matches) else len(listed.stdout or "")
-        block = (listed.stdout or "")[match.start():end]
-        if re.search(r"(?m)^[ \t]*Name:[ \t]+aiianer-backup[ \t]*$", block):
-            job_id = match.group(1)
-            break
+        if re.search(r"(?m)^[ \t]*Name:[ \t]+aiianer-backup[ \t]*$", (listed.stdout or "")[match.start():end]): return match.group(1), match.group(2)
+    return None
+
+
+def _backup_cron_id() -> str | None:
+    job = _backup_cron_job()
+    return job[0] if job else None
+
+
+def _ensure_backup_cron(schedule: str, at: str = "02:00", weekday: int = 0) -> None:
+    expression = _backup_schedule_expression(schedule, at, weekday)
+    job = _backup_cron_job()
+    job_id = job[0] if job else None
     action = "edit" if job_id else "create"
-    argv = _backup_cron_args(schedule, action, job_id)
+    argv = _backup_cron_args(expression, action, job_id)
     try:
         result = subprocess.run(argv, capture_output=True, text=True, timeout=30, shell=False, check=False)
+        if result.returncode != 0: raise RuntimeError("CRON_SETUP_FAILED")
+        if job and job[1] == "paused":
+            result = subprocess.run([shutil.which("hermes") or "hermes", "cron", "resume", job[0]], capture_output=True, text=True, timeout=30, shell=False, check=False)
     except (OSError, subprocess.TimeoutExpired) as exc:
         raise RuntimeError("CRON_SETUP_FAILED") from exc
-    if result.returncode != 0:
-        raise RuntimeError("CRON_SETUP_FAILED")
+    if result.returncode != 0: raise RuntimeError("CRON_SETUP_FAILED")
+
+
+def _pause_backup_cron() -> None:
+    job_id = _backup_cron_id()
+    if not job_id: return
+    try:
+        result = subprocess.run([shutil.which("hermes") or "hermes", "cron", "pause", job_id], capture_output=True, text=True, timeout=30, shell=False, check=False)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise RuntimeError("CRON_SETUP_FAILED") from exc
+    if result.returncode != 0: raise RuntimeError("CRON_SETUP_FAILED")
 
 
 @router.put("/backup/settings")
 async def backup_settings(body: dict) -> dict:
     body = body or {}; schedule = body.get("schedule", "manual")
     if schedule not in {"manual", "daily", "weekly"}: raise HTTPException(422, "SCHEDULE_INVALID")
+    schedule_time = body.get("scheduleTime", "02:00")
+    schedule_weekday = body.get("scheduleWeekday", 0)
+    if schedule != "manual":
+        try: _backup_schedule_expression(schedule, schedule_time, schedule_weekday)
+        except ValueError as exc: raise HTTPException(422, str(exc))
     retention = body.get("retention") or {}; keep = retention.get("keep", 5)
     if not isinstance(keep, int) or isinstance(keep, bool) or not 1 <= keep <= 100: raise HTTPException(422, "RETENTION_INVALID")
     target = body.get("target_dir", body.get("targetDir", ""))
     try: canonical = str(_backup_target(target)) if target else ""
     except ValueError as exc: raise HTTPException(422, str(exc))
-    state = {**_backup_state(), "schemaVersion": 1, "enabled": bool(body.get("enabled", False)), "target_dir": canonical, "schedule": schedule, "retention": {"enabled": bool(retention.get("enabled", False)), "keep": keep}}
-    _backup_save(state)
-    if state["enabled"] and schedule != "manual":
-        try:
-            _ensure_backup_cron(schedule)
-        except RuntimeError:
-            state["lastErrorCode"] = "CRON_SETUP_FAILED"; _backup_save(state)
+    settings = {"schemaVersion": 1, "enabled": bool(body.get("enabled", False)), "target_dir": canonical, "schedule": schedule, "scheduleTime": schedule_time, "scheduleWeekday": schedule_weekday, "retention": {"enabled": bool(retention.get("enabled", False)), "keep": keep}}
+    _backup_save({**_backup_state(), **settings})
+    try:
+        if settings["enabled"] and schedule != "manual":
+            _ensure_backup_cron(schedule, schedule_time, schedule_weekday)
+        else:
+            _pause_backup_cron()
+        state = {**_backup_state(), **settings}
+        state.pop("scheduleErrorCode", None)
+        _backup_save(state)
+    except RuntimeError:
+        state = {**_backup_state(), **settings, "scheduleErrorCode": "CRON_SETUP_FAILED"}
+        _backup_save(state)
     return _backup_public(_backup_state())
+
+
+@router.post("/backup/browse")
+async def backup_browse(body: dict) -> dict:
+    try: path = _backup_browse_path((body or {}).get("path"))
+    except (ValueError, OSError) as exc: raise HTTPException(422, str(exc))
+    directories = []
+    try:
+        for child in sorted(path.iterdir(), key=lambda p: p.name.casefold()):
+            if child.is_dir(): directories.append({"name": child.name, "path": str(child.resolve())})
+            if len(directories) >= 200: break
+    except OSError: raise HTTPException(422, "BROWSER_PATH_UNREADABLE")
+    return {"path": str(path), "parent": str(path.parent) if path.parent != path else None, "directories": directories}
 
 @router.get("/backup/archives")
 async def backup_archives() -> dict:

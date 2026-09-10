@@ -54,5 +54,8 @@ class BackupRunnerTest(unittest.TestCase):
             self.assertEqual(result["state"], "success")
             self.assertEqual(len(list(target.glob("aiianer-backup-*.zip"))), 1)
             self.assertFalse(list(target.glob("*.partial*")))
+            state = MOD.load_state(home)
+            self.assertEqual(state["history"][0]["state"], "success")
+            self.assertEqual(state["history"][0]["archive"]["fileCount"], 1)
 
 if __name__ == "__main__": unittest.main()
