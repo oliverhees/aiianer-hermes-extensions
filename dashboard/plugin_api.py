@@ -22,6 +22,7 @@ import sys
 import tarfile
 import tempfile
 import urllib.request
+import zipfile
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
@@ -477,6 +478,14 @@ def _backup_public(state: dict) -> dict:
     history = state.get("history") if isinstance(state.get("history"), list) else []
     return {"configured": bool(state.get("target_dir")), "enabled": bool(state.get("enabled")), "targetDir": state.get("target_dir") or None, "schedule": state.get("schedule", "manual"), "scheduleTime": state.get("scheduleTime", "02:00"), "scheduleWeekday": state.get("scheduleWeekday", 0), "retention": {"enabled": bool(retention.get("enabled")), "keep": int(retention.get("keep", 5))}, "state": state.get("state", "never_run"), "lastRun": state.get("lastRun"), "lastArchive": state.get("lastArchive"), "lastErrorCode": state.get("lastErrorCode"), "scheduleErrorCode": state.get("scheduleErrorCode"), "nextRun": None, "archiveCount": _archive_count(state.get("target_dir")), "history": history[:20]}
 
+def _archive_is_valid(path: Path) -> bool:
+    try:
+        with zipfile.ZipFile(path) as archive:
+            return archive.testzip() is None and bool(archive.namelist())
+    except (OSError, zipfile.BadZipFile):
+        return False
+
+
 def _archive_count(raw) -> int:
     try: return sum(1 for p in _backup_target(raw, False).iterdir() if p.is_file() and p.name.startswith("aiianer-backup-") and p.name.endswith(".zip"))
     except (ValueError, OSError, TypeError): return 0
@@ -588,7 +597,7 @@ async def backup_archives() -> dict:
     state = _backup_state(); result=[]
     try:
         for p in sorted(_backup_target(state.get("target_dir"), False).glob("aiianer-backup-*.zip"), key=lambda x:x.stat().st_mtime, reverse=True):
-            if p.is_file(): result.append({"name": p.name, "bytes": p.stat().st_size, "modified": datetime.datetime.fromtimestamp(p.stat().st_mtime, datetime.timezone.utc).isoformat()})
+            if p.is_file(): result.append({"name": p.name, "bytes": p.stat().st_size, "modified": datetime.datetime.fromtimestamp(p.stat().st_mtime, datetime.timezone.utc).isoformat(), "valid": _archive_is_valid(p)})
     except (ValueError, OSError, TypeError): pass
     return {"archives": result}
 
@@ -614,7 +623,7 @@ async def backup_restore_prepare(body: dict) -> dict:
         archive = (target / name).resolve(strict=True)
         archive.relative_to(target)
     except (ValueError, OSError): raise HTTPException(404, "ARCHIVE_MISSING_OR_INVALID")
-    if not archive.is_file(): raise HTTPException(404, "ARCHIVE_MISSING_OR_INVALID")
+    if not archive.is_file() or not _archive_is_valid(archive): raise HTTPException(404, "ARCHIVE_MISSING_OR_INVALID")
     nonce = os.urandom(16).hex()
     state["restoreNonce"] = nonce
     _backup_save(state)
