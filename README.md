@@ -69,6 +69,24 @@ Nach dem Neustart erscheint **AIIANER** in der Seitenleiste beziehungsweise als
 Dashboard-Reiter. Die weiteren Komponenten installierst du dort mit den jeweiligen
 Buttons.
 
+### Windows
+
+Windows ist ein gleichwertiger Weg – seit 1.3.33 auch beim Installieren. Der
+Marktplatz spielt „Deutsche Sprache“, „Bot-Modus auf Deutsch“,
+„Gruppenchat-Grenzen“ und „AIIANER Backup“ dort nativ mit dem Python ein, das
+Hermes ohnehin mitbringt. Eine Bash (Git-Bash, MSYS2, WSL) ist dafür **nicht**
+nötig.
+
+Kommst du von 1.3.32 oder älter und die Installation endete mit
+`/bin/bash: C:\Users\...\install.sh: No such file or directory`: zuerst im
+Marktplatz den **AIIANER EXTENSION HUB** aktualisieren, danach die gewünschte
+Komponente. Das Hub-Update selbst war von dem Fehler nicht betroffen.
+
+Nur der **EU-Router** bringt weiter einen Bash-Installer mit. Fehlt eine Bash,
+sagt der Marktplatz das vorher und nennt
+[Git for Windows](https://git-scm.com/download/win) als Abhilfe, statt beim
+Klick in einen Fehler zu laufen.
+
 ## Update und Entfernen
 
 Nach jeder Installation, jedem Update und jeder Deinstallation Hermes **vollständig beenden und neu starten**. Ein Gateway-Neustart oder ein Plugin-Reload reicht für die sichtbare Desktop-Oberfläche nicht zuverlässig aus.

@@ -1,6 +1,12 @@
 {
   "releases": [
     {
+      "tagName": "v1.3.33",
+      "name": "v1.3.33 · Installation unter Windows repariert",
+      "publishedAt": "2026-09-12T08:00:00Z",
+      "body": "Der Installer der Erweiterungen lief unter Windows ins Leere: das Backend rief bash mit einem Windows-Pfad auf, und für eine Bash ist der Backslash ein Fluchtzeichen - sie meldete \"No such file or directory\" für eine Datei, die sehr wohl da lag. Rechner ohne Bash bekamen ohnehin nur einen 500er. Windows installiert Deutsche Sprache, Bot-Modus, Gruppenchat-Grenzen und Backup jetzt nativ in Python, genau wie der Wächter es nach einem Hermes-Update schon immer tat - ohne bash, ohne python3 im PATH. Wo es weiter einen Bash-Installer gibt, bekommt die Bash nur noch einen relativen Dateinamen und Pfade in Posix-Schreibweise; fehlt sie ganz, sagt der Marktplatz das vorher statt nach dem Klick."
+    },
+    {
       "tagName": "v1.3.32",
       "name": "v1.3.32 · Optionale Host-API abgesichert",
       "publishedAt": "2026-09-11T02:30:00Z",
@@ -114,7 +120,6 @@
       "url": "https://github.com/oliverhees/aiianer-hermes-extensions/releases/tag/v1.3.16"
     },
     {
-
       "tagName": "v1.3.15",
       "name": "v1.3.15 · Beta-Feedback und Marktplatz-Auftritt",
       "publishedAt": "2026-09-10T16:30:00Z",
