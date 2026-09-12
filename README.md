@@ -82,8 +82,12 @@ Kommst du von 1.3.32 oder älter und die Installation endete mit
 Marktplatz den **AIIANER EXTENSION HUB** aktualisieren, danach die gewünschte
 Komponente. Das Hub-Update selbst war von dem Fehler nicht betroffen.
 
-Nur der **EU-Router** bringt weiter einen Bash-Installer mit. Fehlt eine Bash,
-sagt der Marktplatz das vorher und nennt
+Seit 1.3.34 gilt das auch für den **EU-Router**: der Marktplatz baut die
+Schritte seines Installers nativ nach, statt sein Shell-Skript auszuführen. Auf
+Linux und macOS läuft weiterhin das Original-Skript aus dem EU-Router-Repo.
+
+Sollte künftig eine Komponente doch einmal eine Bash brauchen, sagt der
+Marktplatz das **vorher** und nennt
 [Git for Windows](https://git-scm.com/download/win) als Abhilfe, statt beim
 Klick in einen Fehler zu laufen.
 

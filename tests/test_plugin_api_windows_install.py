@@ -259,7 +259,7 @@ class BashAufrufTest(unittest.TestCase):
 
             with mock.patch.object(api, "_bash_binaer", return_value="/usr/bin/bash"), \
                     mock.patch.object(api.subprocess, "run", falscher_lauf):
-                api._run_bash_installer("eurouter-provider", src)
+                api._run_bash_installer("kuenftige-komponente", src)
 
             self.assertEqual(gesehen["argv"], ["/usr/bin/bash", "./install.sh"])
             self.assertEqual(Path(gesehen["kwargs"]["cwd"]), src)
@@ -280,7 +280,7 @@ class BashAufrufTest(unittest.TestCase):
             (src / "install.sh").write_text("#!/usr/bin/env bash\necho ok\n")
             with mock.patch.object(api, "_bash_binaer", return_value=None):
                 with self.assertRaises(api.HTTPException) as fall:
-                    api._run_bash_installer("eurouter-provider", src)
+                    api._run_bash_installer("kuenftige-komponente", src)
             self.assertIn("git-scm.com", str(fall.exception.detail))
 
     def test_ignores_the_wsl_launcher_in_system32(self):
@@ -311,7 +311,7 @@ class VerfuegbarkeitTest(unittest.TestCase):
         api = load_api_module()
         with mock.patch.object(api, "_ist_windows", return_value=True), \
                 mock.patch.object(api, "_bash_binaer", return_value=None):
-            ok, grund, grund_en = api._verfuegbar("eurouter-provider")
+            ok, grund, grund_en = api._verfuegbar("kuenftige-komponente")
         self.assertFalse(ok)
         self.assertIn("Bash", grund)
         self.assertIn("bash", grund_en)
@@ -323,7 +323,7 @@ class VerfuegbarkeitTest(unittest.TestCase):
             with mock.patch.object(api, "_ist_windows", return_value=True), \
                     mock.patch.object(api, "_bash_binaer", return_value=None):
                 for comp_id in ("german-language", "bot-mode-german", "group-chat-limits",
-                                "aiianer-backup"):
+                                "aiianer-backup", "eurouter-provider"):
                     ok, grund, _ = api._verfuegbar(comp_id)
                     self.assertTrue(ok, f"{comp_id}: {grund}")
 
@@ -340,6 +340,9 @@ class PayloadVorhandenTest(unittest.TestCase):
             "aiianer-group-limits.ts", "apply-limits.py", "gruppen-grenzen.beispiel.json",
         ),
         "aiianer-backup": ("backup_runner.py",),
+        # Der EU-Router bringt seine Payload aus einem eigenen Repo mit, hier
+        # liegt nur der Installer. Geprueft wird deshalb nur dessen Existenz.
+        "eurouter-provider": (),
     }
 
     def test_every_native_installer_finds_its_payload_in_the_repo(self):
@@ -404,13 +407,13 @@ class InstallRouteAufWindowsTest(unittest.TestCase):
             wurzel = Path(tmp)
             hermes_heim(api, wurzel)
             repo = wurzel / "aiianer-hermes-extensions-main"
-            src = repo / "extensions" / "eurouter-provider"
+            src = repo / "extensions" / "kuenftige-komponente"
             src.mkdir(parents=True)
             (src / "install.sh").write_text("#!/usr/bin/env bash\necho ok\n")
 
             api._download = lambda _tmp: repo
             api._load_catalog = lambda: {
-                "components": [{"id": "eurouter-provider", "version": "2.1.0"}]
+                "components": [{"id": "kuenftige-komponente", "version": "1.0.0"}]
             }
             api._read_state = lambda: {}
             api._write_state = lambda _state: None
@@ -419,10 +422,102 @@ class InstallRouteAufWindowsTest(unittest.TestCase):
             with mock.patch.object(api, "_ist_windows", return_value=True), \
                     mock.patch.object(api, "_bash_binaer", return_value=None):
                 with self.assertRaises(api.HTTPException) as fall:
-                    asyncio.run(api.install({"id": "eurouter-provider"}))
+                    asyncio.run(api.install({"id": "kuenftige-komponente"}))
             # 409 statt 500: die Pruefung greift, bevor irgendetwas laeuft.
             self.assertEqual(fall.exception.status_code, 409)
             self.assertIn("Bash", str(fall.exception.detail))
+
+
+class NativeEurouterTest(unittest.TestCase):
+    """Der EU-Router wohnt in einem eigenen Repo. Unter Windows wird sein
+    install.sh nachgebaut, statt eine Bash zu verlangen."""
+
+    def eurouter_repo(self, wurzel: Path) -> Path:
+        repo = wurzel / "hermes-eurouter-plugin-main"
+        quelle = repo / "model-providers" / "eurouter"
+        quelle.mkdir(parents=True)
+        (quelle / "__init__.py").write_text("# eurouter provider\n")
+        (quelle / "plugin.yaml").write_text("name: eurouter\nversion: 2.1.0\n")
+        return repo
+
+    def test_installs_provider_files_and_clears_the_model_cache(self):
+        api = load_api_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            wurzel = Path(tmp)
+            heim = hermes_heim(api, wurzel)
+            api.PLUGINS = heim / "plugins"
+            repo = self.eurouter_repo(wurzel)
+
+            # Ein Cache mit fremden Eintraegen - die muessen stehen bleiben.
+            cache = heim / "provider_models_cache.json"
+            cache.write_text(json.dumps({"eurouter": ["alt"], "openai": ["bleibt"]}))
+
+            # Ein altes __pycache__, das ein Update ueberleben wuerde.
+            alt = api.PLUGINS / "model-providers" / "eurouter" / "__pycache__"
+            alt.mkdir(parents=True)
+            (alt / "__init__.cpython-311.pyc").write_text("stale")
+
+            with mock.patch.object(api, "_download_tarball", return_value=repo):
+                log = api._install_eurouter_native(wurzel / "egal")
+
+            ziel = api.PLUGINS / "model-providers" / "eurouter"
+            self.assertEqual((ziel / "__init__.py").read_text(), "# eurouter provider\n")
+            self.assertTrue((ziel / "plugin.yaml").is_file())
+            self.assertFalse((ziel / "__pycache__").exists())
+            self.assertEqual(json.loads(cache.read_text()), {"openai": ["bleibt"]})
+            self.assertTrue(any("Cache" in z for z in log), log)
+
+    def test_reports_incomplete_remote_repo(self):
+        api = load_api_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            wurzel = Path(tmp)
+            heim = hermes_heim(api, wurzel)
+            api.PLUGINS = heim / "plugins"
+            repo = wurzel / "hermes-eurouter-plugin-main"
+            (repo / "model-providers" / "eurouter").mkdir(parents=True)
+            with mock.patch.object(api, "_download_tarball", return_value=repo):
+                with self.assertRaises(api.HTTPException) as fall:
+                    api._install_eurouter_native(wurzel / "egal")
+            self.assertIn("__init__.py", str(fall.exception.detail))
+
+    def test_says_it_plainly_when_hermes_home_is_missing(self):
+        api = load_api_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            api.HERMES_HOME = Path(tmp) / "gibt-es-nicht"
+            with self.assertRaises(api.HTTPException) as fall:
+                api._install_eurouter_native(Path(tmp))
+            self.assertIn("Ist Hermes installiert", str(fall.exception.detail))
+
+    def test_windows_never_reaches_for_bash(self):
+        api = load_api_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            wurzel = Path(tmp)
+            heim = hermes_heim(api, wurzel)
+            api.PLUGINS = heim / "plugins"
+            repo = self.eurouter_repo(wurzel)
+            with mock.patch.object(api, "_ist_windows", return_value=True), \
+                    mock.patch.object(api, "_download_tarball", return_value=repo), \
+                    mock.patch.object(
+                        api, "_run_bash_installer",
+                        side_effect=AssertionError("bash darf nicht laufen")):
+                api._run_extension_installer("eurouter-provider", wurzel / "egal")
+            self.assertTrue(
+                (api.PLUGINS / "model-providers" / "eurouter" / "plugin.yaml").is_file()
+            )
+
+    def test_posix_keeps_the_canonical_shell_installer(self):
+        api = load_api_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            src = Path(tmp) / "extensions" / "eurouter-provider"
+            src.mkdir(parents=True)
+            (src / "install.sh").write_text("#!/usr/bin/env bash\necho ok\n")
+            with mock.patch.object(api, "_ist_windows", return_value=False), \
+                    mock.patch.object(
+                        api, "_run_bash_installer", return_value=["ok"]) as bash_weg:
+                self.assertEqual(
+                    api._run_extension_installer("eurouter-provider", src), ["ok"]
+                )
+            bash_weg.assert_called_once()
 
 
 if __name__ == "__main__":
