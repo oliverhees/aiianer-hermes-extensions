@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import contextlib
 import datetime
+import gzip
 import json
 import re
 import os
@@ -189,6 +190,21 @@ def _verfuegbar(comp_id: str) -> tuple:
                 "Hermes' source folder is not where it is expected "
                 f"({I18N_DIR}). Without it the language cannot be installed.",
             )
+
+    # Ein Knopf, der zuverlaessig in einen 500er laeuft, ist schlimmer als
+    # gar kein Knopf: Komponenten, fuer die es nur den Bash-Weg gibt, brauchen
+    # auf Windows eine echte Bash (Git-Bash oder MSYS2).
+    if _ist_windows() and _braucht_bash(comp_id) and _bash_binaer() is None:
+        return (
+            False,
+            "Diese Komponente bringt einen Bash-Installer mit, auf diesem "
+            "Rechner ist aber keine Bash erreichbar. Installiere Git for "
+            "Windows (https://git-scm.com/download/win) und starte Hermes "
+            "danach neu.",
+            "This component ships a bash installer, but no bash is reachable "
+            "on this machine. Install Git for Windows "
+            "(https://git-scm.com/download/win), then restart Hermes.",
+        )
     return (True, "", "")
 
 
@@ -747,6 +763,287 @@ async def health() -> dict:
     return _guard().check_all()
 
 
+# ------------------------------------------------- Installer je Plattform
+
+# Die Installer der Erweiterungen sind Bash-Skripte. Auf Linux und macOS ist
+# das der kurze Weg. Auf Windows ist es ein Irrweg, aus zwei Gruenden:
+#
+#   1. Dort gibt es meist ueberhaupt keine Bash. Der Aufruf endet dann in
+#      einem nackten WinError 2 und die Oberflaeche zeigt einen 500er.
+#   2. Und wenn doch eine da ist (Git-Bash, MSYS2), dann bekommt sie von
+#      Python einen nativen Windows-Pfad. Fuer eine Bash ist der Backslash
+#      ein Fluchtzeichen, also wird aus
+#      C:\Users\...\Temp\tmp1234\extensions\german-language\install.sh
+#      beim Einlesen C:Users...install.sh - und sie meldet
+#      "No such file or directory" fuer eine Datei, die sehr wohl da liegt.
+#      Genau dieser Fehler kam aus der Community (Windows 11, MSYS2-Bash).
+#
+# Darum bekommt Windows einen eigenen, nativen Weg: dieselben Schritte in
+# Python, mit sys.executable als Interpreter fuer die apply-*.py-Patcher.
+# Kein bash, kein python3, kein gzip, kein cp im PATH noetig. Genau so
+# arbeitet der Waechter (guard_check.repair_*) schon heute - nur der Knopf
+# im Marktplatz tat es noch nicht.
+#
+# WICHTIG: Ein nativer Installer unten und die install.sh seiner Erweiterung
+# muessen dieselben Schritte tun. Wer das eine aendert, aendert auch das
+# andere. tests/test_plugin_api_windows_install.py haelt die Schritte fest.
+
+
+def _ist_windows() -> bool:
+    """Eine Stelle fuer die Plattformfrage. So ist der Windows-Weg auch auf
+    einem Linux-Rechner pruefbar, ohne os.name im ganzen Prozess zu biegen."""
+    return os.name == "nt"
+
+
+def _posix_pfad(pfad) -> str:
+    """Pfad in der Schreibweise, die eine Git-/MSYS2-Bash versteht.
+
+    'C:/Users/...' loest eine MSYS2-Bash korrekt auf, 'C:\\Users\\...' nicht."""
+    return str(pfad).replace("\\", "/")
+
+
+def _bash_binaer() -> str | None:
+    """Welche Bash darf einen Installer ausfuehren?
+
+    Auf Windows ist shutil.which("bash") eine Falle: es findet zuerst
+    C:\\Windows\\System32\\bash.exe, den Starter fuer das Linux-Subsystem. Der
+    sieht ein voellig anderes Dateisystem - der Installer wuerde scheinbar
+    durchlaufen und am Hermes der Nutzerin nichts aendern. Deshalb auf
+    Windows nur Git-Bash und MSYS2, und System32 ausdruecklich nicht."""
+    gefunden = shutil.which("bash")
+    if not _ist_windows():
+        # Wenn PATH mager ist (Dienst-Umgebung), liegt sie trotzdem dort.
+        if gefunden is None and Path("/bin/bash").is_file():
+            return "/bin/bash"
+        return gefunden
+    kandidaten: list[str] = []
+    if gefunden and Path(gefunden).parent.name.lower() != "system32":
+        kandidaten.append(gefunden)
+    for basis in (
+        os.environ.get("ProgramFiles", r"C:\Program Files"),
+        os.environ.get("ProgramFiles(x86)", ""),
+        os.environ.get("LOCALAPPDATA", ""),
+    ):
+        if basis:
+            kandidaten.append(str(Path(basis) / "Git" / "bin" / "bash.exe"))
+            kandidaten.append(str(Path(basis) / "Programs" / "Git" / "bin" / "bash.exe"))
+    kandidaten.append(r"C:\msys64\usr\bin\bash.exe")
+    for kandidat in kandidaten:
+        if Path(kandidat).is_file():
+            return kandidat
+    return None
+
+
+def _installer_umgebung() -> dict:
+    """Umgebung fuer einen Bash-Installer.
+
+    HERMES_HOME und HERMES_AGENT_DIR in Posix-Schreibweise: sonst setzt die
+    Bash daraus Pfade mit Backslashes zusammen und greift ins Leere. Auf
+    Linux und macOS ist das eine Kopie derselben Werte, die auch hermes_home()
+    liefert - dort aendert sich also nichts."""
+    env = dict(os.environ)
+    env["HERMES_HOME"] = _posix_pfad(HERMES_HOME)
+    env["HERMES_AGENT_DIR"] = _posix_pfad(AGENT_DIR)
+    return env
+
+
+def _ext_store(comp_id: str) -> Path:
+    """Dauerablage der Payload - dieselbe Stelle, die auch die install.sh
+    benutzen ($HERMES_HOME/aiianer-extensions/<id>)."""
+    return HERMES_HOME / "aiianer-extensions" / comp_id
+
+
+def _protokoll(text: str) -> list[str]:
+    return [z for z in (text or "").splitlines() if z.strip()]
+
+
+def _run_patcher(patcher: Path, argumente: list[str], cwd: Path) -> list[str]:
+    """Fuehrt einen apply-*.py-Patcher mit DEM Python aus, das schon laeuft.
+
+    Kein "python3" im PATH noetig - auf Windows gibt es das naemlich nicht."""
+    try:
+        proc = subprocess.run(
+            [sys.executable, str(patcher), *argumente],
+            capture_output=True, text=True, timeout=180, cwd=str(cwd), shell=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise HTTPException(status_code=500, detail=f"{patcher.name}: {exc}") from exc
+    if proc.returncode != 0:
+        raise HTTPException(
+            status_code=500,
+            detail=(proc.stderr or proc.stdout or f"{patcher.name} fehlgeschlagen")[-800:],
+        )
+    return _protokoll(proc.stdout)
+
+
+def _run_bash_installer(comp_id: str, src: Path) -> list[str]:
+    installer = src / "install.sh"
+    if not installer.is_file():
+        raise HTTPException(status_code=500, detail=f"{comp_id} hat kein install.sh")
+    with contextlib.suppress(OSError):
+        os.chmod(installer, 0o755)
+    bash = _bash_binaer()
+    if bash is None:
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                f"{comp_id} braucht eine Bash, auf diesem Rechner ist keine "
+                "erreichbar. Unter Windows hilft Git for Windows "
+                "(https://git-scm.com/download/win), danach Hermes neu starten."
+            ),
+        )
+    # Der Dateiname wird RELATIV uebergeben, der Ordner ueber cwd gesetzt.
+    # Damit sieht die Bash nie einen Windows-Pfad mit Backslashes und kann
+    # ihn auch nicht falsch auflösen.
+    try:
+        proc = subprocess.run(
+            [bash, "./install.sh"],
+            capture_output=True, text=True, timeout=180, cwd=str(src),
+            env=_installer_umgebung(), shell=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise HTTPException(status_code=500, detail=f"{comp_id}: {exc}") from exc
+    if proc.returncode != 0:
+        raise HTTPException(
+            status_code=500,
+            detail=(proc.stderr or proc.stdout or "Installation fehlgeschlagen")[-800:],
+        )
+    return _protokoll(proc.stdout)[-12:]
+
+
+def _install_german_native(src: Path) -> list[str]:
+    """Schritte aus extensions/german-language/install.sh, ohne Bash."""
+    quelle = src / "de.ts"
+    if not quelle.is_file():
+        gepackt = src / "de.ts.gz"
+        if not gepackt.is_file():
+            raise HTTPException(
+                status_code=500,
+                detail="Die Sprach-Payload de.ts.gz fehlt im heruntergeladenen Repo.",
+            )
+        with gzip.open(gepackt, "rb") as ein, open(quelle, "wb") as aus:
+            shutil.copyfileobj(ein, aus)
+    store = _ext_store("german-language")
+    store.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(quelle, store / "de.ts")
+    shutil.copy2(src / "apply-de.py", store / "apply-de.py")
+    return _run_patcher(store / "apply-de.py", [str(AGENT_DIR)], store)
+
+
+def _install_bots_native(src: Path) -> list[str]:
+    """Schritte aus extensions/bot-mode-german/install.sh, ohne Bash."""
+    if not BOTS_KATALOG.is_file():
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "Nachrichtenkatalog des Bot-Modus nicht gefunden unter "
+                f"{BOTS_KATALOG}. Ist Hermes Desktop installiert und aktuell?"
+            ),
+        )
+    try:
+        verdrahtet = bool(
+            re.search(
+                r"^export type Locale = .*'de'",
+                (I18N_DIR / "types.ts").read_text(errors="ignore"),
+                re.M,
+            )
+        )
+    except OSError:
+        verdrahtet = False
+    if not verdrahtet:
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "Die deutsche Sprache ist nicht eingerichtet. Der Bot-Modus "
+                "haengt daran: ohne 'de' als gueltige Sprache waere das Buendel "
+                "eingetragen, aber nie auswaehlbar. Zuerst „Deutsche Sprache“ "
+                "installieren."
+            ),
+        )
+    store = _ext_store("bot-mode-german")
+    store.mkdir(parents=True, exist_ok=True)
+    for name in ("de-bots.ts", "apply-bots-de.py"):
+        shutil.copy2(src / name, store / name)
+    return _run_patcher(store / "apply-bots-de.py", [str(AGENT_DIR)], store)
+
+
+def _install_limits_native(src: Path) -> list[str]:
+    """Schritte aus extensions/group-chat-limits/install.sh, ohne Bash."""
+    if not BOTS_ROUNDS.is_file():
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "Rundenschleife des Gruppenchats nicht gefunden unter "
+                f"{BOTS_ROUNDS}. Ist Hermes Desktop installiert und aktuell?"
+            ),
+        )
+    store = _ext_store("group-chat-limits")
+    store.mkdir(parents=True, exist_ok=True)
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
+    log: list[str] = []
+    # Beispiel-Konfiguration anlegen, aber niemals eine vorhandene ueberschreiben.
+    konfig = STATE_DIR / "gruppen-grenzen.json"
+    if not konfig.is_file():
+        shutil.copy2(src / "gruppen-grenzen.beispiel.json", konfig)
+        log.append(f"Beispiel-Konfiguration angelegt: {konfig}")
+    for name in ("aiianer-group-limits.ts", "apply-limits.py", "gruppen-grenzen.beispiel.json"):
+        shutil.copy2(src / name, store / name)
+    for name in ("aiianer-group-limits.ts", "apply-limits.py"):
+        shutil.copy2(src / name, STATE_DIR / name)
+    return log + _run_patcher(
+        store / "apply-limits.py", [str(AGENT_DIR), str(STATE_DIR)], store
+    )
+
+
+def _install_backup_native(src: Path) -> list[str]:
+    """Schritte aus extensions/aiianer-backup/install.sh, ohne Bash."""
+    ziel = HERMES_HOME / "scripts" / "aiianer-backup-runner.py"
+    ziel.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(src / "backup_runner.py", ziel)
+    with contextlib.suppress(OSError):
+        os.chmod(ziel, 0o755)
+    zustand = STATE_DIR / "backup-state.json"
+    if not zustand.exists():
+        _write_json_atomic(zustand, {
+            "schemaVersion": 1, "enabled": False, "target_dir": "",
+            "schedule": "manual", "retention": {"enabled": False, "keep": 5},
+            "state": "never_run", "lastRun": None, "lastArchive": None,
+            "lastErrorCode": None,
+        })
+    return [
+        "AIIANER Backup installiert. Zielordner im Backups-Tab festlegen; "
+        "keine Uploads in V1."
+    ]
+
+
+# Nur Erweiterungen, deren install.sh nichts anderes tut als Payload ablegen
+# und einen Patcher starten. Der EU-Router laedt einen fremden Installer aus
+# dem Netz nach - den kann und soll dieser Code nicht nachbauen.
+NATIVE_INSTALLER = {
+    "german-language": _install_german_native,
+    "bot-mode-german": _install_bots_native,
+    "group-chat-limits": _install_limits_native,
+    "aiianer-backup": _install_backup_native,
+}
+
+
+def _braucht_bash(comp_id: str) -> bool:
+    """Gibt es fuer diese Komponente nur den Bash-Weg?"""
+    return comp_id not in NATIVE_INSTALLER and comp_id != "aiianer-hub"
+
+
+def _run_extension_installer(comp_id: str, src: Path) -> list[str]:
+    """Auf Windows nativ, wo es einen nativen Weg gibt - sonst per Bash.
+
+    Auf Linux und macOS bleibt der eingespielte Bash-Weg der Standard: er
+    laeuft dort seit Monaten und ist die Fassung, die Nutzer auch von Hand
+    starten."""
+    nativ = NATIVE_INSTALLER.get(comp_id)
+    if nativ is not None and _ist_windows():
+        return nativ(src)
+    return _run_bash_installer(comp_id, src)
+
+
 @router.post("/install")
 async def install(body: dict) -> dict:
     comp_id = (body or {}).get("id", "")
@@ -766,7 +1063,12 @@ async def install(body: dict) -> dict:
 
     previous_version = _local_plugin_version(comp_id, _read_state())
 
-    with tempfile.TemporaryDirectory() as tmp:
+    # Kein TemporaryDirectory-Kontext: unter Windows kann das Aufraeumen an
+    # einer noch gehaltenen Datei scheitern (Virenscanner, Indexdienst). Das
+    # wuerde eine bereits gelungene Installation als 500er ausgeben - der
+    # Nutzer haelt dann sein System fuer kaputt, obwohl alles sitzt.
+    tmp = tempfile.mkdtemp(prefix="aiianer-install-")
+    try:
         root = _download(tmp)
         install_log: list[str]
         if comp_id == "aiianer-hub":
@@ -778,23 +1080,7 @@ async def install(body: dict) -> dict:
                 raise HTTPException(
                     status_code=500, detail=f"{comp_id} fehlt im heruntergeladenen Repo"
                 )
-            installer = src / "install.sh"
-            if not installer.is_file():
-                raise HTTPException(status_code=500, detail=f"{comp_id} hat kein install.sh")
-            os.chmod(installer, 0o755)
-            proc = subprocess.run(
-                ["bash", str(installer)],
-                capture_output=True,
-                text=True,
-                timeout=180,
-                cwd=str(src),
-            )
-            if proc.returncode != 0:
-                raise HTTPException(
-                    status_code=500,
-                    detail=(proc.stderr or proc.stdout or "Installation fehlgeschlagen")[-800:],
-                )
-            install_log = [z for z in (proc.stdout or "").splitlines() if z.strip()][-12:]
+            install_log = _run_extension_installer(comp_id, src)[-12:]
 
             # Sprachdatei zusaetzlich als Quelle sichern, damit der Waechter sie
             # nach einem Hermes-Update erneut einspielen kann.
@@ -804,6 +1090,8 @@ async def install(body: dict) -> dict:
                              "aiianer-group-limits.ts", "apply-limits.py"):
                     if (src / name).is_file():
                         shutil.copy2(src / name, STATE_DIR / name)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
 
     with _state_lock():
         state = _read_state()

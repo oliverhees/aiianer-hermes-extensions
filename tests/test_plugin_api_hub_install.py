@@ -274,8 +274,28 @@ class HubCatalogUpdateStatusTest(unittest.TestCase):
 
         hub = next(component for component in result["components"] if component["id"] == "aiianer-hub")
         self.assertEqual(hub["installed"], "1.3.12")
-        self.assertEqual(hub["version"], "1.3.32")
+        self.assertEqual(hub["version"], "1.3.33")
         self.assertEqual(hub["status"], "outdated")
+
+
+class VersionKonsistenzTest(unittest.TestCase):
+    """plugin.yaml, dashboard/manifest.json und catalog.json tragen dieselbe
+    Hub-Version. Laufen sie auseinander, sieht ein Nutzer "aktuell", obwohl
+    sein Hub alt ist - oder umgekehrt."""
+
+    def test_hub_version_is_identical_in_all_three_places(self):
+        katalog = json.loads((REPO_ROOT / "catalog.json").read_text())
+        hub = next(c for c in katalog["components"] if c["id"] == "aiianer-hub")
+        manifest = json.loads((REPO_ROOT / "dashboard" / "manifest.json").read_text())
+        plugin_yaml = (REPO_ROOT / "plugin.yaml").read_text()
+        self.assertEqual(manifest["version"], hub["version"])
+        self.assertIn(f"version: {hub['version']}", plugin_yaml)
+
+    def test_release_notes_mention_the_catalog_version(self):
+        katalog = json.loads((REPO_ROOT / "catalog.json").read_text())
+        hub = next(c for c in katalog["components"] if c["id"] == "aiianer-hub")
+        tags = [r["tagName"] for r in json.loads((REPO_ROOT / "releases.json").read_text())["releases"]]
+        self.assertIn(f"v{hub['version']}", tags)
 
 
 if __name__ == "__main__":

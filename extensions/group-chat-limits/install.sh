@@ -45,7 +45,21 @@ cp "$HERE/aiianer-group-limits.ts" "$HERE/apply-limits.py" \
    "$HERE/gruppen-grenzen.beispiel.json" "$STORE/"
 cp "$HERE/aiianer-group-limits.ts" "$HERE/apply-limits.py" "$STATE_DIR/"
 
-python3 "$STORE/apply-limits.py" "$AGENT_DIR" "$STATE_DIR"
+# Welches Python? Auf Linux und macOS ist es python3. In einer Git-Bash unter
+# Windows gibt es python3 oft nicht, dort heisst es python oder py. Der
+# Marktplatz umgeht das ganz (er nimmt sein eigenes sys.executable) - wer den
+# Installer von Hand startet, braucht diese Suche.
+PY="${PYTHON:-}"
+if [ -z "$PY" ]; then
+  for kandidat in python3 python py; do
+    if command -v "$kandidat" >/dev/null 2>&1; then PY="$kandidat"; break; fi
+  done
+fi
+if [ -z "$PY" ]; then
+  echo "FEHLER: Kein Python gefunden (python3, python, py). Bitte Python installieren." >&2
+  exit 1
+fi
+"$PY" "$STORE/apply-limits.py" "$AGENT_DIR" "$STATE_DIR"
 
 echo ""
 echo "Fertig. Hermes Desktop komplett neu starten - beim ersten Start baut die App kurz neu."
