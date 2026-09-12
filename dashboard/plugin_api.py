@@ -32,6 +32,11 @@ router = APIRouter()
 
 REPO = "oliverhees/aiianer-hermes-extensions"
 TARBALL = f"https://github.com/{REPO}/archive/refs/heads/main.tar.gz"
+# Der EU-Router wohnt in einem eigenen Repo. Sein install.sh ist der
+# kanonische Weg; der native Windows-Weg unten holt denselben Stand als
+# Tarball, weil es dort keine Bash gibt, die das Skript ausfuehren koennte.
+EUROUTER_REPO = "oliverhees/hermes-eurouter-plugin"
+EUROUTER_TARBALL = f"https://github.com/{EUROUTER_REPO}/archive/refs/heads/main.tar.gz"
 CATALOG_URL = f"https://raw.githubusercontent.com/{REPO}/main/catalog.json"
 RELEASES_URL = f"https://api.github.com/repos/{REPO}/releases"
 ROADMAP_URL = f"https://raw.githubusercontent.com/{REPO}/main/roadmap.json"
@@ -114,6 +119,7 @@ NEXT_STEPS = {
     },
     "eurouter-provider": {
         "install": [
+            "EUROUTER_API_KEY in die Datei .env im Hermes-Verzeichnis eintragen, falls noch nicht geschehen.",
             "Hermes komplett beenden und neu starten.",
             "Der EU-Router taucht dann im Modell-Auswahlmenü als eigene Gruppe auf.",
         ],
@@ -1016,14 +1022,81 @@ def _install_backup_native(src: Path) -> list[str]:
     ]
 
 
-# Nur Erweiterungen, deren install.sh nichts anderes tut als Payload ablegen
-# und einen Patcher starten. Der EU-Router laedt einen fremden Installer aus
-# dem Netz nach - den kann und soll dieser Code nicht nachbauen.
+def _eurouter_cache_leeren() -> list[str]:
+    """Der Modell-Listen-Cache hat eine Stunde TTL. Bleibt der alte Eintrag
+    stehen, wirkt ein Update bis zu einer Stunde lang "wie nicht passiert"."""
+    cache = HERMES_HOME / "provider_models_cache.json"
+    if not cache.is_file():
+        return []
+    try:
+        daten = json.loads(cache.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    if not isinstance(daten, dict) or daten.pop("eurouter", None) is None:
+        return []
+    _write_json_atomic(cache, daten)
+    return ["Modell-Listen-Cache für eurouter geleert."]
+
+
+def _install_eurouter_native(_src: Path) -> list[str]:
+    """Schritte aus install.sh des EU-Router-Repos, ohne Bash.
+
+    Das Skript dort ist der kanonische Weg und bleibt es auf Linux und macOS.
+    Es tut genau drei Dinge, die hier nachgebaut sind: die beiden
+    Provider-Dateien nach $HERMES_HOME/plugins/model-providers/eurouter
+    kopieren, ein altes __pycache__ wegräumen und den Modell-Listen-Cache
+    leeren. Der Shim unter ~/.local/bin/hermes gehoert NICHT dazu - den
+    installiert nur '--with-shim', und der Marktplatz ruft ohne Argumente auf.
+
+    Die Payload liegt im EU-Router-Repo, nicht in diesem hier. Sie wird
+    deshalb frisch geladen - derselbe Stand, den auch das install.sh zieht."""
+    if not HERMES_HOME.is_dir():
+        raise HTTPException(
+            status_code=500,
+            detail=f"{HERMES_HOME} existiert nicht. Ist Hermes installiert?",
+        )
+    tmp = tempfile.mkdtemp(prefix="aiianer-eurouter-")
+    try:
+        try:
+            wurzel = _download_tarball(EUROUTER_TARBALL, tmp)
+        except HTTPException:
+            raise
+        except OSError as exc:
+            raise HTTPException(
+                status_code=500,
+                detail=f"EU-Router konnte nicht geladen werden: {exc}",
+            ) from exc
+        quelle = wurzel / "model-providers" / "eurouter"
+        dateien = ("__init__.py", "plugin.yaml")
+        fehlend = [n for n in dateien if not (quelle / n).is_file()]
+        if fehlend:
+            raise HTTPException(
+                status_code=500,
+                detail=(
+                    "Das EU-Router-Repo ist unvollständig, es fehlt: "
+                    + ", ".join(fehlend)
+                ),
+            )
+        ziel = PLUGINS / "model-providers" / "eurouter"
+        ziel.mkdir(parents=True, exist_ok=True)
+        for name in dateien:
+            _atomic_copy(quelle / name, ziel / name)
+        # Ein altes __pycache__ kann eine ersetzte Datei ueberleben.
+        shutil.rmtree(ziel / "__pycache__", ignore_errors=True)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    return [f"EU-Router-Plugin installiert nach {ziel}"] + _eurouter_cache_leeren()
+
+
+# Erweiterungen, die ohne Bash installiert werden koennen. Jede Funktion hier
+# baut die Schritte der zugehoerigen install.sh nach - nicht mehr und nicht
+# weniger.
 NATIVE_INSTALLER = {
     "german-language": _install_german_native,
     "bot-mode-german": _install_bots_native,
     "group-chat-limits": _install_limits_native,
     "aiianer-backup": _install_backup_native,
+    "eurouter-provider": _install_eurouter_native,
 }
 
 
@@ -1533,10 +1606,16 @@ async def repair() -> dict:
 # ---------------------------------------------------------------- Helfer
 
 def _download(tmp: str) -> Path:
+    return _download_tarball(TARBALL, tmp)
+
+
+def _download_tarball(url: str, tmp: str) -> Path:
+    """Laedt einen GitHub-Tarball und packt ihn aus. Eine Stelle fuer alle
+    Downloads, damit der Tar-Slip-Schutz unten nicht irgendwo fehlt."""
     archive = Path(tmp) / "repo.tar.gz"
     # Ohne Timeout haengt der Download unbegrenzt und blockiert damit die
     # ganze Route.
-    with urllib.request.urlopen(TARBALL, timeout=60) as resp, open(archive, "wb") as fh:
+    with urllib.request.urlopen(url, timeout=60) as resp, open(archive, "wb") as fh:
         shutil.copyfileobj(resp, fh)
     # filter="data" verhindert Tar-Slip (Pfade ausserhalb des Zielordners,
     # Symlinks, absolute Pfade). Vor Python 3.14 ist das NICHT die

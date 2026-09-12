@@ -273,8 +273,12 @@ class HubCatalogUpdateStatusTest(unittest.TestCase):
             result = asyncio.run(api.catalog())
 
         hub = next(component for component in result["components"] if component["id"] == "aiianer-hub")
+        # Die Soll-Version kommt aus dem Katalog selbst - eine fest
+        # eingetippte Zahl hier waere bei jedem Release ein falscher Alarm.
+        katalog = json.loads((REPO_ROOT / "catalog.json").read_text())
+        soll = next(c["version"] for c in katalog["components"] if c["id"] == "aiianer-hub")
         self.assertEqual(hub["installed"], "1.3.12")
-        self.assertEqual(hub["version"], "1.3.33")
+        self.assertEqual(hub["version"], soll)
         self.assertEqual(hub["status"], "outdated")
 
 

@@ -1,6 +1,12 @@
 {
   "releases": [
     {
+      "tagName": "v1.3.34",
+      "name": "v1.3.34 · EU-Router auch ohne Bash",
+      "publishedAt": "2026-09-12T10:00:00Z",
+      "body": "Die letzte Komponente, die unter Windows eine Bash brauchte, kommt jetzt ohne aus. Der Marktplatz baut die Schritte des kanonischen EU-Router-Installers nativ nach: Provider-Dateien nach plugins/model-providers/eurouter kopieren, ein altes __pycache__ wegräumen, den Modell-Listen-Cache leeren. Auf Linux und macOS läuft weiterhin das Original-Skript aus dem EU-Router-Repo. Außerdem nennt der Marktplatz den Schritt mit dem EUROUTER_API_KEY jetzt in den nächsten Schritten - er stand bisher nur in der Ausgabe des Installers."
+    },
+    {
       "tagName": "v1.3.33",
       "name": "v1.3.33 · Installation unter Windows repariert",
       "publishedAt": "2026-09-12T08:00:00Z",
