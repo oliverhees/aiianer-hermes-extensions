@@ -133,6 +133,21 @@ if not wired:
 
 # de.ts immer (neu) kopieren - so bringt ein erneuter Lauf Uebersetzungs-Updates
 shutil.copy2(HERE / "de.ts", I18N / "de.ts")
-state = "bereits verdrahtet, de.ts aktualisiert" if wired else "neu verdrahtet"
-print(f"OK: Deutsche Sprachdatei {state} ({I18N})")
+if wired:
+    print(f"OK: Deutsche Sprachdatei war bereits verdrahtet, de.ts aktualisiert ({I18N})")
+else:
+    # Genau auflisten statt nur "neu verdrahtet": wer das Ergebnis in einem
+    # Issue postet, soll sehen koennen, was konkret geschrieben wurde, ohne
+    # selbst in drei Dateien nachzusehen.
+    geaendert = []
+    if "'de'" not in m_union.group(1):
+        geaendert.append("types.ts: 'de' an die Locale-Union angehaengt")
+    if "./de'" not in catalog_s:
+        geaendert.append("catalog.ts: import { de } from './de' + Eintrag im TRANSLATIONS-Record")
+    if "id: 'de'" not in langs_s:
+        geaendert.append("languages.ts: Eintrag in LOCALE_OPTIONS + LOCALE_ALIASES")
+    geaendert.append("de.ts kopiert")
+    print(f"OK: Deutsche Sprachdatei neu verdrahtet ({I18N})")
+    for zeile in geaendert:
+        print(f"  - {zeile}")
 print("Hinweis: Beim naechsten Start von 'hermes desktop' baut die App sich automatisch neu (Content-Stamp).")
