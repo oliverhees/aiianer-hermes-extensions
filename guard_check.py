@@ -297,3 +297,108 @@ def repair_all() -> dict:
         _log("Desktop-Build-Stempel entfernt, naechster Start baut neu")
     return {"ok": all(r.get("repaired") for r in results) if results else True,
             "results": results}
+
+
+# --------------------------------------------------------------- Diagnose
+
+# Copy-paste-fertiges Support-Buendel fuer ein GitHub-Issue. Der Anlass: bei
+# den ersten beiden gemeldeten Fehlern (Windows-500er, Linux-GUI-Absturz)
+# brauchte es mehrere Runden Rueckfragen, um ueberhaupt an die Zustandsdaten
+# zu kommen, die hier stehen - vor allem wenn die GUI selbst nicht mehr geht
+# und der Marktplatz-Reiter unerreichbar ist. Enthaelt keine Geheimnisse:
+# installed.json/guard.log tragen nur Komponenten-IDs, Versionen und
+# Patch-Ergebnisse, nie Tokens oder Pfade mit Nutzerdaten darin.
+
+
+def _hermes_version(agent: Path) -> str:
+    """Best-effort - Hermes hat keine einzelne Versionsdatei, die immer
+    stimmt (package.json im Monorepo-Root bleibt oft bei "1.0.0" stehen).
+    Der Git-Stand des Checkouts ist der ehrlichste verfuegbare Nachweis."""
+    if not (agent / ".git").exists():
+        return "unbekannt (kein Git-Checkout unter " + str(agent) + ")"
+    for cmd in (["git", "-C", str(agent), "describe", "--tags", "--always"],
+                ["git", "-C", str(agent), "rev-parse", "--short", "HEAD"]):
+        try:
+            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+            if proc.returncode == 0 and proc.stdout.strip():
+                return proc.stdout.strip()
+        except Exception:
+            continue
+    return "unbekannt (Git-Befehl fehlgeschlagen)"
+
+
+def _log_tail(n: int = 25) -> list:
+    try:
+        zeilen = LOG_FILE.read_text(encoding="utf-8").splitlines()
+        return zeilen[-n:]
+    except Exception:
+        return []
+
+
+def diagnostics() -> str:
+    """Baut den Text-Report. Reine Textausgabe (kein JSON), damit er sich
+    ohne Umweg in ein GitHub-Issue einfuegen laesst."""
+    zeilen = []
+    zeilen.append("## AIIANER Marktplatz - Diagnose")
+    zeilen.append("")
+    zeilen.append(f"Erzeugt: {datetime.now(timezone.utc).isoformat(timespec='seconds')}")
+    zeilen.append(f"Plattform: {sys.platform} / Python {sys.version.split()[0]}")
+    zeilen.append(f"HERMES_HOME: {HERMES_HOME}")
+    zeilen.append(f"Hermes-Checkout-Stand: {_hermes_version(AGENT)}")
+    zeilen.append("")
+
+    zeilen.append("### Installierte Komponenten")
+    installiert = _installed()
+    if installiert:
+        for comp_id, info in sorted(installiert.items()):
+            zeilen.append(f"- {comp_id}: v{info.get('version', '?')} (seit {info.get('at', '?')})")
+    else:
+        zeilen.append("- keine (installed.json leer oder nicht gefunden)")
+    zeilen.append("")
+
+    zeilen.append("### Pruefung (check_all)")
+    status = check_all()
+    for c in status["checks"]:
+        zusatz = f" - {c['detail']}" if "detail" in c else ""
+        zeilen.append(f"- {c['id']}: {c['state']}{zusatz}")
+    zeilen.append(f"- Gesamt: {'ok' if status['ok'] else 'NICHT ok - betroffen: ' + ', '.join(status['broken'])}")
+    zeilen.append("")
+
+    zeilen.append("### Desktop-Build-Stempel")
+    stamp = HERMES_HOME / "desktop-build-stamp.json"
+    if stamp.is_file():
+        try:
+            inhalt = json.loads(stamp.read_text())
+            zeilen.append(f"- vorhanden, gebaut: {inhalt.get('builtAt', '?')}")
+        except Exception:
+            zeilen.append("- vorhanden, aber nicht lesbar (kaputtes JSON)")
+    else:
+        zeilen.append("- fehlt -> naechster 'hermes desktop'-Start baut in jedem Fall neu")
+    zeilen.append("")
+
+    zeilen.append("### Waechter-Log (letzte 25 Zeilen)")
+    log = _log_tail()
+    if log:
+        zeilen.extend(f"    {z}" for z in log)
+    else:
+        zeilen.append("- guard.log leer oder nicht gefunden")
+
+    zeilen.append("")
+    zeilen.append("*Enthaelt keine Tokens, Passwoerter oder Datei-Inhalte - nur "
+                   "Komponenten-IDs, Versionsnummern und Patch-Ergebnisse.*")
+    return "\n".join(zeilen)
+
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] in ("diagnostics", "diagnose", "--diagnostics"):
+        print(diagnostics())
+    elif len(sys.argv) > 1 and sys.argv[1] in ("health", "check"):
+        print(json.dumps(check_all(), indent=2, ensure_ascii=False))
+    elif len(sys.argv) > 1 and sys.argv[1] in ("repair",):
+        print(json.dumps(repair_all(), indent=2, ensure_ascii=False))
+    else:
+        print("Verwendung: python3 guard_check.py {diagnostics|health|repair}", file=sys.stderr)
+        print("  diagnostics  Copy-paste-fertiger Text-Report fuer ein GitHub-Issue", file=sys.stderr)
+        print("  health       Rohe JSON-Pruefung (wie /api/plugins/aiianer-hub/health)", file=sys.stderr)
+        print("  repair       Erzwingt eine Reparatur (wie der Waechter beim Gateway-Start)", file=sys.stderr)
+        sys.exit(1)
