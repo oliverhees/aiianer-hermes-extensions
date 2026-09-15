@@ -111,6 +111,11 @@ Der Wächter arbeitet mit Sicherungen und wiederholbaren Ankern. Wenn ein Hermes
 Umbau einen Ankerpunkt unbrauchbar macht, meldet der Marktplatz die Ursache,
 statt still einen halben Zustand zu hinterlassen.
 
+Ein täglicher, automatischer Trockenlauf testet die Anker zusätzlich gegen den
+aktuellen Quellcode von `NousResearch/hermes-agent` — bevor irgendjemand ein
+Update installiert. Findet er einen gerissenen Anker, öffnet er von selbst ein
+Issue in diesem Repo.
+
 Deutsch verschwindet nach einem Hermes-Update trotzdem manchmal erst nach dem
 **zweiten** Neustart: Hermes Desktop baut sich nur neu, wenn ein Content-Stempel
 unter `$HERMES_HOME/desktop-build-stamp.json` veraltet ist. Reparierte der
@@ -139,7 +144,17 @@ ausgegeben hat – das ist unser einziger Weg, den Anker rechtzeitig nachzuziehe
 
 ## Feedback, Hilfe und Probleme
 
-Der Marktplatz ist **Beta**. Genau deshalb ist dein Feedback wichtig:
+Der Marktplatz ist **Beta**. Genau deshalb ist dein Feedback wichtig. Bevor du
+ein Problem meldest, hilft ein Diagnose-Report enorm — er läuft auch, wenn die
+Marktplatz-Oberfläche selbst das Problem ist:
+
+```bash
+python3 ~/.hermes/aiianer/guard_check.py diagnostics
+```
+
+Gibt einen copy-paste-fertigen Status-Report aus (installierte Komponenten,
+Health-Check, Build-Stempel-Status, Wächter-Log) — ohne Tokens, Passwörter
+oder Datei-Inhalte. Den Text einfach unten ins Issue kopieren.
 
 - 🐛 [Problem melden](https://github.com/oliverhees/aiianer-hermes-extensions/issues/new?template=bug_report.md)
 - 💡 [Feature oder Idee vorschlagen](https://github.com/oliverhees/aiianer-hermes-extensions/issues/new?template=feature_request.md)

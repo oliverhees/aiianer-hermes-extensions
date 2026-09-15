@@ -1,6 +1,12 @@
 {
   "releases": [
     {
+      "tagName": "v1.3.35",
+      "name": "v1.3.35 · Deutsche Sprachdatei: Ursache für „verschwindet nach Update“ gefunden und behoben",
+      "publishedAt": "2026-09-15T12:00:00Z",
+      "body": "Der wichtigste Fix in diesem Release betrifft die deutsche Sprachdatei. Hermes Desktop entscheidet über einen Content-Hash-Stempel, ob es sich beim nächsten Start neu baut. Weder die Installation noch der Wächter haben diesen Stempel bisher gelöscht, wenn sie die Sprachdatei nach einem Hermes-Update reparierten - Hermes hielt dadurch manchmal einen veralteten Stand für aktuell und baute nicht neu. Das erklärt das gemeldete Muster \"Update entfernt Deutsch, ein Neustart bringt es nicht zurück, erst ein manueller Eingriff hilft\". Installation, Deinstallation und der Wächter entfernen den Stempel jetzt selbst, sobald sie etwas an Hermes' Sprachdateien ändern - ein Neustart baut danach zuverlässig neu.\n\nDazu, für den Fall, dass Hermes Desktop nach der Sprachdatei-Installation gar nicht mehr aufgeht und der Marktplatz-Reiter deshalb unerreichbar ist: ein Notausstieg direkt im Terminal, ohne laufendes Hermes Desktop (`extensions/german-language/restore-original.py`, siehe README).\n\nWeitere Fixe und neue Werkzeuge in diesem Release:\n- Ein Live-Drift in der internen Gruppenchat-Grenzen-Komponente gefunden und behoben (aktueller Hermes main hatte eine Funktionssignatur erweitert; unser Anker war zu wörtlich).\n- Neuer Diagnose-Befehl (`python3 guard_check.py diagnostics`, auch als Route im Dashboard): ein copy-paste-fertiger Status-Report für Support-Anfragen, läuft auch im Terminal, wenn die GUI selbst das Problem ist.\n- Täglicher automatischer Trockenlauf gegen den aktuellen Hermes-Quellcode (GitHub Actions), meldet einen gerissenen Anker künftig von selbst, bevor ihn jemand als Fehler erlebt.\n- Komponenten-Installationen laden jetzt bevorzugt vom releasten Git-Tag statt vom jeweils aktuellsten main-Stand.\n- Der Installieren-Knopf für Deutsch prüft jetzt vorher, ob Hermes' Sprachdateien noch zur erwarteten Form passen, statt erst beim Klick zu scheitern."
+    },
+    {
       "tagName": "v1.3.34",
       "name": "v1.3.34 · EU-Router auch ohne Bash",
       "publishedAt": "2026-09-12T10:00:00Z",
