@@ -44,7 +44,15 @@ ERSATZ = {
     "GROUP_CHAT_MAX_CONTINUATIONS": "aiianerGrenzen.continuations",
 }
 
-ANKER_FN = "export async function runGroupChatRounds(group: string, members: GroupMember[], thread: string) {"
+# Nur der Kopf bis "thread: string" ist der stabile Teil des Ankers: Upstream
+# hat hier bereits einmal einen vierten Parameter angehaengt
+# (failedMembers = new Set<string>()), ohne die ersten drei zu aendern. Der
+# Anker matcht deshalb bis zur schliessenden Klammer, statt die komplette
+# Signatur woertlich vorzuschreiben - sonst reisst er bei jedem weiteren
+# angehaengten Parameter erneut, obwohl an der Naht selbst nichts kaputt ist.
+ANKER_FN_MUSTER = re.compile(
+    r"export async function runGroupChatRounds\(group: string, members: GroupMember\[\], thread: string(?:,.*?)?\)\s*\{"
+)
 ANKER_EXIT = "  let exitKind: 'capped' | 'settled' = 'settled'"
 
 
@@ -115,11 +123,13 @@ def main() -> None:
         print("Hinweis: Hermes Desktop neu starten, damit die Werte greifen.")
         return
 
-    if ANKER_FN not in inhalt:
+    m_anker_fn = ANKER_FN_MUSTER.search(inhalt)
+    if not m_anker_fn:
         fail(
             "Anker 'runGroupChatRounds' nicht gefunden. Hermes hat die "
             "Rundenschleife umgebaut - bitte in der AIIANER Community melden."
         )
+    anker_fn = m_anker_fn.group(0)
     if ANKER_EXIT not in inhalt:
         fail("Anker 'exitKind' nicht gefunden (Upstream-Drift)")
     fehlend = [k for k in ERSATZ if k not in inhalt]
@@ -152,7 +162,7 @@ def main() -> None:
     # 3) Die vier Konstanten in der Schleife ersetzen. Wortgrenzen, damit
     #    GROUP_CHAT_MAX_MESSAGES nicht in GROUP_CHAT_MAX_MESSAGES_SOMETHING
     #    hineingreift.
-    koerper_start = neu.index(ANKER_FN)
+    koerper_start = neu.index(anker_fn)
     kopf, koerper = neu[:koerper_start], neu[koerper_start:]
 
     # Zeilenweise, und Kommentare bleiben unangetastet: sonst steht dort
@@ -170,7 +180,7 @@ def main() -> None:
 
     # 4) Ungenutzt gewordene Importe entfernen, sonst meckert der Linter
     for alt in ERSATZ:
-        if not re.search(rf"\b{alt}\b", neu[neu.index(ANKER_FN):]):
+        if not re.search(rf"\b{alt}\b", neu[neu.index(anker_fn):]):
             neu = re.sub(rf"^\s*{alt},\n", "", neu, count=1, flags=re.M)
 
     # Die Verlaufsgrenze liegt in aktuellen Hermes-Versionen im separaten
@@ -211,7 +221,7 @@ def main() -> None:
         mitglieder_gepr = MITGLIEDER.read_text()
         # Am Ergebnis pruefen, nicht an der Abwesenheit: die Konstanten
         # duerfen in Kommentaren stehen bleiben, dort sind sie richtig.
-        koerper_neu = gepr[gepr.index(ANKER_FN):]
+        koerper_neu = gepr[gepr.index(anker_fn):]
         code_zeilen = [
             z for z in koerper_neu.split("\n") if not z.lstrip().startswith(("//", "*", "/*"))
         ]
