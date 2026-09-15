@@ -112,7 +112,7 @@ Umbau einen Ankerpunkt unbrauchbar macht, meldet der Marktplatz die Ursache,
 statt still einen halben Zustand zu hinterlassen.
 
 Ein täglicher, automatischer Trockenlauf testet die Anker zusätzlich gegen den
-aktuellen Quellcode von `NousResearch/hermes-agent` — bevor irgendjemand ein
+aktuellen Quellcode von `NousResearch/hermes-agent`, bevor irgendjemand ein
 Update installiert. Findet er einen gerissenen Anker, öffnet er von selbst ein
 Issue in diesem Repo.
 
@@ -129,32 +129,59 @@ auf „Neu einspielen“ im Reiter „AIIANER“.
 
 Kommt vor, wenn Hermes selbst zwischenzeitlich seinen i18n-Ordner umgebaut hat
 (Upstream-Drift) und der Neubau beim nächsten Start dabei scheitert. Ohne
-laufende GUI ist der normale Weg – Deinstallieren im Marktplatz-Reiter – nicht
-erreichbar. Direkt im Terminal, ohne Hermes Desktop:
+laufende GUI ist weder der normale Weg (Deinstallieren im Marktplatz-Reiter)
+noch der Hermes-Chat erreichbar, deshalb geht es hier nur direkt im Terminal:
 
-```bash
-curl -sL https://raw.githubusercontent.com/oliverhees/aiianer-hermes-extensions/main/extensions/german-language/restore-original.py | python3 -
-```
+1. Öffne ein Terminal (Windows: „Eingabeaufforderung" oder „PowerShell" im
+   Startmenü suchen; macOS: „Terminal" über Spotlight/Launchpad; Linux: deine
+   gewohnte Konsole).
+2. Kopiere diese eine Zeile hinein und drücke Enter:
 
-Setzt `types.ts`/`catalog.ts`/`languages.ts` auf den Stand vor der
-Installation zurück, entfernt `de.ts` und den Build-Stempel, alles-oder-nichts.
-Danach Hermes (inklusive Gateway-Prozess, falls er separat läuft) neu starten.
-Bitte danach in der AIIANER Community melden, mit den Zeilen, die das Skript
-ausgegeben hat – das ist unser einziger Weg, den Anker rechtzeitig nachzuziehen.
+   ```bash
+   curl -sL https://raw.githubusercontent.com/oliverhees/aiianer-hermes-extensions/main/extensions/german-language/restore-original.py | python3 -
+   ```
+3. Lies die Ausgabe durch, sie sagt dir, ob es geklappt hat.
+4. Starte Hermes komplett neu (falls ein Gateway-Prozess separat läuft, auch
+   den beenden und neu starten).
+
+Das Skript setzt `types.ts`, `catalog.ts` und `languages.ts` auf den Stand vor
+der Installation zurück, entfernt `de.ts` und den Build-Stempel, alles oder
+nichts. Bitte danach in der AIIANER Community melden, mit der kompletten
+Ausgabe des Skripts, das ist unser einziger Weg, den Anker rechtzeitig
+nachzuziehen.
 
 ## Feedback, Hilfe und Probleme
 
 Der Marktplatz ist **Beta**. Genau deshalb ist dein Feedback wichtig. Bevor du
-ein Problem meldest, hilft ein Diagnose-Report enorm — er läuft auch, wenn die
-Marktplatz-Oberfläche selbst das Problem ist:
+ein Problem meldest, hilft ein Diagnose-Report enorm, er läuft auch, wenn die
+Marktplatz-Oberfläche selbst das Problem ist. Kein Terminal nötig: Hermes ist
+selbst ein Agent mit Terminal-Zugriff und macht das für dich. Kopiere diesen
+Satz einfach in deinen Hermes-Chat:
 
-```bash
-python3 ~/.hermes/aiianer/guard_check.py diagnostics
-```
+> Bitte führe im Terminal den Befehl `python3 ~/.hermes/aiianer/guard_check.py
+> diagnostics` aus und zeig mir das komplette Ergebnis, damit ich es in ein
+> GitHub-Issue kopieren kann.
 
-Gibt einen copy-paste-fertigen Status-Report aus (installierte Komponenten,
-Health-Check, Build-Stempel-Status, Wächter-Log) — ohne Tokens, Passwörter
-oder Datei-Inhalte. Den Text einfach unten ins Issue kopieren.
+Hermes zeigt dir danach den Report direkt im Chat an. Er enthält installierte
+Komponenten, den Health-Check, den Build-Stempel-Status und die letzten
+Wächter-Log-Zeilen, nie Tokens, Passwörter oder Datei-Inhalte. Den Text
+einfach unten ins Issue kopieren.
+
+<details>
+<summary>Lieber selbst im Terminal? So geht's auch direkt.</summary>
+
+1. Öffne ein Terminal (Windows: „Eingabeaufforderung" oder „PowerShell" im
+   Startmenü suchen; macOS: „Terminal" über Spotlight/Launchpad; Linux: deine
+   gewohnte Konsole).
+2. Kopiere diese eine Zeile hinein und drücke Enter:
+
+   ```bash
+   python3 ~/.hermes/aiianer/guard_check.py diagnostics
+   ```
+3. Markiere die komplette Ausgabe, kopiere sie (Strg/Cmd+C) und füge sie unten
+   ins Issue ein (Strg/Cmd+V).
+
+</details>
 
 - 🐛 [Problem melden](https://github.com/oliverhees/aiianer-hermes-extensions/issues/new?template=bug_report.md)
 - 💡 [Feature oder Idee vorschlagen](https://github.com/oliverhees/aiianer-hermes-extensions/issues/new?template=feature_request.md)
