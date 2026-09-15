@@ -1,0 +1,113 @@
+name: Hermes upstream drift check
+
+# Testet unsere Anker (german-language, bot-mode-german, group-chat-limits)
+# taeglich trocken gegen den aktuellen NousResearch/hermes-agent main-Stand -
+# bevor ein Nutzer es meldet, nicht erst danach. Reiner Lesetest: klont
+# keinen Hermes-Checkout, laedt nur die konkreten Ziel-Dateien und laesst
+# jeden Patcher in einem Wegwerf-Verzeichnis laufen.
+
+on:
+  schedule:
+    # 04:00 UTC, versetzt zu den ueblichen Stundenwechsel-Jobs anderer Repos
+    - cron: "0 4 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  drift-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repo auschecken
+        uses: actions/checkout@v4
+
+      - name: Python einrichten
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Ziel-Dateien von hermes-agent main laden
+        id: fetch
+        run: |
+          set -euo pipefail
+          BASE="https://raw.githubusercontent.com/NousResearch/hermes-agent/main"
+          mkdir -p work/i18n-agent/apps/desktop/src/i18n
+          mkdir -p work/i18n-agent/apps/desktop/src/plugins/hermes-bots
+          mkdir -p work/bots-agent/apps/desktop/src/plugins/hermes-bots
+          mkdir -p work/limits-agent/apps/desktop/src/plugins/hermes-bots
+          mkdir -p work/limits-state
+
+          fetch() { curl -fsSL --retry 3 --retry-delay 5 "$BASE/$1" -o "$2"; }
+
+          fetch apps/desktop/src/i18n/types.ts work/i18n-agent/apps/desktop/src/i18n/types.ts
+          fetch apps/desktop/src/i18n/catalog.ts work/i18n-agent/apps/desktop/src/i18n/catalog.ts
+          fetch apps/desktop/src/i18n/languages.ts work/i18n-agent/apps/desktop/src/i18n/languages.ts
+
+          fetch apps/desktop/src/plugins/hermes-bots/i18n.ts work/bots-agent/apps/desktop/src/plugins/hermes-bots/i18n.ts
+
+          fetch apps/desktop/src/plugins/hermes-bots/group-rounds.ts work/limits-agent/apps/desktop/src/plugins/hermes-bots/group-rounds.ts
+          fetch apps/desktop/src/plugins/hermes-bots/group-round-members.ts work/limits-agent/apps/desktop/src/plugins/hermes-bots/group-round-members.ts
+
+      - name: german-language testen
+        id: german
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          mkdir -p work/german-src
+          cp extensions/german-language/apply-de.py work/german-src/
+          gzip -cd extensions/german-language/de.ts.gz > work/german-src/de.ts
+          python3 work/german-src/apply-de.py work/i18n-agent
+
+      - name: bot-mode-german testen
+        id: bots
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          python3 extensions/bot-mode-german/apply-bots-de.py work/bots-agent
+
+      - name: group-chat-limits testen
+        id: limits
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          python3 extensions/group-chat-limits/apply-limits.py work/limits-agent work/limits-state
+
+      - name: Ergebnis auswerten
+        if: steps.german.outcome == 'failure' || steps.bots.outcome == 'failure' || steps.limits.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GERMAN_OUTCOME: ${{ steps.german.outcome }}
+          BOTS_OUTCOME: ${{ steps.bots.outcome }}
+          LIMITS_OUTCOME: ${{ steps.limits.outcome }}
+        run: |
+          set -euo pipefail
+          BODY="Automatischer Trockenlauf gegen \`NousResearch/hermes-agent\` main hat einen oder mehrere Anker reissen sehen. Das betrifft noch niemanden, der nicht gerade neu installiert oder repariert - aber je frueher wir es wissen, desto weniger Nutzer bekommen es zuerst als Fehlermeldung zu sehen.
+
+          | Komponente | Ergebnis |
+          |---|---|
+          | german-language | ${GERMAN_OUTCOME} |
+          | bot-mode-german | ${BOTS_OUTCOME} |
+          | group-chat-limits | ${LIMITS_OUTCOME} |
+
+          Lauf: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+          Nichts wurde an echten Nutzerdaten veraendert - der Test laeuft nur gegen frisch heruntergeladene Kopien der betroffenen Hermes-Dateien in einem Wegwerf-Verzeichnis."
+
+          EXISTING=$(gh issue list --repo "${{ github.repository }}" --label upstream-drift --state open --json number --jq '.[0].number // empty')
+
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --repo "${{ github.repository }}" --body "Erneuter Fund beim taeglichen Trockenlauf: $BODY"
+          else
+            gh issue create --repo "${{ github.repository }}" \
+              --title "Upstream-Drift: Anker gegen hermes-agent main gerissen" \
+              --label upstream-drift \
+              --body "$BODY"
+          fi
+
+      - name: Fehlschlag im Job sichtbar machen
+        if: steps.german.outcome == 'failure' || steps.bots.outcome == 'failure' || steps.limits.outcome == 'failure'
+        run: |
+          echo "::error::Mindestens ein Anker ist gegen hermes-agent main gerissen - siehe geoeffnetes/aktualisiertes Issue."
+          exit 1
