@@ -150,6 +150,38 @@ NEXT_STEPS = {
 }
 
 
+def _german_anchor_missing() -> str:
+    """Rein lesende Vorpruefung der drei Anker, die apply-de.py selbst
+    benutzt - dieselben Muster, absichtlich dupliziert statt importiert
+    (apply-de.py wird auch eigenstaendig per curl heruntergeladen und muss
+    ohne dashboard/ lauffaehig bleiben). Leerer String = alles passt.
+
+    Bereits verdrahtete Dateien gelten automatisch als passend: sie haben den
+    Beweis schon erbracht, dass das Format stimmt, und apply-de.py prueft die
+    rohen Anker in dem Fall gar nicht erst."""
+    try:
+        types_s = (I18N_DIR / "types.ts").read_text()
+        catalog_s = (I18N_DIR / "catalog.ts").read_text()
+        langs_s = (I18N_DIR / "languages.ts").read_text()
+    except Exception as exc:
+        return f"i18n-Dateien nicht lesbar: {exc}"
+
+    if _verdrahtet("types.ts", types_s) and _verdrahtet("catalog.ts", catalog_s) and _verdrahtet("languages.ts", langs_s):
+        return ""
+
+    if not re.search(r"^export type Locale = (.+)$", types_s, re.M):
+        return "Anker 'export type Locale' in types.ts fehlt"
+    if not _verdrahtet("catalog.ts", catalog_s):
+        if not re.search(r"^import \{ \w+ \} from '\./\w[\w-]*'$", catalog_s, re.M):
+            return "Import-Anker in catalog.ts fehlt"
+        if not re.search(r"export const TRANSLATIONS[^=]*=\s*\{.*?\n\}", catalog_s, re.S):
+            return "TRANSLATIONS-Anker in catalog.ts fehlt"
+    if not _verdrahtet("languages.ts", langs_s):
+        if not re.search(r"export const LOCALE_OPTIONS = \[.*?\n\] as const", langs_s, re.S):
+            return "LOCALE_OPTIONS-Anker in languages.ts fehlt"
+    return ""
+
+
 def _verfuegbar(comp_id: str) -> tuple:
     """Kann diese Komponente auf DIESEM Rechner installiert werden?
 
@@ -214,6 +246,22 @@ def _verfuegbar(comp_id: str) -> tuple:
                 "einspielen.",
                 "Hermes' source folder is not where it is expected "
                 f"({I18N_DIR}). Without it the language cannot be installed.",
+            )
+        # Nicht nur "gibt es die Datei", sondern "passt der Anker noch rein" -
+        # dieselben Muster, die apply-de.py selbst benutzt. Ein Knopf, der
+        # erst beim Klick in "Anker nicht gefunden" laeuft, ist der gleiche
+        # Fehler wie oben, nur eine Ebene tiefer. Rein lesend, schreibt nichts.
+        fehlender_anker = _german_anchor_missing()
+        if fehlender_anker:
+            return (
+                False,
+                "Hermes hat seine Sprachdateien umgebaut, der Installer "
+                f"passt gerade nicht mehr ({fehlender_anker}). Bitte in der "
+                "AIIANER Community melden, der Patcher braucht eine "
+                "Anpassung.",
+                "Hermes restructured its locale files, the installer "
+                f"currently does not fit ({fehlender_anker}). Please report "
+                "this in the AIIANER community, the patcher needs an update.",
             )
 
     # Ein Knopf, der zuverlaessig in einen 500er laeuft, ist schlimmer als
@@ -788,6 +836,14 @@ async def health() -> dict:
     return _guard().check_all()
 
 
+@router.get("/diagnostics")
+async def diagnostics() -> dict:
+    """Copy-paste-fertiger Text-Report fuer ein GitHub-Issue. Derselbe Report
+    laeuft auch direkt im Terminal, ohne Dashboard: 'python3 guard_check.py
+    diagnostics' - wichtig genau dann, wenn die GUI selbst das Problem ist."""
+    return {"report": _guard().diagnostics()}
+
+
 # ------------------------------------------------- Installer je Plattform
 
 # Die Installer der Erweiterungen sind Bash-Skripte. Auf Linux und macOS ist
@@ -1161,7 +1217,7 @@ async def install(body: dict) -> dict:
     # Nutzer haelt dann sein System fuer kaputt, obwohl alles sitzt.
     tmp = tempfile.mkdtemp(prefix="aiianer-install-")
     try:
-        root = _download(tmp)
+        root = _download(tmp, cat)
         install_log: list[str]
         if comp_id == "aiianer-hub":
             _install_hub_from_root(root)
@@ -1629,8 +1685,42 @@ async def repair() -> dict:
 
 # ---------------------------------------------------------------- Helfer
 
-def _download(tmp: str) -> Path:
-    return _download_tarball(TARBALL, tmp)
+def _pinned_tarball_url(cat: dict) -> str:
+    """Bevorzugt den Git-Tag der aktuell im Katalog gefuehrten Hub-Version
+    statt immer den jeweils neuesten main-Stand herunterzuladen.
+
+    Der Katalog selbst kommt weiter frisch von main (er soll sich sofort
+    aktualisieren) - aber der Code, der tatsaechlich installiert wird, soll
+    aus genau dem Tag stammen, den dieser Katalog gerade als aiianer-hub
+    fuehrt. main kann sich zwischen zwei Auslieferungen schon wieder
+    weiterbewegt haben; ein Tag ist der reviewte, releaste Stand, auf den
+    sich releases.json und die Versionsnummer im Katalog tatsaechlich
+    beziehen. Kein neues Feld noetig: die Hub-Version im Katalog IST bereits
+    der Tag-Name minus 'v', bei jedem Release synchron gepflegt.
+
+    Faellt main-Tarball zurueck, wenn kein Tag ermittelbar ist oder der Tag
+    (noch) nicht existiert - z. B. lokal vor dem ersten Release-Tag, oder
+    wenn die Versionsnummer aus irgendeinem Grund nicht zu einem Tag passt.
+    Das ist ein Haerten, kein neuer Fehlschlagpfad: schlaegt die
+    Tag-Ermittlung fehl, installiert es wie bisher von main."""
+    try:
+        hub = next((c for c in cat.get("components", []) if c["id"] == "aiianer-hub"), None)
+        version = (hub or {}).get("version", "").strip()
+        if not version:
+            return TARBALL
+        tag_url = f"https://github.com/{REPO}/archive/refs/tags/v{version}.tar.gz"
+        req = urllib.request.Request(tag_url, method="HEAD")
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            if resp.status == 200:
+                return tag_url
+    except Exception:
+        pass
+    return TARBALL
+
+
+def _download(tmp: str, cat: dict | None = None) -> Path:
+    url = _pinned_tarball_url(cat) if cat is not None else TARBALL
+    return _download_tarball(url, tmp)
 
 
 def _download_tarball(url: str, tmp: str) -> Path:
