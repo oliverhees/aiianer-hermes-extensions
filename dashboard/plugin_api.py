@@ -94,6 +94,35 @@ def _invalidate_desktop_build_stamp() -> None:
         pass
 
 
+def _rebuild_desktop() -> dict:
+    """Baut die Desktop-App JETZT neu (--build-only --force-build), statt nur
+    auf den naechsten Terminal-Start zu hoffen.
+
+    Befund aus der Community nach v1.3.35: ein normales Oeffnen ueber das
+    App-Symbol startet die bereits gepackte Electron-App direkt und ruehrt
+    dabei nie die Python-CLI an, die den Content-Hash-Stempel prueft - nur
+    'hermes desktop'/'hermes gui' im TERMINAL tut das. Ohne diesen Schritt
+    bleibt eine frisch gepatchte Sprachdatei fuer die meisten Nutzer
+    unsichtbar. Dieselbe Route, die 'hermes update' intern fuer den
+    Bundle-Swap benutzt. Kann mehrere zig Sekunden bis wenige Minuten
+    dauern - deshalb NUR hier (interaktiver Install/Uninstall/Repair-Klick,
+    Nutzer sieht einen Ladezustand), nie im passiven Waechter-Hook auf
+    gateway:startup, der sonst jeden Hermes-Start ausbremsen wuerde.
+    Nicht fatal bei Fehlschlag: der Stempel ist bereits entfernt, ein
+    spaeterer Terminal-Start baut trotzdem neu."""
+    try:
+        proc = subprocess.run(
+            [sys.executable, "-m", "hermes_cli.main", "desktop", "--build-only", "--force-build"],
+            capture_output=True, text=True, timeout=300, cwd=str(AGENT_DIR),
+        )
+    except Exception as exc:
+        return {"rebuilt": False, "detail": str(exc)}
+    return {
+        "rebuilt": proc.returncode == 0,
+        "detail": (proc.stdout or proc.stderr or "").strip()[-500:],
+    }
+
+
 def _bots_ziel():
     """Upstream hat die Datei von plugin.js auf plugin.tsx umbenannt. Fest auf
     einen Namen zu setzen hiesse, nach dem naechsten Umbenennen ins Leere zu
@@ -1249,6 +1278,23 @@ async def install(body: dict) -> dict:
         vorher = previous_version
         state[comp_id] = {"version": entry["version"], "at": _now()}
         _write_state(state)
+
+    next_steps = _steps(comp_id, "install", entry)
+    rebuild = None
+    if comp_id in DESKTOP_TOUCHING:
+        rebuild = _rebuild_desktop()
+        # Die vorhandenen Schritte unangetastet lassen (jede Komponente
+        # formuliert sie unterschiedlich) und nur ergaenzen, statt zu raten,
+        # welche Zeile "baut sich neu" meint und ersetzt werden muesste.
+        if rebuild["rebuilt"]:
+            next_steps = next_steps + [
+                "Die Desktop-App wurde bereits automatisch neu gebaut, ein normaler Neustart reicht.",
+            ]
+        else:
+            next_steps = next_steps + [
+                "Automatischer Neubau der Desktop-App hat nicht geklappt. Bitte einmal "
+                "'hermes desktop' in einem Terminal ausfuehren, das baut dann nach.",
+            ]
     return {
         "ok": True,
         "id": comp_id,
@@ -1256,7 +1302,8 @@ async def install(body: dict) -> dict:
         "version": entry["version"],
         "previousVersion": vorher,
         "log": install_log,
-        "nextSteps": _steps(comp_id, "install", entry),
+        "nextSteps": next_steps,
+        "desktopRebuild": rebuild,
         # Der Hub ersetzt bei einem Self-Update seinen eigenen Python-Code.
         # Der laufende Gateway-Prozess hat diesen aber schon importiert und
         # muss daher kontrolliert neu gestartet werden.
@@ -1650,6 +1697,9 @@ async def uninstall(body: dict) -> dict:
         if comp_id in DESKTOP_TOUCHING:
             _invalidate_desktop_build_stamp()
 
+        # Der eigentliche Neubau (kann Minuten dauern) laeuft bewusst NICHT
+        # hier drin - sonst haelt er die Zustandssperre fuer jede andere
+        # gleichzeitige Install/Uninstall/Repair-Anfrage blockiert.
         # Erst wenn der Rueckbau durchlief, faellt der Zustandseintrag. Der
         # Waechter richtet sich danach und spielt sonst alles wieder ein.
         # Frisch lesen: unter der Sperre kann sich zwischenzeitlich nichts
@@ -1659,8 +1709,18 @@ async def uninstall(body: dict) -> dict:
         zustand.pop(comp_id, None)
         _write_state(zustand)
 
+    rebuild = _rebuild_desktop() if comp_id in DESKTOP_TOUCHING else None
+
     cat = _load_catalog()
     entry = next((c for c in cat.get("components", []) if c["id"] == comp_id), None)
+    next_steps = _steps(comp_id, "uninstall", entry)
+    if rebuild is not None:
+        next_steps = next_steps + (
+            ["Die Desktop-App wurde bereits automatisch neu gebaut, ein normaler Neustart reicht."]
+            if rebuild["rebuilt"] else
+            ["Automatischer Neubau der Desktop-App hat nicht geklappt. Bitte einmal "
+             "'hermes desktop' in einem Terminal ausfuehren, das baut dann nach."]
+        )
     # Nicht blind ok melden: was sich nicht entfernen liess, gehoert vor die
     # Augen des Nutzers, nicht nur ins Protokoll.
     warnungen = [z for z in protokoll if z.startswith("KONNTE NICHT ENTFERNEN")]
@@ -1670,17 +1730,21 @@ async def uninstall(body: dict) -> dict:
         "action": "uninstall",
         "log": protokoll,
         "warnings": warnungen,
+        "desktopRebuild": rebuild,
         # Warnungen gehoeren NICHT in die Schritteliste - dort stehen Dinge,
         # die der Nutzer tun soll, nicht Dinge, die schiefgingen. Beide
         # Oberflaechen rendern "warnings" in einem eigenen Kasten.
-        "nextSteps": _steps(comp_id, "uninstall", entry),
+        "nextSteps": next_steps,
     }
 
 
 @router.post("/repair")
 async def repair() -> dict:
-    """Erzwingt, was der Waechter beim Start automatisch tut."""
-    return _guard().repair_all()
+    """Erzwingt, was der Waechter beim Start automatisch tut - inklusive
+    sofortigem Neubau der Desktop-App (rebuild_desktop=True): anders als der
+    passive Waechter-Hook auf gateway:startup sieht der Nutzer hier aktiv
+    einen Ladezustand, ein mehrminuetiger Neubau ist deshalb vertretbar."""
+    return _guard().repair_all(rebuild_desktop=True)
 
 
 # ---------------------------------------------------------------- Helfer

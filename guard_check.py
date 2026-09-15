@@ -88,6 +88,41 @@ def _invalidate_desktop_build_stamp() -> None:
         pass
 
 
+def _rebuild_desktop() -> dict:
+    """Baut die Desktop-App JETZT neu, statt nur auf den naechsten Start zu
+    hoffen.
+
+    Der entscheidende Befund (Community-Meldung nach v1.3.35): ein normales
+    Oeffnen ueber das App-Symbol startet die bereits gepackte Electron-App
+    direkt und ruehrt dabei nie die Python-CLI an, die den Content-Hash-
+    Stempel prueft und bei Bedarf neu baut - nur 'hermes desktop'/'hermes
+    gui' im TERMINAL tut das. Ohne diesen Schritt bleibt eine frisch
+    gepatchte Sprachdatei fuer die meisten Nutzer unsichtbar, bis irgendwer
+    zufaellig einmal ueber das Terminal startet. Der Loesung: den Neubau
+    selbst anstossen, mit demselben Befehl, den 'hermes update' intern
+    benutzt (--build-only). --force-build zusaetzlich, damit ein zufaellig
+    schon wieder passender Stempel den Neubau nicht ueberspringt.
+
+    Kann mehrere zig Sekunden bis wenige Minuten dauern (npm/vite/
+    electron-builder). Nicht fatal, wenn es fehlschlaegt oder 'hermes' nicht
+    aufrufbar ist: Stempel wurde vorher schon entfernt, ein spaeterer
+    Terminal-Start (oder ein erneuter Klick auf 'Neu einspielen') baut dann
+    trotzdem neu.
+    """
+    try:
+        proc = subprocess.run(
+            [sys.executable, "-m", "hermes_cli.main", "desktop", "--build-only", "--force-build"],
+            capture_output=True, text=True, timeout=300, cwd=str(AGENT),
+        )
+    except Exception as exc:
+        _log(f"Desktop-Neubau nicht gestartet: {exc}")
+        return {"rebuilt": False, "detail": str(exc)}
+    ok = proc.returncode == 0
+    detail = (proc.stdout or proc.stderr or "").strip()[-500:]
+    _log(f"Desktop-Neubau {'erfolgreich' if ok else 'fehlgeschlagen'}: {detail[:200]}")
+    return {"rebuilt": ok, "detail": detail}
+
+
 # ------------------------------------------------------------- Pruefungen
 
 def check_german() -> dict:
@@ -273,7 +308,14 @@ def repair_group_limits() -> dict:
             "detail": (proc.stdout or proc.stderr).strip()[-300:]}
 
 
-def repair_all() -> dict:
+def repair_all(rebuild_desktop: bool = False) -> dict:
+    """rebuild_desktop=True baut die Desktop-App sofort neu (--build-only),
+    statt nur den Stempel zu entfernen und auf einen spaeteren Terminal-Start
+    zu hoffen. Standardmaessig AUS: der Waechter-Hook laeuft auf
+    gateway:startup und ein Neubau kann mehrere Minuten dauern - das wuerde
+    jeden Hermes-Start nach einem Update ausbremsen, unbeaufsichtigt und ohne
+    Fortschrittsanzeige. Die interaktive /repair-Route (Nutzer hat aktiv
+    geklickt, sieht einen Ladezustand) setzt es bewusst auf True."""
     status = check_all()
     results = []
     for c in status["checks"]:
@@ -290,13 +332,20 @@ def repair_all() -> dict:
                 "id": c["id"], "repaired": False,
                 "hint": "Im AIIANER-Marktplatz erneut installieren.",
             })
+    rebuild_result = None
     if not results:
         _log("Pruefung ok, nichts zu tun")
     elif any(r.get("repaired") and r.get("id") in _DESKTOP_TOUCHING for r in results):
         _invalidate_desktop_build_stamp()
-        _log("Desktop-Build-Stempel entfernt, naechster Start baut neu")
-    return {"ok": all(r.get("repaired") for r in results) if results else True,
-            "results": results}
+        if rebuild_desktop:
+            rebuild_result = _rebuild_desktop()
+        else:
+            _log("Desktop-Build-Stempel entfernt, naechster Terminal-Start baut neu")
+    out = {"ok": all(r.get("repaired") for r in results) if results else True,
+           "results": results}
+    if rebuild_result is not None:
+        out["desktopRebuild"] = rebuild_result
+    return out
 
 
 # --------------------------------------------------------------- Diagnose

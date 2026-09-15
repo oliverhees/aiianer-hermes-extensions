@@ -662,7 +662,7 @@ export default {
         uninstall: 'Deinstallieren',
         updateTo: v => `Auf v${v} aktualisieren`,
         installedIs: v => `installiert: v${v}`,
-        installing: 'Wird installiert, einen Moment ...',
+        installing: 'Wird installiert - bei Sprachdatei/Bot-Modus/Gruppenchat-Grenzen baut das die Desktop-App neu, das kann bis zu einigen Minuten dauern ...',
         uninstalling: 'Wird entfernt ...',
         doneTitle: 'Fertig. Das ist jetzt zu tun:',
         doneBare: 'Fertig. Hermes komplett beenden und neu starten, damit es greift.',
@@ -684,7 +684,7 @@ export default {
         uninstall: 'Deinstallieren',
         updateTo: v => `Auf v${v} aktualisieren`,
         installedIs: v => `installiert: v${v}`,
-        installing: 'Wird installiert, einen Moment ...',
+        installing: 'Wird installiert - bei Sprachdatei/Bot-Modus/Gruppenchat-Grenzen baut das die Desktop-App neu, das kann bis zu einigen Minuten dauern ...',
         uninstalling: 'Wird entfernt ...',
         doneTitle: 'Fertig. Das ist jetzt zu tun:',
         doneBare: 'Fertig. Hermes komplett beenden und neu starten, damit es greift.',
@@ -707,9 +707,16 @@ export default {
     // body ist ein Objekt - die Bruecke serialisiert selbst. Ein
     // JSON.stringify hier wuerde dem Backend einen String statt eines
     // Objekts schicken.
+    // 320s: laenger als der 300s-Server-Timeout fuer den Desktop-Neubau
+    // (german-language/bot-mode-german/group-chat-limits loesen seit v1.3.36
+    // synchron 'hermes desktop --build-only' aus, damit die Sprache nach
+    // einem einfachen Neustart wirklich da ist - das kann eine Weile dauern).
+    // Ohne dieses timeoutMs wuerde der Client vorzeitig einen Fehler zeigen,
+    // waehrend der Server noch baut und am Ende trotzdem erfolgreich waere.
+    const REBUILD_TIMEOUT_MS = 320000
     const aktionen = {
-      install: id => ctx.rest('/install', { method: 'POST', body: { id } }),
-      uninstall: id => ctx.rest('/uninstall', { method: 'POST', body: { id } }),
+      install: id => ctx.rest('/install', { method: 'POST', body: { id }, timeoutMs: REBUILD_TIMEOUT_MS }),
+      uninstall: id => ctx.rest('/uninstall', { method: 'POST', body: { id }, timeoutMs: REBUILD_TIMEOUT_MS }),
       backupStatus: () => ctx.rest('/backup/status'),
       backupSettings: body => ctx.rest('/backup/settings', { method: 'PUT', body }),
       backupBrowse: body => ctx.rest('/backup/browse', { method: 'POST', body }),

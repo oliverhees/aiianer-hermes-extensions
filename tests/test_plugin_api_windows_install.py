@@ -54,6 +54,12 @@ def hermes_heim(api, wurzel: Path) -> Path:
     i18n.mkdir(parents=True)
     bots.mkdir(parents=True)
     (i18n / "types.ts").write_text("export type Locale = 'en' | 'de'\n")
+    # catalog.ts/languages.ts gehoeren real IMMER neben types.ts - fehlten sie
+    # hier, waere die Fixture kein echtes Abbild eines Hermes-Checkouts mehr.
+    # Schon 'de'-verdrahtet, damit _german_anchor_missing() den schnellen
+    # Weg nimmt (konsistent mit dem bereits verdrahteten types.ts oben).
+    (i18n / "catalog.ts").write_text("import { de } from './de'\nexport const TRANSLATIONS = { en, de }\n")
+    (i18n / "languages.ts").write_text("export const LOCALE_OPTIONS = [{ id: 'en' }, { id: 'de' }]\n")
     (bots / "i18n.ts").write_text("export const MESSAGES = {}\n")
     (bots / "group-rounds.ts").write_text("export const MAX_ROUNDS = 3\n")
     api.HERMES_HOME = heim
@@ -378,7 +384,7 @@ class InstallRouteAufWindowsTest(unittest.TestCase):
             (src / "install.sh").write_text("#!/usr/bin/env bash\nexit 7\n")
 
             zustand: dict = {}
-            api._download = lambda _tmp: repo
+            api._download = lambda _tmp, _cat=None: repo
             api._load_catalog = lambda: {
                 "catalogVersion": "test",
                 "components": [{"id": "german-language", "version": "2026.09.01"}],
@@ -411,7 +417,7 @@ class InstallRouteAufWindowsTest(unittest.TestCase):
             src.mkdir(parents=True)
             (src / "install.sh").write_text("#!/usr/bin/env bash\necho ok\n")
 
-            api._download = lambda _tmp: repo
+            api._download = lambda _tmp, _cat=None: repo
             api._load_catalog = lambda: {
                 "components": [{"id": "kuenftige-komponente", "version": "1.0.0"}]
             }
