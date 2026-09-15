@@ -62,6 +62,32 @@ def _installed() -> dict:
         return {}
 
 
+# Komponenten, die apps/desktop/ selbst veraendern. Nach jeder Reparatur einer
+# von ihnen muss der Content-Hash-Stempel weg, sonst haelt Hermes Desktop die
+# eigene, noch unreparierte Fassung fuer aktuell und baut nicht neu - genau das
+# Muster hinter "Neustart bringt nichts, erst ein manueller Eingriff hilft".
+_DESKTOP_TOUCHING = {"german-language", "bot-mode-german", "group-chat-limits"}
+
+
+def _invalidate_desktop_build_stamp() -> None:
+    """Zwingt den naechsten 'hermes desktop'/'hermes gui'-Start zum Neubau.
+
+    Hermes vergleicht dafuer einen SHA-256 ueber apps/desktop/ mit einem
+    Stempel unter $HERMES_HOME/desktop-build-stamp.json (siehe
+    hermes_cli/main_desktop.py, _stamp_is_current). Fehlt die Datei, gilt der
+    Stand automatisch als veraltet - dieselbe Technik, die Hermes' eigener
+    Self-Heal bei einem zerrissenen Bundle benutzt. Best-effort: eine
+    fehlende oder nicht loeschbare Datei ist kein Fehler, nur ein
+    uebersprungener Neubau-Zwang.
+    """
+    try:
+        stamp = HERMES_HOME / "desktop-build-stamp.json"
+        if stamp.is_file():
+            stamp.unlink()
+    except Exception:
+        pass
+
+
 # ------------------------------------------------------------- Pruefungen
 
 def check_german() -> dict:
@@ -266,5 +292,8 @@ def repair_all() -> dict:
             })
     if not results:
         _log("Pruefung ok, nichts zu tun")
+    elif any(r.get("repaired") and r.get("id") in _DESKTOP_TOUCHING for r in results):
+        _invalidate_desktop_build_stamp()
+        _log("Desktop-Build-Stempel entfernt, naechster Start baut neu")
     return {"ok": all(r.get("repaired") for r in results) if results else True,
             "results": results}

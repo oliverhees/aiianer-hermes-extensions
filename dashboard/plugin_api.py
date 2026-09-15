@@ -73,6 +73,25 @@ BOTS_DIR = AGENT_DIR / "apps" / "desktop" / "src" / "plugins" / "hermes-bots"
 BOTS_PLUGIN = BOTS_DIR / "plugin.js"
 BOTS_KATALOG = BOTS_DIR / "i18n.ts"
 BOTS_ROUNDS = BOTS_DIR / "group-rounds.ts"
+DESKTOP_BUILD_STAMP = HERMES_HOME / "desktop-build-stamp.json"
+
+# Wer apps/desktop/ selbst veraendert, muss danach den Content-Hash-Stempel
+# entfernen, den Hermes Desktop fuer seine Rebuild-Entscheidung fuehrt (siehe
+# hermes_cli/main_desktop.py, _stamp_is_current: SHA-256 ueber apps/desktop/,
+# verglichen mit $HERMES_HOME/desktop-build-stamp.json). Sonst haelt Hermes
+# Desktop die noch unveraenderte Fassung fuer aktuell und baut beim naechsten
+# Start NICHT neu - "Neustart bringt nichts" ist genau dieses Muster.
+DESKTOP_TOUCHING = {"german-language", "bot-mode-german", "group-chat-limits"}
+
+
+def _invalidate_desktop_build_stamp() -> None:
+    """Best-effort, wie Hermes' eigener Self-Heal es bei einem zerrissenen
+    Bundle macht: fehlt der Stempel, gilt der Stand automatisch als veraltet."""
+    try:
+        if DESKTOP_BUILD_STAMP.is_file():
+            DESKTOP_BUILD_STAMP.unlink()
+    except Exception:
+        pass
 
 
 def _bots_ziel():
@@ -1163,6 +1182,9 @@ async def install(body: dict) -> dict:
                              "aiianer-group-limits.ts", "apply-limits.py"):
                     if (src / name).is_file():
                         shutil.copy2(src / name, STATE_DIR / name)
+
+            if comp_id in DESKTOP_TOUCHING:
+                _invalidate_desktop_build_stamp()
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
@@ -1569,6 +1591,8 @@ async def uninstall(body: dict) -> dict:
             )
 
         _run_uninstall(comp_id, protokoll)
+        if comp_id in DESKTOP_TOUCHING:
+            _invalidate_desktop_build_stamp()
 
         # Erst wenn der Rueckbau durchlief, faellt der Zustandseintrag. Der
         # Waechter richtet sich danach und spielt sonst alles wieder ein.

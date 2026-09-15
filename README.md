@@ -111,6 +111,32 @@ Der Wächter arbeitet mit Sicherungen und wiederholbaren Ankern. Wenn ein Hermes
 Umbau einen Ankerpunkt unbrauchbar macht, meldet der Marktplatz die Ursache,
 statt still einen halben Zustand zu hinterlassen.
 
+Deutsch verschwindet nach einem Hermes-Update trotzdem manchmal erst nach dem
+**zweiten** Neustart: Hermes Desktop baut sich nur neu, wenn ein Content-Stempel
+unter `$HERMES_HOME/desktop-build-stamp.json` veraltet ist. Reparierte der
+Wächter die Sprachdatei, nachdem Hermes diesen Stempel für den (kurzzeitig
+unreparierten) Stand schon neu geschrieben hatte, hält die App ihn trotzdem für
+aktuell. Reparatur und Installation entfernen diesen Stempel deshalb jetzt
+selbst; hilft das nicht, hilft ein zweiter kompletter Neustart oder ein Klick
+auf „Neu einspielen“ im Reiter „AIIANER“.
+
+### Falls Hermes Desktop nach der deutschen Sprachdatei nicht mehr aufgeht
+
+Kommt vor, wenn Hermes selbst zwischenzeitlich seinen i18n-Ordner umgebaut hat
+(Upstream-Drift) und der Neubau beim nächsten Start dabei scheitert. Ohne
+laufende GUI ist der normale Weg – Deinstallieren im Marktplatz-Reiter – nicht
+erreichbar. Direkt im Terminal, ohne Hermes Desktop:
+
+```bash
+curl -sL https://raw.githubusercontent.com/oliverhees/aiianer-hermes-extensions/main/extensions/german-language/restore-original.py | python3 -
+```
+
+Setzt `types.ts`/`catalog.ts`/`languages.ts` auf den Stand vor der
+Installation zurück, entfernt `de.ts` und den Build-Stempel, alles-oder-nichts.
+Danach Hermes (inklusive Gateway-Prozess, falls er separat läuft) neu starten.
+Bitte danach in der AIIANER Community melden, mit den Zeilen, die das Skript
+ausgegeben hat – das ist unser einziger Weg, den Anker rechtzeitig nachzuziehen.
+
 ## Feedback, Hilfe und Probleme
 
 Der Marktplatz ist **Beta**. Genau deshalb ist dein Feedback wichtig:
