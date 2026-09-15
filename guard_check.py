@@ -311,11 +311,14 @@ def repair_group_limits() -> dict:
 def repair_all(rebuild_desktop: bool = False) -> dict:
     """rebuild_desktop=True baut die Desktop-App sofort neu (--build-only),
     statt nur den Stempel zu entfernen und auf einen spaeteren Terminal-Start
-    zu hoffen. Standardmaessig AUS: der Waechter-Hook laeuft auf
-    gateway:startup und ein Neubau kann mehrere Minuten dauern - das wuerde
-    jeden Hermes-Start nach einem Update ausbremsen, unbeaufsichtigt und ohne
-    Fortschrittsanzeige. Die interaktive /repair-Route (Nutzer hat aktiv
-    geklickt, sieht einen Ladezustand) setzt es bewusst auf True."""
+    zu hoffen. Sowohl der Waechter-Hook (gateway:startup) als auch die
+    interaktive /repair-Route setzen es inzwischen auf True: Gateway-Hooks
+    laufen laut Hermes' eigener Doku, ohne die Gateway-Pipeline zu blockieren,
+    und gateway:startup nach einem Update ist ohnehin der Moment, in dem der
+    Nutzer schon durch Hermes' eigenen Update-Bildschirm gewartet hat - ein
+    zusaetzlicher Neubau dort faellt nicht mehr auf, als noch einmal manuell
+    auf 'Reparieren' klicken zu muessen. Default bleibt False fuer
+    Aufrufer, die diese Abwaegung nicht automatisch treffen wollen."""
     status = check_all()
     results = []
     for c in status["checks"]:

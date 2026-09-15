@@ -1,6 +1,12 @@
 {
   "releases": [
     {
+      "tagName": "v1.3.37",
+      "name": "v1.3.37 · Automatischer Wächter baut jetzt auch selbst neu",
+      "publishedAt": "2026-09-15T17:00:00Z",
+      "body": "Schliesst die letzte Luecke aus v1.3.36. Dort baute der Marktplatz die Desktop-App bei Installation, Deinstallation und Reparatur bereits selbst neu, aber nur, wenn jemand aktiv im Marktplatz-Reiter klickte. Der automatische Waechter, der nach jedem Hermes-Update die Sprachdatei repariert, tat das bisher weiterhin nur am Quellcode, ohne die Desktop-App neu zu bauen - man musste also nach einem Hermes-Update trotzdem einmal manuell nachhelfen.\n\nDer Waechter loest jetzt ebenfalls einen sofortigen Neubau aus, ganz ohne Zutun. Der richtige Moment dafuer ist ohnehin gegeben: er feuert beim naechsten Hermes-Start nach einem Update, und genau da hat man gerade erst Hermes' eigenen Update-Bildschirm hinter sich gebracht (\"Fenster schliesst sich, Neustart folgt automatisch\") - ein paar zusaetzliche Sekunden bis Minuten fuer den Neubau fallen in diesem Wartemoment nicht mehr auf. Gateway-Hooks laufen laut Hermes' eigener Dokumentation, ohne die Gateway-Pipeline zu blockieren, der Start haengt dadurch nicht.\n\nDamit sollte die deutsche Sprachdatei jetzt wirklich in jedem Fall von selbst da sein, ohne jemals den Marktplatz-Reiter oeffnen zu muessen."
+    },
+    {
       "tagName": "v1.3.36",
       "name": "v1.3.36 · Sprachdatei wird jetzt wirklich sofort sichtbar",
       "publishedAt": "2026-09-15T15:00:00Z",

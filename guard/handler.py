@@ -4,6 +4,17 @@ Feuert auf gateway:startup. Prueft, ob ein Hermes-Update die deutschen
 Erweiterungen aus dem Checkout entfernt hat, und stellt sie wieder her.
 Faellt still aus, wenn nichts installiert ist. Fehler werden geloggt und
 nie weitergeworfen, damit der Gateway-Start nie an uns scheitert.
+
+Repariert MIT sofortigem Desktop-Neubau (rebuild_desktop=True): Gateway-Hooks
+laufen laut Hermes' eigener Doku "without blocking the main agent pipeline" -
+ein mehrminuetiger Neubau haengt den Gateway-Start also nicht auf. Und er
+lohnt sich hier besonders: gateway:startup nach einem Hermes-Update ist genau
+der Moment, in dem Hermes selbst den Nutzer schon durch seinen eigenen
+Update-Bildschirm ("Fenster schliesst sich, Neustart folgt automatisch")
+geschickt hat - ein Wartemoment, den der Nutzer ohnehin schon erwartet. Ohne
+diesen Schritt bliebe Deutsch bis zum naechsten manuellen Klick auf
+"Reparieren" im Marktplatz unsichtbar, obwohl der Quellcode laengst wieder
+stimmt (siehe README, Abschnitt Update-Sicherheit).
 """
 
 import os
@@ -38,7 +49,7 @@ async def handle(event_type: str, context: dict):
         status = guard_check.check_all()
         if status.get("ok"):
             return
-        guard_check.repair_all()
+        guard_check.repair_all(rebuild_desktop=True)
     except Exception as exc:
         try:
             guard_check._log(f"Waechter abgebrochen: {exc}")

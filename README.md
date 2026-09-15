@@ -105,7 +105,11 @@ den normalen Plugin-Manager von Hermes.
 Hermes aktualisiert sein eigenes Programmverzeichnis regelmäßig. Der Marktplatz
 liegt deshalb vollständig in den vorgesehenen Plugin-Verzeichnissen außerhalb des
 Hermes-Checkouts. Die deutsche Sprachdatei und andere notwendige Anpassungen
-werden über den Wächter nach einem Hermes-Update erneut eingespielt.
+werden über den Wächter nach einem Hermes-Update erneut eingespielt, seit
+Version 1.3.37 inklusive automatischem Neubau der Desktop-App. Kein Klick im
+Marktplatz-Reiter nötig: der Wächter feuert von selbst beim nächsten
+Hermes-Start nach einem Update, genau in dem Moment, in dem man ohnehin schon
+durch Hermes' eigenen Update-Bildschirm gewartet hat.
 
 Der Wächter arbeitet mit Sicherungen und wiederholbaren Ankern. Wenn ein Hermes-
 Umbau einen Ankerpunkt unbrauchbar macht, meldet der Marktplatz die Ursache,
@@ -128,8 +132,10 @@ von Haus aus.
 Seit Version 1.3.36 übernimmt der Marktplatz diesen Neubau deshalb selbst:
 Installation, Deinstallation und Reparatur lösen direkt `hermes desktop
 --build-only` aus, das kann je nach Rechner eine bis wenige Minuten dauern
-(daher der längere Ladezustand nach einem Klick). Ein normaler Neustart reicht
-danach wirklich. Schlägt der automatische Neubau ausnahmsweise fehl, sagt der
+(daher der längere Ladezustand nach einem Klick). Seit Version 1.3.37 gilt das
+auch für den automatischen Wächter beim nächsten Hermes-Start nach einem
+Update, ganz ohne Zutun. Ein normaler Neustart reicht danach wirklich. Schlägt
+der automatische Neubau ausnahmsweise fehl, sagt der
 Marktplatz das konkret und nennt als Rückfallweg: einmal `hermes desktop` in
 einem Terminal ausführen.
 
