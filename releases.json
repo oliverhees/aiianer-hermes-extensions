@@ -1,6 +1,12 @@
 {
   "releases": [
     {
+      "tagName": "v1.3.36",
+      "name": "v1.3.36 · Sprachdatei wird jetzt wirklich sofort sichtbar",
+      "publishedAt": "2026-09-15T15:00:00Z",
+      "body": "Der Fix aus v1.3.35 (Content-Hash-Stempel entfernen) war richtig, aber nicht vollstaendig: ein Community-Bericht kurz nach dem Release zeigte, dass ein normales Oeffnen ueber das App-Symbol den Neubau der Desktop-App gar nicht erst anstoesst. Diese Erweiterung veraendert Hermes' Quellcode, verlaedt aber nichts zur Laufzeit nach - aus dem veraenderten Quellcode muss erst wieder eine fertige App gebaut werden, und nur \"hermes desktop\" im Terminal tut das von Haus aus. Ein einfacher Neustart ueber das Programm-Symbol nicht.\n\nInstallation, Deinstallation und Reparatur bauen die Desktop-App deshalb jetzt selbst neu (hermes desktop --build-only --force-build), direkt waehrend der Aktion, nicht erst beim naechsten zufaelligen Terminal-Start. Ein normaler Neustart danach reicht wirklich. Das kann den Installieren-Knopf spuerbar laenger dauern lassen (bis zu ein paar Minuten je nach Rechner), dafuer stimmt das Ergebnis. Schlaegt der automatische Neubau ausnahmsweise fehl, bleibt der bisherige Weg als Rueckfall: einmal \"hermes desktop\" im Terminal ausfuehren.\n\nAusserdem: der Diagnose-Weg fuer nicht-technische Nutzer ist jetzt zugaenglicher - statt eines nackten Terminal-Befehls gibt es einen Satz zum Kopieren in den Hermes-Chat, Hermes fuehrt die Diagnose dann selbst aus."
+    },
+    {
       "tagName": "v1.3.35",
       "name": "v1.3.35 · Deutsche Sprachdatei: Ursache für „verschwindet nach Update“ gefunden und behoben",
       "publishedAt": "2026-09-15T12:00:00Z",

@@ -116,14 +116,22 @@ aktuellen Quellcode von `NousResearch/hermes-agent`, bevor irgendjemand ein
 Update installiert. Findet er einen gerissenen Anker, öffnet er von selbst ein
 Issue in diesem Repo.
 
-Deutsch verschwindet nach einem Hermes-Update trotzdem manchmal erst nach dem
-**zweiten** Neustart: Hermes Desktop baut sich nur neu, wenn ein Content-Stempel
-unter `$HERMES_HOME/desktop-build-stamp.json` veraltet ist. Reparierte der
-Wächter die Sprachdatei, nachdem Hermes diesen Stempel für den (kurzzeitig
-unreparierten) Stand schon neu geschrieben hatte, hält die App ihn trotzdem für
-aktuell. Reparatur und Installation entfernen diesen Stempel deshalb jetzt
-selbst; hilft das nicht, hilft ein zweiter kompletter Neustart oder ein Klick
-auf „Neu einspielen“ im Reiter „AIIANER“.
+**Wichtig zu wissen, wie die Sprachdatei überhaupt wirksam wird:** diese
+Erweiterung lädt kein Deutsch zur Laufzeit nach, sie verändert Hermes'
+Quellcode. Aus verändertem Quellcode muss erst wieder eine fertige Desktop-App
+gebaut werden, sonst zeigt die bereits laufende (oder die als Programm-Symbol
+gestartete) App weiterhin den alten Stand, egal wie oft man sie schließt und
+wieder öffnet. Ein einfacher Neustart über das App-Symbol stößt diesen Neubau
+für sich genommen nämlich nicht an, nur `hermes desktop` im Terminal tut das
+von Haus aus.
+
+Seit Version 1.3.36 übernimmt der Marktplatz diesen Neubau deshalb selbst:
+Installation, Deinstallation und Reparatur lösen direkt `hermes desktop
+--build-only` aus, das kann je nach Rechner eine bis wenige Minuten dauern
+(daher der längere Ladezustand nach einem Klick). Ein normaler Neustart reicht
+danach wirklich. Schlägt der automatische Neubau ausnahmsweise fehl, sagt der
+Marktplatz das konkret und nennt als Rückfallweg: einmal `hermes desktop` in
+einem Terminal ausführen.
 
 ### Falls Hermes Desktop nach der deutschen Sprachdatei nicht mehr aufgeht
 
