@@ -246,9 +246,33 @@ def check_plugin(comp_id: str) -> dict:
     return {"id": comp_id, "state": "ok" if _liegt_noch(comp_id) else "missing"}
 
 
+# Der Katalog entscheidet, was ueberhaupt noch aktiv gepflegt wird. Stand
+# 2026-09: group-chat-limits ist als "unfinished" aus catalog.json entfernt
+# (Oliver, 10.09.), aber Nutzer, die es davor installiert hatten, bekamen es
+# trotzdem fuer immer automatisch repariert - inklusive dem teuren
+# --build-only-Neubau aus v1.3.36+. Eine versteckte, nicht mehr gepflegte
+# Komponente soll den Waechter nicht mehr beschaeftigen.
+_CATALOG_PFAD = HERMES_HOME / "plugins" / "aiianer-hub" / "catalog.json"
+
+
+def _katalog_ids() -> set | None:
+    """IDs der aktuell im Katalog sichtbaren Komponenten. None = Katalog nicht
+    lesbar (z. B. sehr alte Installation) - dann bewusst ALLES weiter pruefen
+    statt riskant nichts mehr zu reparieren, nur weil die Datei fehlt."""
+    try:
+        daten = json.loads(_CATALOG_PFAD.read_text(encoding="utf-8"))
+        return {c["id"] for c in daten.get("components", []) if "id" in c}
+    except Exception:
+        return None
+
+
 def check_all() -> dict:
     checks = [check_german()]
-    for comp_id in ("eurouter-provider", "bot-mode-german", "group-chat-limits"):
+    kandidaten = ("eurouter-provider", "bot-mode-german", "group-chat-limits")
+    sichtbar = _katalog_ids()
+    if sichtbar is not None:
+        kandidaten = tuple(c for c in kandidaten if c in sichtbar)
+    for comp_id in kandidaten:
         checks.append(check_plugin(comp_id))
     broken = [c for c in checks if c["state"] in ("missing", "unreadable", "no-checkout")]
     return {"ok": not broken, "checks": checks, "broken": [c["id"] for c in broken]}
@@ -358,9 +382,13 @@ def repair_all(rebuild_desktop: bool = False) -> dict:
     # zu reparieren findet (siehe _desktop_build_stamp_missing). Ohne diese
     # zweite Bedingung bliebe die App nach einem Hub-Selbstupdate, das
     # zwischen Reparatur und naechstem Pruefpass liegt, dauerhaft veraltet.
+    sichtbar = _katalog_ids()
+    aktive_desktop_touching = (
+        _DESKTOP_TOUCHING if sichtbar is None else (_DESKTOP_TOUCHING & sichtbar)
+    )
     stamp_missing = (
         not repaired_desktop
-        and any(cid in _installed() for cid in _DESKTOP_TOUCHING)
+        and any(cid in _installed() for cid in aktive_desktop_touching)
         and _desktop_build_stamp_missing()
     )
 

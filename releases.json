@@ -1,6 +1,12 @@
 {
   "releases": [
     {
+      "tagName": "v1.3.40",
+      "name": "v1.3.40 · Wächter repariert nur noch, was im Katalog sichtbar ist",
+      "publishedAt": "2026-09-16T15:00:00Z",
+      "body": "Community-Report ueber unser eigenes Diagnose-Tool zeigte einen Reparatur-Loop: group-chat-limits wurde alle paar Minuten bis Stunden als 'repariert' gemeldet, war aber beim naechsten Check wieder 'missing' - inklusive dem teuren automatischen Desktop-Neubau bei jedem Fund. Der Anker selbst ist intakt (gegen aktuellen Hermes main erneut verifiziert), das eigentliche Problem liegt woanders: group-chat-limits ist seit dem 10.09. bewusst als unfertig aus dem Katalog versteckt, wurde aber fuer Nutzer, die es davor installiert hatten, trotzdem fuer immer automatisch geprueft und repariert.\n\nDer Waechter prueft und repariert jetzt nur noch, was aktuell im Katalog sichtbar ist. Eine bereits installierte, aber versteckte Komponente bleibt unangetastet liegen und loest keinen Rebuild-Loop mehr aus. Ist der Katalog aus irgendeinem Grund nicht lesbar, faellt das bewusst auf die alte Pruefung ALLER Komponenten zurueck - lieber zu viel geprueft als riskant zu wenig.\n\nAusserdem: eine irrefuehrende Neustart-Meldung nach einem Hub-eigenen Update korrigiert (v1.3.39 nachgezogen) - der Hub selbst hot-reloadet seine Oberflaeche automatisch, ganz ohne Neustart, das betraf nur die Nutzer-Meldung, nicht die eigentliche Funktion."
+    },
+    {
       "tagName": "v1.3.39",
       "name": "v1.3.39 · Irreführenden Neustart-Hinweis nach Hub-Update korrigiert",
       "publishedAt": "2026-09-16T13:00:00Z",
