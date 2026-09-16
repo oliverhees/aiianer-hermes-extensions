@@ -88,6 +88,23 @@ def _invalidate_desktop_build_stamp() -> None:
         pass
 
 
+def _desktop_build_stamp_missing() -> bool:
+    """Unabhaengiges Signal fuer 'muss neu gebaut werden' - losgeloest davon,
+    ob DER AKTUELLE Pruefpass selbst gerade etwas am Quellcode repariert hat.
+
+    Community-Befund nach v1.3.37: der Stempel wurde in einem FRUEHEREN Lauf
+    schon korrekt entfernt (Quellcode war damals kaputt und wurde repariert),
+    aber KEIN Neubau fand statt (alte Hub-Version ohne rebuild_desktop, oder
+    rebuild_desktop=False). Ein SPAETERER Lauf findet den Quellcode dann
+    bereits intakt vor (state == 'ok' fuer alle Komponenten) und bricht bisher
+    sofort ab, ohne je zu pruefen, ob der fehlende Stempel noch fuer sich
+    alleine einen Neubau rechtfertigt. Ergebnis: die fertige App bleibt
+    dauerhaft auf altem Stand, obwohl der Quellcode laengst wieder stimmt.
+    Diese Funktion schliesst genau diese Luecke - sie wird IMMER geprueft,
+    nicht nur wenn im selben Durchlauf etwas repariert wurde."""
+    return not (HERMES_HOME / "desktop-build-stamp.json").is_file()
+
+
 def _rebuild_desktop() -> dict:
     """Baut die Desktop-App JETZT neu, statt nur auf den naechsten Start zu
     hoffen.
@@ -335,15 +352,30 @@ def repair_all(rebuild_desktop: bool = False) -> dict:
                 "id": c["id"], "repaired": False,
                 "hint": "Im AIIANER-Marktplatz erneut installieren.",
             })
+    repaired_desktop = any(r.get("repaired") and r.get("id") in _DESKTOP_TOUCHING for r in results)
+    # UNABHAENGIG von results pruefen: ein frueherer Lauf kann den Stempel
+    # schon entfernt haben, ohne dass DIESER Lauf noch etwas am Quellcode
+    # zu reparieren findet (siehe _desktop_build_stamp_missing). Ohne diese
+    # zweite Bedingung bliebe die App nach einem Hub-Selbstupdate, das
+    # zwischen Reparatur und naechstem Pruefpass liegt, dauerhaft veraltet.
+    stamp_missing = (
+        not repaired_desktop
+        and any(cid in _installed() for cid in _DESKTOP_TOUCHING)
+        and _desktop_build_stamp_missing()
+    )
+
     rebuild_result = None
-    if not results:
+    if not results and not stamp_missing:
         _log("Pruefung ok, nichts zu tun")
-    elif any(r.get("repaired") and r.get("id") in _DESKTOP_TOUCHING for r in results):
-        _invalidate_desktop_build_stamp()
+    elif repaired_desktop or stamp_missing:
+        if repaired_desktop:
+            _invalidate_desktop_build_stamp()
         if rebuild_desktop:
             rebuild_result = _rebuild_desktop()
-        else:
+        elif repaired_desktop:
             _log("Desktop-Build-Stempel entfernt, naechster Terminal-Start baut neu")
+        else:
+            _log("Desktop-Build-Stempel fehlt noch von einem frueheren Lauf, naechster Terminal-Start baut neu")
     out = {"ok": all(r.get("repaired") for r in results) if results else True,
            "results": results}
     if rebuild_result is not None:

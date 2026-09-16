@@ -45,10 +45,14 @@ async def handle(event_type: str, context: dict):
     except Exception:
         return
 
+    # Kein Vorab-"check_all().ok -> return" mehr: repair_all() muss IMMER
+    # laufen, weil es selbst noch zusaetzlich prueft, ob ein fruehrerer Lauf
+    # den Build-Stempel entfernt hat, ohne dass seitdem neu gebaut wurde -
+    # genau diese Kombination (Quellcode laengst wieder ok, Stempel aber noch
+    # weg) meldete check_all() alleine faelschlich als "nichts zu tun".
+    # repair_all() selbst bleibt fuer den haeufigen Fall (wirklich nichts zu
+    # tun) billig, kein Grund, hier zusaetzlich vorzufiltern.
     try:
-        status = guard_check.check_all()
-        if status.get("ok"):
-            return
         guard_check.repair_all(rebuild_desktop=True)
     except Exception as exc:
         try:

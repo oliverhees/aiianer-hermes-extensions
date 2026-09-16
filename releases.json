@@ -1,6 +1,12 @@
 {
   "releases": [
     {
+      "tagName": "v1.3.38",
+      "name": "v1.3.38 · Verwaister Build-Stempel wird jetzt auch erkannt",
+      "publishedAt": "2026-09-16T09:00:00Z",
+      "body": "Community-Befund, sehr praezise diagnostiziert: der automatische Neubau aus v1.3.37 griff in einem bestimmten Fall trotzdem nicht. Genauer Ablauf: ein FRUEHERER Waechter-Lauf (noch mit einer aelteren Hub-Version ohne automatischen Rebuild) reparierte den Quellcode und entfernte dabei korrekt den Build-Stempel - baute aber noch nicht neu. Kurz danach aktualisierte sich der Hub selbst auf 1.3.37 und der Gateway startete neu. Der neue Waechter fand den Quellcode bereits intakt vor und brach ab, ohne zu pruefen, dass der Build-Stempel immer noch fehlte. Ergebnis: die fertige App blieb veraltet, obwohl der Quellcode laengst wieder stimmte.\n\nDer Waechter prueft den fehlenden Build-Stempel jetzt als EIGENSTAENDIGES Signal, unabhaengig davon, ob im selben Durchlauf auch am Quellcode etwas zu reparieren war. Sechs neue Tests (tests/test_guard_check_rebuild.py) sichern das ab, inklusive eines Tests, der nachweislich fehlschlaegt ohne diesen Fix."
+    },
+    {
       "tagName": "v1.3.37",
       "name": "v1.3.37 · Automatischer Wächter baut jetzt auch selbst neu",
       "publishedAt": "2026-09-15T17:00:00Z",
