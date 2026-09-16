@@ -291,7 +291,7 @@ function makePane(fetchCatalog, fetchReleases, fetchRoadmap, aktionen, onCommuni
                     notify({
                       kind: 'success',
                       title: 'Hub aktualisiert',
-                      message: 'Backend und Katalog laufen jetzt mit dem neuen Stand. Bitte Hermes komplett beenden und neu starten, damit die Desktop-Oberfläche den neuen Plugin-Code lädt.'
+                      message: 'Backend und Katalog laufen jetzt mit dem neuen Stand. Die Oberfläche lädt den neuen Marktplatz-Code normalerweise von selbst nach (wenige Sekunden, gleicher Hot-Reload wie bei jedem Desktop-Plugin). Bleibt hier trotzdem der alte Stand stehen: Befehlspalette (Strg/Cmd+K) → \'Reload desktop plugins\', oder Hermes einmal komplett neu starten.'
                     })
                     return refetch().catch(() => {})
                   })

@@ -1,6 +1,12 @@
 {
   "releases": [
     {
+      "tagName": "v1.3.39",
+      "name": "v1.3.39 · Irreführenden Neustart-Hinweis nach Hub-Update korrigiert",
+      "publishedAt": "2026-09-16T13:00:00Z",
+      "body": "Community-Rueckmeldung: nach einem Hub-Selbstupdate blieb der Hinweis 'Hermes komplett beenden und neu starten' stehen, obwohl das Backend bereits erfolgreich neu geladen hatte. Nachgeprueft gegen Hermes' eigene Desktop-Plugin-SDK-Dokumentation: unser Hub ist ein 'Unified Package' ($HERMES_HOME/plugins/aiianer-hub/desktop/plugin.js) und laeuft ueber dieselbe Disk-Pipeline wie jedes andere Desktop-Plugin - die App hot-reloadet die Oberflaeche automatisch bei jeder Aenderung, ganz ohne Neustart. Nur das Backend brauchte den expliziten restartGateway()-Schritt, den es schon gab.\n\nDie Meldung nach einem Hub-Update behauptete faelschlich, ein kompletter Neustart sei noetig. Jetzt korrekt: Backend ist bereits aktuell, die Oberflaeche laedt sich normalerweise von selbst binnen Sekunden nach - bleibt trotzdem der alte Stand sichtbar, hilft die Befehlspalette (Strg/Cmd+K) -> 'Reload desktop plugins', oder ein normaler Neustart als Rueckfall.\n\nWichtig zur Einordnung: das betrifft NUR den Hub selbst. Die deutsche Sprachdatei aendert echten Hermes-Quellcode statt eines Plugin-Files und braucht deshalb weiterhin den vollen Neubau-Weg aus v1.3.36-1.3.38 - zwei technisch unterschiedliche Faelle, die beide 'die Oberflaeche zeigt noch den alten Stand' ausloesen koennen, aber unterschiedliche Loesungen brauchen."
+    },
+    {
       "tagName": "v1.3.38",
       "name": "v1.3.38 · Verwaister Build-Stempel wird jetzt auch erkannt",
       "publishedAt": "2026-09-16T09:00:00Z",
