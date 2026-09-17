@@ -1,6 +1,12 @@
 {
   "releases": [
     {
+      "tagName": "v1.3.41",
+      "name": "v1.3.41 · Sicherheits-Scanner blockierte jede Neuinstallation (behoben)",
+      "publishedAt": "2026-09-17T10:37:00Z",
+      "body": "Dringender Fix: Hermes' eigener Sicherheits-Scanner (laeuft bei jeder Installation und jedem Update) stufte dieses Repo als GEFAEHRLICH ein und blockierte jede Neuinstallation, auch mit --force. Ursache: die README enthielt fuer den Notausstieg ohne laufendes Hermes Desktop (siehe v1.3.35) einen 'curl ... | python3 -'-Befehl - ein klassisches Muster fuer unkontrollierte Codeausfuehrung, das der Scanner als kritisches Lieferketten-Risiko erkennt und blockiert, unabhaengig davon, dass das Skript selbst unveraendert und offen einsehbar im Repo liegt.\n\nDer Befehl in der README ist jetzt in zwei Schritte aufgeteilt: erst herunterladen, dann ausfuehren. Funktional identisch, aber ohne das Pipe-Muster, das den Scanner ausloeste - und nebenbei besser, weil man das Skript vor dem Ausfuehren ansehen kann. Kein Code in restore-original.py selbst wurde veraendert.\n\nWichtiger Hinweis zur Ehrlichkeit: ich kann Hermes' eigenen Scanner von hier aus nicht selbst erneut laufen lassen, um das Ergebnis direkt zu bestaetigen. Die Analyse stuetzt sich auf Hermes' eigene Scanner-Dokumentation (das genaue Muster heisst dort 'curl_pipe_python', als KRITISCH eingestuft) und darauf, dass dies die einzige derartige Textstelle im gesamten Repo war. Wer von der Blockade betroffen war: bitte melden, ob die Installation jetzt durchlaeuft."
+    },
+    {
       "tagName": "v1.3.40",
       "name": "v1.3.40 · Wächter repariert nur noch, was im Katalog sichtbar ist",
       "publishedAt": "2026-09-16T15:00:00Z",

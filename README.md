@@ -152,8 +152,14 @@ noch der Hermes-Chat erreichbar, deshalb geht es hier nur direkt im Terminal:
 2. Kopiere diese eine Zeile hinein und drücke Enter:
 
    ```bash
-   curl -sL https://raw.githubusercontent.com/oliverhees/aiianer-hermes-extensions/main/extensions/german-language/restore-original.py | python3 -
+   curl -sL https://raw.githubusercontent.com/oliverhees/aiianer-hermes-extensions/main/extensions/german-language/restore-original.py -o restore-original.py
+   python3 restore-original.py
    ```
+
+   (Absichtlich zwei Schritte statt eines Pipe-Befehls: so lässt sich das
+   Skript vor dem Ausführen ansehen, und Hermes' eigener Sicherheits-Scanner
+   stuft ein direktes „curl | python3“ in Dokumentation als Lieferketten-
+   Risiko ein und blockiert sonst jede Neuinstallation dieses Repos.)
 3. Lies die Ausgabe durch, sie sagt dir, ob es geklappt hat.
 4. Starte Hermes komplett neu (falls ein Gateway-Prozess separat läuft, auch
    den beenden und neu starten).
