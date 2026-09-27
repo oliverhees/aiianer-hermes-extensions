@@ -220,16 +220,26 @@ class NativeBotsAndLimitsTest(unittest.TestCase):
 
 
 class NativeBackupInstallTest(unittest.TestCase):
+    """Hermes Backup wohnt seit 2026-09-27 in einem eigenen Repo, genau wie
+    EU-Router und Bot-Mode Advanced - der native Windows-Weg holt die
+    Payload deshalb per Tarball, nicht mehr aus extensions/aiianer-backup/
+    in diesem Repo."""
+
+    def backup_repo(self, wurzel: Path) -> Path:
+        repo = wurzel / "hermes-backup-plugin-main"
+        (repo / "scripts").mkdir(parents=True)
+        (repo / "scripts" / "backup_runner.py").write_text("# runner\n")
+        return repo
+
     def test_installs_runner_and_seeds_state_once(self):
         api = load_api_module()
         with tempfile.TemporaryDirectory() as tmp:
             wurzel = Path(tmp)
             heim = hermes_heim(api, wurzel)
-            src = wurzel / "extensions" / "aiianer-backup"
-            src.mkdir(parents=True)
-            (src / "backup_runner.py").write_text("# runner\n")
+            repo = self.backup_repo(wurzel)
 
-            api._install_backup_native(src)
+            with mock.patch.object(api, "_download_tarball", return_value=repo):
+                api._install_backup_native(wurzel / "egal")
 
             runner = heim / "scripts" / "aiianer-backup-runner.py"
             self.assertEqual(runner.read_text(), "# runner\n")
@@ -241,10 +251,23 @@ class NativeBackupInstallTest(unittest.TestCase):
             zustand["enabled"] = True
             zustand["target_dir"] = str(wurzel / "ziel")
             (api.STATE_DIR / "backup-state.json").write_text(json.dumps(zustand))
-            api._install_backup_native(src)
+            with mock.patch.object(api, "_download_tarball", return_value=repo):
+                api._install_backup_native(wurzel / "egal")
             self.assertTrue(
                 json.loads((api.STATE_DIR / "backup-state.json").read_text())["enabled"]
             )
+
+    def test_reports_incomplete_remote_repo(self):
+        api = load_api_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            wurzel = Path(tmp)
+            hermes_heim(api, wurzel)
+            repo = wurzel / "hermes-backup-plugin-main"
+            repo.mkdir(parents=True)
+            with mock.patch.object(api, "_download_tarball", return_value=repo):
+                with self.assertRaises(api.HTTPException) as fall:
+                    api._install_backup_native(wurzel / "egal")
+            self.assertIn("backup_runner.py", str(fall.exception.detail))
 
 
 class BashAufrufTest(unittest.TestCase):
@@ -348,12 +371,12 @@ class PayloadVorhandenTest(unittest.TestCase):
     ERWARTET = {
         "german-language": ("de.ts.gz", "apply-de.py"),
         "bot-mode-german": ("de-bots.ts", "apply-bots-de.py"),
-        "aiianer-backup": ("backup_runner.py",),
-        # EU-Router und Bot-Mode Advanced bringen ihre Payload aus einem
-        # eigenen Repo mit, hier liegt nur der Installer-Stub. Geprueft wird
-        # deshalb nur dessen Existenz.
+        # EU-Router, Bot-Mode Advanced und Backup bringen ihre Payload aus
+        # einem eigenen Repo mit, hier liegt nur der Installer-Stub. Geprueft
+        # wird deshalb nur dessen Existenz.
         "eurouter-provider": (),
         "group-chat-limits": (),
+        "aiianer-backup": (),
     }
 
     def test_every_native_installer_finds_its_payload_in_the_repo(self):

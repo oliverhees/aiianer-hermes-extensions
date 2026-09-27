@@ -60,8 +60,8 @@
       "kind": "plugin",
       "premium": false,
       "summary": "Vollständige Hermes-Backups in einen externen lokalen Ordner. Keine Uploads, kein GitHub.",
-      "note": "Nach der Installation in Hermes Desktop → AIIANER Extension Hub → Tab „Backups“ konfigurieren. Wiederherstellung ist ausdrücklich manuell.",
-      "nextSteps": {"install": ["Öffne Hermes Desktop → AIIANER Extension Hub → Tab „Backups“ und lege einen externen lokalen Zielordner fest."], "uninstall": []}
+      "note": "Läuft vollständig außerhalb des Hermes-Verzeichnisses. Nach der Installation zwei Schalter aktivieren: Einstellungen → Plugins → „Hermes Backup“, sowie „hermes-backup“ in plugins.enabled in config.yaml. Danach im Seitenleisten-Eintrag „Backups“ einen externen lokalen Zielordner festlegen. Wiederherstellung ist ausdrücklich manuell.",
+      "nextSteps": {"install": ["In Hermes Desktop unter Einstellungen → Plugins „Hermes Backup“ aktivieren, dann „hermes-backup“ in plugins.enabled in ~/.hermes/config.yaml eintragen und neu starten."], "uninstall": []}
     }
   ]
 }
