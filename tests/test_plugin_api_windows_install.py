@@ -167,6 +167,18 @@ class NativeBotsAndLimitsTest(unittest.TestCase):
                 api._install_bots_native(src)
             self.assertIn("Deutsche Sprache", str(fall.exception.detail))
 
+    def botmode_advanced_repo(self, wurzel: Path) -> Path:
+        """Bot-Mode Advanced (vormals group-chat-limits) wohnt seit
+        2026-09-27 in einem eigenen Repo, genau wie EU-Router - der native
+        Windows-Weg holt die Payload deshalb per Tarball, nicht mehr aus
+        extensions/group-chat-limits/ in diesem Repo."""
+        repo = wurzel / "hermes-botmode-advanced-main"
+        repo.mkdir(parents=True)
+        (repo / "aiianer-group-limits.ts").write_text("export const grenzen = {}\n")
+        (repo / "apply-limits.py").write_text(PATCHER_STUB)
+        (repo / "gruppen-grenzen.beispiel.json").write_text('{"default": {"maxRounds": 8}}\n')
+        return repo
+
     def test_limits_keeps_existing_configuration(self):
         api = load_api_module()
         with tempfile.TemporaryDirectory() as tmp:
@@ -176,13 +188,10 @@ class NativeBotsAndLimitsTest(unittest.TestCase):
             eigen = '{"default": {"maxRounds": 99}}\n'
             (api.STATE_DIR / "gruppen-grenzen.json").write_text(eigen)
 
-            src = wurzel / "extensions" / "group-chat-limits"
-            src.mkdir(parents=True)
-            (src / "aiianer-group-limits.ts").write_text("export const grenzen = {}\n")
-            (src / "apply-limits.py").write_text(PATCHER_STUB)
-            (src / "gruppen-grenzen.beispiel.json").write_text('{"default": {"maxRounds": 8}}\n')
+            repo = self.botmode_advanced_repo(wurzel)
 
-            api._install_limits_native(src)
+            with mock.patch.object(api, "_download_tarball", return_value=repo):
+                api._install_limits_native(wurzel / "egal")
 
             # Eigene Grenzen bleiben stehen.
             self.assertEqual((api.STATE_DIR / "gruppen-grenzen.json").read_text(), eigen)
@@ -199,13 +208,10 @@ class NativeBotsAndLimitsTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             wurzel = Path(tmp)
             hermes_heim(api, wurzel)
-            src = wurzel / "extensions" / "group-chat-limits"
-            src.mkdir(parents=True)
-            (src / "aiianer-group-limits.ts").write_text("export const grenzen = {}\n")
-            (src / "apply-limits.py").write_text(PATCHER_STUB)
-            (src / "gruppen-grenzen.beispiel.json").write_text('{"default": {"maxRounds": 8}}\n')
+            repo = self.botmode_advanced_repo(wurzel)
 
-            api._install_limits_native(src)
+            with mock.patch.object(api, "_download_tarball", return_value=repo):
+                api._install_limits_native(wurzel / "egal")
 
             self.assertEqual(
                 json.loads((api.STATE_DIR / "gruppen-grenzen.json").read_text()),
@@ -342,13 +348,12 @@ class PayloadVorhandenTest(unittest.TestCase):
     ERWARTET = {
         "german-language": ("de.ts.gz", "apply-de.py"),
         "bot-mode-german": ("de-bots.ts", "apply-bots-de.py"),
-        "group-chat-limits": (
-            "aiianer-group-limits.ts", "apply-limits.py", "gruppen-grenzen.beispiel.json",
-        ),
         "aiianer-backup": ("backup_runner.py",),
-        # Der EU-Router bringt seine Payload aus einem eigenen Repo mit, hier
-        # liegt nur der Installer. Geprueft wird deshalb nur dessen Existenz.
+        # EU-Router und Bot-Mode Advanced bringen ihre Payload aus einem
+        # eigenen Repo mit, hier liegt nur der Installer-Stub. Geprueft wird
+        # deshalb nur dessen Existenz.
         "eurouter-provider": (),
+        "group-chat-limits": (),
     }
 
     def test_every_native_installer_finds_its_payload_in_the_repo(self):

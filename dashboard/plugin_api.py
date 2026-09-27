@@ -37,6 +37,12 @@ TARBALL = f"https://github.com/{REPO}/archive/refs/heads/main.tar.gz"
 # Tarball, weil es dort keine Bash gibt, die das Skript ausfuehren koennte.
 EUROUTER_REPO = "oliverhees/hermes-eurouter-plugin"
 EUROUTER_TARBALL = f"https://github.com/{EUROUTER_REPO}/archive/refs/heads/main.tar.gz"
+# Bot-Mode Advanced (vormals extensions/group-chat-limits) wohnt seit
+# 2026-09-27 in einem eigenen Repo, aus demselben Grund wie EU-Router:
+# sein install.sh ist der kanonische Weg, der native Windows-Weg holt
+# denselben Stand als Tarball.
+BOTMODE_ADVANCED_REPO = "oliverhees/hermes-botmode-advanced"
+BOTMODE_ADVANCED_TARBALL = f"https://github.com/{BOTMODE_ADVANCED_REPO}/archive/refs/heads/main.tar.gz"
 CATALOG_URL = f"https://raw.githubusercontent.com/{REPO}/main/catalog.json"
 RELEASES_URL = f"https://api.github.com/repos/{REPO}/releases"
 ROADMAP_URL = f"https://raw.githubusercontent.com/{REPO}/main/roadmap.json"
@@ -1077,8 +1083,13 @@ def _install_bots_native(src: Path) -> list[str]:
     return _run_patcher(store / "apply-bots-de.py", [str(AGENT_DIR)], store)
 
 
-def _install_limits_native(src: Path) -> list[str]:
-    """Schritte aus extensions/group-chat-limits/install.sh, ohne Bash."""
+def _install_limits_native(_src: Path) -> list[str]:
+    """Schritte aus install.sh des Bot-Mode-Advanced-Repos, ohne Bash.
+
+    Die Payload liegt seit 2026-09-27 im eigenen Repo
+    (siehe BOTMODE_ADVANCED_REPO oben), nicht mehr unter
+    extensions/group-chat-limits/ in diesem Repo. Sie wird deshalb frisch
+    geladen, derselbe Stand, den auch das dortige install.sh zieht."""
     if not BOTS_ROUNDS.is_file():
         raise HTTPException(
             status_code=500,
@@ -1087,19 +1098,39 @@ def _install_limits_native(src: Path) -> list[str]:
                 f"{BOTS_ROUNDS}. Ist Hermes Desktop installiert und aktuell?"
             ),
         )
-    store = _ext_store("group-chat-limits")
-    store.mkdir(parents=True, exist_ok=True)
-    STATE_DIR.mkdir(parents=True, exist_ok=True)
-    log: list[str] = []
-    # Beispiel-Konfiguration anlegen, aber niemals eine vorhandene ueberschreiben.
-    konfig = STATE_DIR / "gruppen-grenzen.json"
-    if not konfig.is_file():
-        shutil.copy2(src / "gruppen-grenzen.beispiel.json", konfig)
-        log.append(f"Beispiel-Konfiguration angelegt: {konfig}")
-    for name in ("aiianer-group-limits.ts", "apply-limits.py", "gruppen-grenzen.beispiel.json"):
-        shutil.copy2(src / name, store / name)
-    for name in ("aiianer-group-limits.ts", "apply-limits.py"):
-        shutil.copy2(src / name, STATE_DIR / name)
+    tmp = tempfile.mkdtemp(prefix="aiianer-botmode-advanced-")
+    try:
+        try:
+            wurzel = _download_tarball(BOTMODE_ADVANCED_TARBALL, tmp)
+        except HTTPException:
+            raise
+        except OSError as exc:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Bot-Mode Advanced konnte nicht geladen werden: {exc}",
+            ) from exc
+        dateien = ("aiianer-group-limits.ts", "apply-limits.py", "gruppen-grenzen.beispiel.json")
+        fehlend = [n for n in dateien if not (wurzel / n).is_file()]
+        if fehlend:
+            raise HTTPException(
+                status_code=500,
+                detail="Das Bot-Mode-Advanced-Repo ist unvollständig, es fehlt: " + ", ".join(fehlend),
+            )
+        store = _ext_store("group-chat-limits")
+        store.mkdir(parents=True, exist_ok=True)
+        STATE_DIR.mkdir(parents=True, exist_ok=True)
+        log: list[str] = []
+        # Beispiel-Konfiguration anlegen, aber niemals eine vorhandene ueberschreiben.
+        konfig = STATE_DIR / "gruppen-grenzen.json"
+        if not konfig.is_file():
+            shutil.copy2(wurzel / "gruppen-grenzen.beispiel.json", konfig)
+            log.append(f"Beispiel-Konfiguration angelegt: {konfig}")
+        for name in dateien:
+            _atomic_copy(wurzel / name, store / name)
+        for name in ("aiianer-group-limits.ts", "apply-limits.py"):
+            _atomic_copy(wurzel / name, STATE_DIR / name)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
     return log + _run_patcher(
         store / "apply-limits.py", [str(AGENT_DIR), str(STATE_DIR)], store
     )
@@ -1260,11 +1291,14 @@ async def install(body: dict) -> dict:
             install_log = _run_extension_installer(comp_id, src)[-12:]
 
             # Sprachdatei zusaetzlich als Quelle sichern, damit der Waechter sie
-            # nach einem Hermes-Update erneut einspielen kann.
-            if comp_id in ("german-language", "bot-mode-german", "group-chat-limits"):
+            # nach einem Hermes-Update erneut einspielen kann. group-chat-limits
+            # gehoert seit 2026-09-27 NICHT mehr hierher: sein Quellstand liegt
+            # jetzt im eigenen Repo (BOTMODE_ADVANCED_REPO) und wird bereits
+            # innerhalb von _install_limits_native / seinem Bash-Installer nach
+            # STATE_DIR gesichert.
+            if comp_id in ("german-language", "bot-mode-german"):
                 STATE_DIR.mkdir(parents=True, exist_ok=True)
-                for name in ("de.ts", "apply-de.py", "de-bots.ts", "apply-bots-de.py",
-                             "aiianer-group-limits.ts", "apply-limits.py"):
+                for name in ("de.ts", "apply-de.py", "de-bots.ts", "apply-bots-de.py"):
                     if (src / name).is_file():
                         shutil.copy2(src / name, STATE_DIR / name)
 

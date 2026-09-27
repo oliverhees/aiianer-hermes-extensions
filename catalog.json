@@ -45,6 +45,15 @@
       "note": "Trägt ein deutsches Bündel in den Nachrichtenkatalog des Bot-Modus ein. Setzt „Deutsche Sprache“ voraus. Der Wächter spielt es nach einem Hermes-Update selbst wieder ein."
     },
     {
+      "id": "group-chat-limits",
+      "name": "Bot-Mode Advanced",
+      "version": "1.0.0",
+      "kind": "plugin",
+      "premium": false,
+      "summary": "Runden- und Nachrichten-Limits pro Gruppenchat im Bot-Modus, einstellbar statt fest verdrahtet.",
+      "note": "Läuft vollständig außerhalb des Hermes-Verzeichnisses. Konfiguration: ~/.hermes/aiianer/gruppen-grenzen.json."
+    },
+    {
       "id": "aiianer-backup",
       "name": "AIIANER Backup-Außenposten",
       "version": "1.0.0",
