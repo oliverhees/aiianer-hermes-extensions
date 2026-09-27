@@ -1,6 +1,12 @@
 {
   "releases": [
     {
+      "tagName": "v1.4.0",
+      "name": "v1.4.0 · Drei Erweiterungen als eigenständige Plugins ausgekoppelt, Deutsche Sprache entfernt",
+      "publishedAt": "2026-09-27T12:00:00Z",
+      "body": "Größter struktureller Umbau seit Bestehen des Marktplatzes. EU-Router (bereits als Stub ausgekoppelt, jetzt gegen den aktuellen Hermes-Hauptzweig geprüft und mit CHANGELOG versehen: github.com/oliverhees/hermes-eurouter-plugin), Bot-Mode Advanced (vormals group-chat-limits, erstmals veröffentlicht: github.com/oliverhees/hermes-botmode-advanced) und Hermes Backup (voller Port aus dem Hub, jetzt eigenständiges unified package mit eigener Seite und eigenem Backend: github.com/oliverhees/hermes-backup-plugin) laufen jetzt als eigenständige, einzeln installierbare Repos mit eigenem AIIANER-Branding.\n\nDie deutsche Sprachdatei (\"Deutsche Sprache\") und die deutsche Bot-Modus-Übersetzung (\"Bot-Modus auf Deutsch\") sind ersatzlos entfernt: Hermes liefert Deutsch inzwischen nativ (bestätigt gegen NousResearch/hermes-agent@main, Locale-Typ enthält jetzt 'de'). Wer eine dieser beiden Komponenten noch installiert hatte, verliert dadurch keine Funktion: die deutsche Oberfläche kommt jetzt direkt aus Hermes selbst.\n\nDer Hub selbst schrumpft entsprechend: er bleibt die Marktplatz-Hülle, die die drei ausgekoppelten Repos installiert/deinstalliert, patcht aber nichts mehr direkt im Hermes-Checkout für Sprache."
+    },
+    {
       "tagName": "v1.3.41",
       "name": "v1.3.41 · Sicherheits-Scanner blockierte jede Neuinstallation (behoben)",
       "publishedAt": "2026-09-17T10:37:00Z",

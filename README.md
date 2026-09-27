@@ -20,8 +20,8 @@ Installierbare Werkzeuge, Sprache und Automationen für deinen KI-Außenposten.<
 
 Der **AIIANER Hermes Marktplatz** ist die deutsche Erweiterungsplattform für
 [Hermes Desktop](https://github.com/NousResearch/hermes-agent). Ein Plugin, ein
-klarer Ort, ein Klick: deutsche Sprache, nützliche Werkzeuge und update-feste
-Automationen direkt in Hermes.
+klarer Ort, ein Klick: nützliche Werkzeuge und update-feste Automationen
+direkt in Hermes.
 
 **Tagline:** KI zum Anwenden, nicht zum Hypen.
 
@@ -35,12 +35,14 @@ Erweiterungen.
 
 | Komponente | Was sie tut |
 | --- | --- |
-| **aiianer-hub** | **Der Marktplatz.** Ein Reiter in Hermes zum Installieren und Aktualisieren der AIIANER-Erweiterungen. Enthält außerdem den Wächter, der die Erweiterungen nach Hermes-Updates prüft und bei Bedarf repariert. |
-| **eurouter-provider** | EU Router als Provider mit EU-Compliance-Routen im Modell-Picker. |
-| **german-language** | Deutsche Oberfläche für Hermes Desktop. Wird nach Hermes-Updates automatisch erneut eingespielt. |
-| **bot-mode-german** | Deutsche Texte für Bot Mode: Liste, Gruppenchats, Avatare und Zeitpläne. Setzt `german-language` voraus. |
-| **group-chat-limits** | Eigene Runden-, Nachrichten-, Fortsetzungs- und Verlaufsgrenzen pro Gruppenchat. |
-| **aiianer-backup** | Lokale vollständige Hermes-Backups in einem externen Ordner. V1 mit Planung, Laufprotokoll, Archivliste und sicherem Restore. GitHub-Backup steht auf der Roadmap. |
+| **aiianer-hub** | **Der Marktplatz.** Ein Reiter in Hermes zum Installieren und Aktualisieren der eigenständigen AIIANER-Erweiterungen. Enthält außerdem den Wächter, der die verbleibende in-place-Erweiterung (group-chat-limits) nach Hermes-Updates prüft und bei Bedarf repariert. |
+| **eurouter-provider** | Stub, zeigt auf [hermes-eurouter-plugin](https://github.com/oliverhees/hermes-eurouter-plugin): EU Router als Provider mit EU-Compliance-Routen im Modell-Picker. |
+| **group-chat-limits** | Stub, zeigt auf [hermes-botmode-advanced](https://github.com/oliverhees/hermes-botmode-advanced): eigene Runden-, Nachrichten-, Fortsetzungs- und Verlaufsgrenzen pro Gruppenchat. |
+| **aiianer-backup** | Stub, zeigt auf [hermes-backup-plugin](https://github.com/oliverhees/hermes-backup-plugin): lokale vollständige Hermes-Backups in einem externen Ordner mit Planung, Laufprotokoll, Archivliste und sicherem Restore. |
+
+Deutsch ist seit Kurzem nativ in Hermes selbst eingebaut, die frühere
+Sprachdatei-Erweiterung (`german-language`) und die deutsche Bot-Mode-
+Übersetzung (`bot-mode-german`) sind deshalb ersatzlos entfallen.
 
 ## EUrouter.ai
 
@@ -71,11 +73,10 @@ Buttons.
 
 ### Windows
 
-Windows ist ein gleichwertiger Weg – seit 1.3.33 auch beim Installieren. Der
-Marktplatz spielt „Deutsche Sprache“, „Bot-Modus auf Deutsch“,
-„Gruppenchat-Grenzen“ und „AIIANER Backup“ dort nativ mit dem Python ein, das
-Hermes ohnehin mitbringt. Eine Bash (Git-Bash, MSYS2, WSL) ist dafür **nicht**
-nötig.
+Windows ist ein gleichwertiger Weg, seit 1.3.33 auch beim Installieren. Der
+Marktplatz spielt „Gruppenchat-Grenzen“ und „AIIANER Backup“ dort nativ mit
+dem Python ein, das Hermes ohnehin mitbringt. Eine Bash (Git-Bash, MSYS2,
+WSL) ist dafür **nicht** nötig.
 
 Kommst du von 1.3.32 oder älter und die Installation endete mit
 `/bin/bash: C:\Users\...\install.sh: No such file or directory`: zuerst im
@@ -104,8 +105,9 @@ den normalen Plugin-Manager von Hermes.
 
 Hermes aktualisiert sein eigenes Programmverzeichnis regelmäßig. Der Marktplatz
 liegt deshalb vollständig in den vorgesehenen Plugin-Verzeichnissen außerhalb des
-Hermes-Checkouts. Die deutsche Sprachdatei und andere notwendige Anpassungen
-werden über den Wächter nach einem Hermes-Update erneut eingespielt, seit
+Hermes-Checkouts. Von den verbliebenen Komponenten patcht nur noch
+**„Gruppenchat-Grenzen“** (Bot-Mode Advanced) tatsächlich Hermes-Quellcode; die
+Naht wird über den Wächter nach einem Hermes-Update erneut eingespielt, seit
 Version 1.3.37 inklusive automatischem Neubau der Desktop-App. Kein Klick im
 Marktplatz-Reiter nötig: der Wächter feuert von selbst beim nächsten
 Hermes-Start nach einem Update, genau in dem Moment, in dem man ohnehin schon
@@ -120,8 +122,8 @@ aktuellen Quellcode von `NousResearch/hermes-agent`, bevor irgendjemand ein
 Update installiert. Findet er einen gerissenen Anker, öffnet er von selbst ein
 Issue in diesem Repo.
 
-**Wichtig zu wissen, wie die Sprachdatei überhaupt wirksam wird:** diese
-Erweiterung lädt kein Deutsch zur Laufzeit nach, sie verändert Hermes'
+**Wichtig zu wissen, wie „Gruppenchat-Grenzen“ überhaupt wirksam wird:** diese
+Erweiterung lädt ihre Änderung nicht zur Laufzeit nach, sie verändert Hermes'
 Quellcode. Aus verändertem Quellcode muss erst wieder eine fertige Desktop-App
 gebaut werden, sonst zeigt die bereits laufende (oder die als Programm-Symbol
 gestartete) App weiterhin den alten Stand, egal wie oft man sie schließt und
@@ -138,37 +140,6 @@ Update, ganz ohne Zutun. Ein normaler Neustart reicht danach wirklich. Schlägt
 der automatische Neubau ausnahmsweise fehl, sagt der
 Marktplatz das konkret und nennt als Rückfallweg: einmal `hermes desktop` in
 einem Terminal ausführen.
-
-### Falls Hermes Desktop nach der deutschen Sprachdatei nicht mehr aufgeht
-
-Kommt vor, wenn Hermes selbst zwischenzeitlich seinen i18n-Ordner umgebaut hat
-(Upstream-Drift) und der Neubau beim nächsten Start dabei scheitert. Ohne
-laufende GUI ist weder der normale Weg (Deinstallieren im Marktplatz-Reiter)
-noch der Hermes-Chat erreichbar, deshalb geht es hier nur direkt im Terminal:
-
-1. Öffne ein Terminal (Windows: „Eingabeaufforderung" oder „PowerShell" im
-   Startmenü suchen; macOS: „Terminal" über Spotlight/Launchpad; Linux: deine
-   gewohnte Konsole).
-2. Kopiere diese eine Zeile hinein und drücke Enter:
-
-   ```bash
-   curl -sL https://raw.githubusercontent.com/oliverhees/aiianer-hermes-extensions/main/extensions/german-language/restore-original.py -o restore-original.py
-   python3 restore-original.py
-   ```
-
-   (Absichtlich zwei Schritte statt eines Pipe-Befehls: so lässt sich das
-   Skript vor dem Ausführen ansehen, und Hermes' eigener Sicherheits-Scanner
-   stuft ein direktes „curl | python3“ in Dokumentation als Lieferketten-
-   Risiko ein und blockiert sonst jede Neuinstallation dieses Repos.)
-3. Lies die Ausgabe durch, sie sagt dir, ob es geklappt hat.
-4. Starte Hermes komplett neu (falls ein Gateway-Prozess separat läuft, auch
-   den beenden und neu starten).
-
-Das Skript setzt `types.ts`, `catalog.ts` und `languages.ts` auf den Stand vor
-der Installation zurück, entfernt `de.ts` und den Build-Stempel, alles oder
-nichts. Bitte danach in der AIIANER Community melden, mit der kompletten
-Ausgabe des Skripts, das ist unser einziger Weg, den Anker rechtzeitig
-nachzuziehen.
 
 ## Feedback, Hilfe und Probleme
 

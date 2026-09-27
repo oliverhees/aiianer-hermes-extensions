@@ -40,28 +40,40 @@ def tempfile_dir():
 
 def hermes_heim(gc, wurzel: Path) -> Path:
     """Verdrahtet das Modul auf ein Test-Hermes um, mit bereits korrekt
-    verdrahteter deutscher Sprachdatei (der Zustand NACH einer erfolgreichen
-    Reparatur, VOR einem Neubau)."""
+    eingehaengten Gruppenchat-Grenzen (der Zustand NACH einer erfolgreichen
+    Reparatur, VOR einem Neubau). group-chat-limits ist die einzige
+    Desktop-Code-veraendernde Komponente, die es nach der Auskopplung von
+    german-language/bot-mode-german noch in diesem Repo gibt."""
     heim = wurzel / "hermes-home"
     agent = heim / "hermes-agent"
-    i18n = agent / "apps" / "desktop" / "src" / "i18n"
-    i18n.mkdir(parents=True)
-    (i18n / "types.ts").write_text("export type Locale = 'en' | 'de'\n")
-    (i18n / "catalog.ts").write_text("import { de } from './de'\nexport const TRANSLATIONS = { en, de }\n")
-    (i18n / "languages.ts").write_text("export const LOCALE_OPTIONS = [{ id: 'en' }, { id: 'de' }]\n")
-    (i18n / "de.ts").write_text("export const de = {}\n")
+    bots = agent / "apps" / "desktop" / "src" / "plugins" / "hermes-bots"
+    bots.mkdir(parents=True)
+    (bots / "group-rounds.ts").write_text(
+        "export async function runGroupChatRounds(group: string, members: GroupMember[], thread: string) {\n"
+        "  const aiianerGrenzen = aiianerCaps(group)\n"
+        "}\n"
+    )
+    (bots / "group-round-members.ts").write_text(
+        "// aiianer-group-limits-history\naiianerCaps(context.group).history\n"
+    )
 
     state_dir = heim / "aiianer"
     state_dir.mkdir(parents=True)
     (state_dir / "installed.json").write_text(json.dumps({
-        "german-language": {"version": "2026.09.01", "at": "2026-09-15T00:00:00+00:00"},
+        "group-chat-limits": {"version": "1.0.0", "at": "2026-09-15T00:00:00+00:00"},
     }))
 
     gc.HERMES_HOME = heim
     gc.AGENT = agent
-    gc.I18N = i18n
     gc.STATE_DIR = state_dir
     gc.LOG_FILE = state_dir / "guard.log"
+    # _CATALOG_PFAD ist beim Modul-Import an das ECHTE HERMES_HOME gebunden
+    # (nicht an das gerade gesetzte gc.HERMES_HOME) - ohne diese explizite
+    # Ueberschreibung wuerde _katalog_ids() den echten, lokal installierten
+    # Katalog dieser Maschine lesen statt None (Katalog "nicht lesbar") zu
+    # liefern, und die Sichtbarkeits-Filterung in check_all()/repair_all()
+    # wuerde von zufaelligem lokalen Maschinenzustand abhaengen.
+    gc._CATALOG_PFAD = state_dir / "kein-katalog-hier.json"
     return heim
 
 
@@ -89,7 +101,7 @@ class RepairAllRebuildsOnOrphanedStampTest(unittest.TestCase):
         gc = load_guard_check_module()
         with tempfile_dir() as tmp:
             hermes_heim(gc, tmp)
-            # Quellcode ist bereits korrekt verdrahtet (siehe check_german oben) -
+            # Quellcode ist bereits korrekt eingehaengt (siehe hermes_heim oben) -
             # kein Reparaturbedarf. Kein desktop-build-stamp.json angelegt.
             self.assertEqual(gc.check_all()["ok"], True)
 

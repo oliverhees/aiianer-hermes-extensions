@@ -12,7 +12,6 @@ Pfade in Posix-Schreibweise).
 from __future__ import annotations
 
 import asyncio
-import gzip
 import importlib.util
 import json
 import subprocess
@@ -74,99 +73,7 @@ def hermes_heim(api, wurzel: Path) -> Path:
     return heim
 
 
-class NativeGermanInstallTest(unittest.TestCase):
-    def test_installs_german_without_bash_and_without_python3(self):
-        api = load_api_module()
-        with tempfile.TemporaryDirectory() as tmp:
-            wurzel = Path(tmp)
-            heim = hermes_heim(api, wurzel)
-            src = wurzel / "extensions" / "german-language"
-            src.mkdir(parents=True)
-            with gzip.open(src / "de.ts.gz", "wb") as fh:
-                fh.write(b"export const de = {}\n")
-            (src / "apply-de.py").write_text(PATCHER_STUB)
-
-            # Ein Bash-Aufruf waere hier schon der Fehler von 1.3.32.
-            with mock.patch.object(api, "_ist_windows", return_value=True), mock.patch.object(
-                api, "_run_bash_installer", side_effect=AssertionError("bash darf nicht laufen")
-            ):
-                log = api._run_extension_installer("german-language", src)
-
-            store = heim / "aiianer-extensions" / "german-language"
-            self.assertEqual((store / "de.ts").read_text(), "export const de = {}\n")
-            self.assertTrue((store / "apply-de.py").is_file())
-            # de.ts muss auch in src liegen: /install sichert die Payload von
-            # dort nach ~/.hermes/aiianer/, damit der Waechter sie wiederfindet.
-            self.assertTrue((src / "de.ts").is_file())
-            self.assertIn("Patcher gelaufen", log)
-
-            spur = json.loads((store / "patcher-lief.json").read_text())
-            self.assertEqual(spur["argv"], [str(api.AGENT_DIR)])
-            self.assertEqual(Path(spur["cwd"]), store)
-            self.assertEqual(spur["exe"], sys.executable)
-
-    def test_reports_missing_payload_instead_of_crashing(self):
-        api = load_api_module()
-        with tempfile.TemporaryDirectory() as tmp:
-            wurzel = Path(tmp)
-            hermes_heim(api, wurzel)
-            src = wurzel / "extensions" / "german-language"
-            src.mkdir(parents=True)
-            (src / "apply-de.py").write_text(PATCHER_STUB)
-            with self.assertRaises(api.HTTPException) as fall:
-                api._install_german_native(src)
-            self.assertIn("de.ts.gz", str(fall.exception.detail))
-
-    def test_failing_patcher_becomes_readable_error(self):
-        api = load_api_module()
-        with tempfile.TemporaryDirectory() as tmp:
-            wurzel = Path(tmp)
-            hermes_heim(api, wurzel)
-            src = wurzel / "extensions" / "german-language"
-            src.mkdir(parents=True)
-            with gzip.open(src / "de.ts.gz", "wb") as fh:
-                fh.write(b"export const de = {}\n")
-            (src / "apply-de.py").write_text(
-                "import sys\nprint('FEHLER: Anker weg', file=sys.stderr)\nsys.exit(1)\n"
-            )
-            with self.assertRaises(api.HTTPException) as fall:
-                api._install_german_native(src)
-            self.assertEqual(fall.exception.status_code, 500)
-            self.assertIn("Anker weg", str(fall.exception.detail))
-
-
 class NativeBotsAndLimitsTest(unittest.TestCase):
-    def test_installs_bot_bundle_natively(self):
-        api = load_api_module()
-        with tempfile.TemporaryDirectory() as tmp:
-            wurzel = Path(tmp)
-            heim = hermes_heim(api, wurzel)
-            src = wurzel / "extensions" / "bot-mode-german"
-            src.mkdir(parents=True)
-            (src / "de-bots.ts").write_text("export const deBots = {}\n")
-            (src / "apply-bots-de.py").write_text(PATCHER_STUB)
-
-            api._install_bots_native(src)
-
-            store = heim / "aiianer-extensions" / "bot-mode-german"
-            self.assertTrue((store / "de-bots.ts").is_file())
-            spur = json.loads((store / "patcher-lief.json").read_text())
-            self.assertEqual(spur["argv"], [str(api.AGENT_DIR)])
-
-    def test_bot_bundle_refuses_without_german_locale(self):
-        api = load_api_module()
-        with tempfile.TemporaryDirectory() as tmp:
-            wurzel = Path(tmp)
-            hermes_heim(api, wurzel)
-            (api.I18N_DIR / "types.ts").write_text("export type Locale = 'en'\n")
-            src = wurzel / "extensions" / "bot-mode-german"
-            src.mkdir(parents=True)
-            (src / "de-bots.ts").write_text("export const deBots = {}\n")
-            (src / "apply-bots-de.py").write_text(PATCHER_STUB)
-            with self.assertRaises(api.HTTPException) as fall:
-                api._install_bots_native(src)
-            self.assertIn("Deutsche Sprache", str(fall.exception.detail))
-
     def botmode_advanced_repo(self, wurzel: Path) -> Path:
         """Bot-Mode Advanced (vormals group-chat-limits) wohnt seit
         2026-09-27 in einem eigenen Repo, genau wie EU-Router - der native
@@ -357,8 +264,7 @@ class VerfuegbarkeitTest(unittest.TestCase):
             hermes_heim(api, Path(tmp))
             with mock.patch.object(api, "_ist_windows", return_value=True), \
                     mock.patch.object(api, "_bash_binaer", return_value=None):
-                for comp_id in ("german-language", "bot-mode-german", "group-chat-limits",
-                                "aiianer-backup", "eurouter-provider"):
+                for comp_id in ("group-chat-limits", "aiianer-backup", "eurouter-provider"):
                     ok, grund, _ = api._verfuegbar(comp_id)
                     self.assertTrue(ok, f"{comp_id}: {grund}")
 
@@ -369,8 +275,6 @@ class PayloadVorhandenTest(unittest.TestCase):
     Community-Mitglieds."""
 
     ERWARTET = {
-        "german-language": ("de.ts.gz", "apply-de.py"),
-        "bot-mode-german": ("de-bots.ts", "apply-bots-de.py"),
         # EU-Router, Bot-Mode Advanced und Backup bringen ihre Payload aus
         # einem eigenen Repo mit, hier liegt nur der Installer-Stub. Geprueft
         # wird deshalb nur dessen Existenz.
@@ -395,45 +299,6 @@ class InstallRouteAufWindowsTest(unittest.TestCase):
     Früher lief das in einen HTTP 500 mit
     "/bin/bash: C:\\Users\\...\\install.sh: No such file or directory".
     Jetzt muss es durchlaufen - auch wenn auf dem Rechner gar keine Bash ist."""
-
-    def test_installs_german_language_end_to_end_without_any_bash(self):
-        api = load_api_module()
-        with tempfile.TemporaryDirectory() as tmp:
-            wurzel = Path(tmp)
-            heim = hermes_heim(api, wurzel)
-
-            # Ein "heruntergeladenes" Repo, wie _download es auspackt.
-            repo = wurzel / "aiianer-hermes-extensions-main"
-            src = repo / "extensions" / "german-language"
-            src.mkdir(parents=True)
-            with gzip.open(src / "de.ts.gz", "wb") as fh:
-                fh.write(b"export const de = {}\n")
-            (src / "apply-de.py").write_text(PATCHER_STUB)
-            (src / "install.sh").write_text("#!/usr/bin/env bash\nexit 7\n")
-
-            zustand: dict = {}
-            api._download = lambda _tmp, _cat=None: repo
-            api._load_catalog = lambda: {
-                "catalogVersion": "test",
-                "components": [{"id": "german-language", "version": "2026.09.01"}],
-            }
-            api._read_state = lambda: dict(zustand)
-            api._write_state = zustand.update
-            api._premium_berechtigt = lambda _entry: (True, "", "")
-
-            with mock.patch.object(api, "_ist_windows", return_value=True), \
-                    mock.patch.object(api, "_bash_binaer", return_value=None):
-                antwort = asyncio.run(api.install({"id": "german-language"}))
-
-            self.assertTrue(antwort["ok"])
-            self.assertEqual(antwort["version"], "2026.09.01")
-            self.assertIn("Patcher gelaufen", antwort["log"])
-            # Payload liegt im Store UND unter ~/.hermes/aiianer/ fuer den Waechter.
-            self.assertTrue(
-                (heim / "aiianer-extensions" / "german-language" / "de.ts").is_file()
-            )
-            self.assertTrue((api.STATE_DIR / "de.ts").is_file())
-            self.assertTrue((api.STATE_DIR / "apply-de.py").is_file())
 
     def test_install_route_reports_missing_bash_for_bash_only_component(self):
         api = load_api_module()

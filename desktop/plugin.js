@@ -589,9 +589,9 @@ export default {
     // JSON.stringify hier wuerde dem Backend einen String statt eines
     // Objekts schicken.
     // 320s: laenger als der 300s-Server-Timeout fuer den Desktop-Neubau
-    // (german-language/bot-mode-german/group-chat-limits loesen seit v1.3.36
-    // synchron 'hermes desktop --build-only' aus, damit die Sprache nach
-    // einem einfachen Neustart wirklich da ist - das kann eine Weile dauern).
+    // (group-chat-limits loest seit v1.3.36 synchron
+    // 'hermes desktop --build-only' aus, damit die Aenderung nach einem
+    // einfachen Neustart wirklich da ist - das kann eine Weile dauern).
     // Ohne dieses timeoutMs wuerde der Client vorzeitig einen Fehler zeigen,
     // waehrend der Server noch baut und am Ende trotzdem erfolgreich waere.
     const REBUILD_TIMEOUT_MS = 320000

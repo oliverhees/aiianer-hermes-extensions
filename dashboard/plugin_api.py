@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import contextlib
 import datetime
-import gzip
 import json
 import re
 import os
@@ -78,10 +77,7 @@ LOCAL_CATALOG = Path(__file__).resolve().parent.parent / "catalog.json"
 LOCAL_RELEASES = Path(__file__).resolve().parent.parent / "releases.json"
 LOCAL_ROADMAP = Path(__file__).resolve().parent.parent / "roadmap.json"
 AGENT_DIR = Path(os.environ.get("HERMES_AGENT_DIR") or (HERMES_HOME / "hermes-agent"))
-I18N_DIR = AGENT_DIR / "apps" / "desktop" / "src" / "i18n"
 BOTS_DIR = AGENT_DIR / "apps" / "desktop" / "src" / "plugins" / "hermes-bots"
-BOTS_PLUGIN = BOTS_DIR / "plugin.js"
-BOTS_KATALOG = BOTS_DIR / "i18n.ts"
 BOTS_ROUNDS = BOTS_DIR / "group-rounds.ts"
 DESKTOP_BUILD_STAMP = HERMES_HOME / "desktop-build-stamp.json"
 
@@ -91,7 +87,7 @@ DESKTOP_BUILD_STAMP = HERMES_HOME / "desktop-build-stamp.json"
 # verglichen mit $HERMES_HOME/desktop-build-stamp.json). Sonst haelt Hermes
 # Desktop die noch unveraenderte Fassung fuer aktuell und baut beim naechsten
 # Start NICHT neu - "Neustart bringt nichts" ist genau dieses Muster.
-DESKTOP_TOUCHING = {"german-language", "bot-mode-german", "group-chat-limits"}
+DESKTOP_TOUCHING = {"group-chat-limits"}
 
 
 def _invalidate_desktop_build_stamp() -> None:
@@ -133,15 +129,6 @@ def _rebuild_desktop() -> dict:
     }
 
 
-def _bots_ziel():
-    """Upstream hat die Datei von plugin.js auf plugin.tsx umbenannt. Fest auf
-    einen Namen zu setzen hiesse, nach dem naechsten Umbenennen ins Leere zu
-    schreiben."""
-    for name in ("plugin.js", "plugin.tsx"):
-        kandidat = BOTS_DIR / name
-        if kandidat.is_file():
-            return kandidat
-    return None
 EXT_STORE = HERMES_HOME / "aiianer-extensions"
 
 # Was der Nutzer NACH einer Aktion tun muss. Bewusst hier im lokalen Code und
@@ -149,21 +136,6 @@ EXT_STORE = HERMES_HOME / "aiianer-extensions"
 # jemand von aussen setzen kann, sind eine Einladung zum Missbrauch. Der
 # Katalog darf sie ueberschreiben, muss aber nicht.
 NEXT_STEPS = {
-    "german-language": {
-        "install": [
-            "Hermes komplett beenden und neu starten. Beim ersten Start baut die App sich einmal neu, das dauert einen Moment.",
-            "Danach: Settings -> Language -> Deutsch auswählen.",
-            "Erst danach ist die Oberfläche auf Deutsch. Vorher ändert sich nichts.",
-        ],
-        "uninstall": [
-            "Hermes komplett beenden und neu starten.",
-            "Falls die Sprache noch auf Deutsch stand: Settings -> Language -> English.",
-        ],
-    },
-    "bot-mode-german": {
-        "install": ["Hermes komplett beenden und neu starten. Der Bot-Modus ist danach auf Deutsch."],
-        "uninstall": ["Hermes komplett beenden und neu starten. Der Bot-Modus ist wieder englisch."],
-    },
     "group-chat-limits": {
         "install": [
             "Hermes komplett beenden und neu starten. Beim ersten Start baut die App einmal neu.",
@@ -189,38 +161,6 @@ NEXT_STEPS = {
 }
 
 
-def _german_anchor_missing() -> str:
-    """Rein lesende Vorpruefung der drei Anker, die apply-de.py selbst
-    benutzt - dieselben Muster, absichtlich dupliziert statt importiert
-    (apply-de.py wird auch eigenstaendig per curl heruntergeladen und muss
-    ohne dashboard/ lauffaehig bleiben). Leerer String = alles passt.
-
-    Bereits verdrahtete Dateien gelten automatisch als passend: sie haben den
-    Beweis schon erbracht, dass das Format stimmt, und apply-de.py prueft die
-    rohen Anker in dem Fall gar nicht erst."""
-    try:
-        types_s = (I18N_DIR / "types.ts").read_text()
-        catalog_s = (I18N_DIR / "catalog.ts").read_text()
-        langs_s = (I18N_DIR / "languages.ts").read_text()
-    except Exception as exc:
-        return f"i18n-Dateien nicht lesbar: {exc}"
-
-    if _verdrahtet("types.ts", types_s) and _verdrahtet("catalog.ts", catalog_s) and _verdrahtet("languages.ts", langs_s):
-        return ""
-
-    if not re.search(r"^export type Locale = (.+)$", types_s, re.M):
-        return "Anker 'export type Locale' in types.ts fehlt"
-    if not _verdrahtet("catalog.ts", catalog_s):
-        if not re.search(r"^import \{ \w+ \} from '\./\w[\w-]*'$", catalog_s, re.M):
-            return "Import-Anker in catalog.ts fehlt"
-        if not re.search(r"export const TRANSLATIONS[^=]*=\s*\{.*?\n\}", catalog_s, re.S):
-            return "TRANSLATIONS-Anker in catalog.ts fehlt"
-    if not _verdrahtet("languages.ts", langs_s):
-        if not re.search(r"export const LOCALE_OPTIONS = \[.*?\n\] as const", langs_s, re.S):
-            return "LOCALE_OPTIONS-Anker in languages.ts fehlt"
-    return ""
-
-
 def _verfuegbar(comp_id: str) -> tuple:
     """Kann diese Komponente auf DIESEM Rechner installiert werden?
 
@@ -234,38 +174,6 @@ def _verfuegbar(comp_id: str) -> tuple:
 
     Absichtlich hier im lokalen Code und nicht im Katalog aus dem Netz - die
     Pruefung entscheidet, was auf fremden Rechnern ausgefuehrt werden darf."""
-    if comp_id == "bot-mode-german":
-        if not BOTS_KATALOG.is_file():
-            return (
-                False,
-                "Der Nachrichtenkatalog des Bot-Modus liegt nicht an der "
-                f"erwarteten Stelle ({BOTS_KATALOG}). Aktualisiere Hermes "
-                "Desktop.",
-                "Bot Mode's message catalog is not where it is expected "
-                f"({BOTS_KATALOG}). Update Hermes Desktop.",
-            )
-        # Harte Abhaengigkeit: ohne 'de' als gueltige Locale waere das Buendel
-        # eingetragen, aber nie auswaehlbar. Lieber vorher sagen als hinterher
-        # ein "installiert, aber nichts passiert".
-        try:
-            verdrahtet = bool(
-                re.search(
-                    r"^export type Locale = .*'de'", (I18N_DIR / "types.ts").read_text(), re.M
-                )
-            )
-        except Exception:
-            verdrahtet = False
-        if not verdrahtet:
-            return (
-                False,
-                "Zuerst „Deutsche Sprache“ installieren. Der Bot-Modus haengt "
-                "daran: ohne Deutsch als gueltige Sprache waere das Buendel "
-                "zwar eingetragen, aber Hermes koennte es nie auswaehlen.",
-                "Install “Deutsche Sprache” first. Bot Mode depends on it: "
-                "without German as a valid locale the bundle would be "
-                "registered but never selectable.",
-            )
-
     if comp_id == "group-chat-limits":
         if not BOTS_ROUNDS.is_file():
             return (
@@ -275,32 +183,6 @@ def _verfuegbar(comp_id: str) -> tuple:
                 "Desktop.",
                 "The group chat round loop is not where it is expected "
                 f"({BOTS_ROUNDS}). Update Hermes Desktop.",
-            )
-    if comp_id == "german-language":
-        if not (I18N_DIR / "types.ts").is_file():
-            return (
-                False,
-                "Der Hermes-Quellordner liegt nicht an der erwarteten Stelle "
-                f"({I18N_DIR}). Ohne ihn lässt sich die Sprache nicht "
-                "einspielen.",
-                "Hermes' source folder is not where it is expected "
-                f"({I18N_DIR}). Without it the language cannot be installed.",
-            )
-        # Nicht nur "gibt es die Datei", sondern "passt der Anker noch rein" -
-        # dieselben Muster, die apply-de.py selbst benutzt. Ein Knopf, der
-        # erst beim Klick in "Anker nicht gefunden" laeuft, ist der gleiche
-        # Fehler wie oben, nur eine Ebene tiefer. Rein lesend, schreibt nichts.
-        fehlender_anker = _german_anchor_missing()
-        if fehlender_anker:
-            return (
-                False,
-                "Hermes hat seine Sprachdateien umgebaut, der Installer "
-                f"passt gerade nicht mehr ({fehlender_anker}). Bitte in der "
-                "AIIANER Community melden, der Patcher braucht eine "
-                "Anpassung.",
-                "Hermes restructured its locale files, the installer "
-                f"currently does not fit ({fehlender_anker}). Please report "
-                "this in the AIIANER community, the patcher needs an update.",
             )
 
     # Ein Knopf, der zuverlaessig in einen 500er laeuft, ist schlimmer als
@@ -717,7 +599,7 @@ async def diagnostics() -> dict:
 #   2. Und wenn doch eine da ist (Git-Bash, MSYS2), dann bekommt sie von
 #      Python einen nativen Windows-Pfad. Fuer eine Bash ist der Backslash
 #      ein Fluchtzeichen, also wird aus
-#      C:\Users\...\Temp\tmp1234\extensions\german-language\install.sh
+#      C:\Users\...\Temp\tmp1234\extensions\group-chat-limits\install.sh
 #      beim Einlesen C:Users...install.sh - und sie meldet
 #      "No such file or directory" fuer eine Datei, die sehr wohl da liegt.
 #      Genau dieser Fehler kam aus der Community (Windows 11, MSYS2-Bash).
@@ -853,62 +735,6 @@ def _run_bash_installer(comp_id: str, src: Path) -> list[str]:
             detail=(proc.stderr or proc.stdout or "Installation fehlgeschlagen")[-800:],
         )
     return _protokoll(proc.stdout)[-12:]
-
-
-def _install_german_native(src: Path) -> list[str]:
-    """Schritte aus extensions/german-language/install.sh, ohne Bash."""
-    quelle = src / "de.ts"
-    if not quelle.is_file():
-        gepackt = src / "de.ts.gz"
-        if not gepackt.is_file():
-            raise HTTPException(
-                status_code=500,
-                detail="Die Sprach-Payload de.ts.gz fehlt im heruntergeladenen Repo.",
-            )
-        with gzip.open(gepackt, "rb") as ein, open(quelle, "wb") as aus:
-            shutil.copyfileobj(ein, aus)
-    store = _ext_store("german-language")
-    store.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(quelle, store / "de.ts")
-    shutil.copy2(src / "apply-de.py", store / "apply-de.py")
-    return _run_patcher(store / "apply-de.py", [str(AGENT_DIR)], store)
-
-
-def _install_bots_native(src: Path) -> list[str]:
-    """Schritte aus extensions/bot-mode-german/install.sh, ohne Bash."""
-    if not BOTS_KATALOG.is_file():
-        raise HTTPException(
-            status_code=500,
-            detail=(
-                "Nachrichtenkatalog des Bot-Modus nicht gefunden unter "
-                f"{BOTS_KATALOG}. Ist Hermes Desktop installiert und aktuell?"
-            ),
-        )
-    try:
-        verdrahtet = bool(
-            re.search(
-                r"^export type Locale = .*'de'",
-                (I18N_DIR / "types.ts").read_text(errors="ignore"),
-                re.M,
-            )
-        )
-    except OSError:
-        verdrahtet = False
-    if not verdrahtet:
-        raise HTTPException(
-            status_code=500,
-            detail=(
-                "Die deutsche Sprache ist nicht eingerichtet. Der Bot-Modus "
-                "haengt daran: ohne 'de' als gueltige Sprache waere das Buendel "
-                "eingetragen, aber nie auswaehlbar. Zuerst „Deutsche Sprache“ "
-                "installieren."
-            ),
-        )
-    store = _ext_store("bot-mode-german")
-    store.mkdir(parents=True, exist_ok=True)
-    for name in ("de-bots.ts", "apply-bots-de.py"):
-        shutil.copy2(src / name, store / name)
-    return _run_patcher(store / "apply-bots-de.py", [str(AGENT_DIR)], store)
 
 
 def _install_limits_native(_src: Path) -> list[str]:
@@ -1082,8 +908,6 @@ def _install_eurouter_native(_src: Path) -> list[str]:
 # baut die Schritte der zugehoerigen install.sh nach - nicht mehr und nicht
 # weniger.
 NATIVE_INSTALLER = {
-    "german-language": _install_german_native,
-    "bot-mode-german": _install_bots_native,
     "group-chat-limits": _install_limits_native,
     "aiianer-backup": _install_backup_native,
     "eurouter-provider": _install_eurouter_native,
@@ -1144,18 +968,6 @@ async def install(body: dict) -> dict:
                     status_code=500, detail=f"{comp_id} fehlt im heruntergeladenen Repo"
                 )
             install_log = _run_extension_installer(comp_id, src)[-12:]
-
-            # Sprachdatei zusaetzlich als Quelle sichern, damit der Waechter sie
-            # nach einem Hermes-Update erneut einspielen kann. group-chat-limits
-            # gehoert seit 2026-09-27 NICHT mehr hierher: sein Quellstand liegt
-            # jetzt im eigenen Repo (BOTMODE_ADVANCED_REPO) und wird bereits
-            # innerhalb von _install_limits_native / seinem Bash-Installer nach
-            # STATE_DIR gesichert.
-            if comp_id in ("german-language", "bot-mode-german"):
-                STATE_DIR.mkdir(parents=True, exist_ok=True)
-                for name in ("de.ts", "apply-de.py", "de-bots.ts", "apply-bots-de.py"):
-                    if (src / name).is_file():
-                        shutil.copy2(src / name, STATE_DIR / name)
 
             if comp_id in DESKTOP_TOUCHING:
                 _invalidate_desktop_build_stamp()
@@ -1233,236 +1045,6 @@ def _drop(pfad: Path, protokoll: list) -> bool:
     except Exception as exc:
         protokoll.append(f"KONNTE NICHT ENTFERNEN: {pfad} ({exc})")
         return False
-
-
-def _verdrahtet(name: str, inhalt: str) -> bool:
-    """Traegt die Datei noch die Deutsch-Verdrahtung? Pro Datei ihr Anker."""
-    if name == "types.ts":
-        m = re.search(r"^export type Locale = (.+)$", inhalt, re.M)
-        return bool(m and "'de'" in m.group(1))
-    if name == "catalog.ts":
-        return "./de'" in inhalt
-    if name == "languages.ts":
-        return "id: 'de'" in inhalt
-    return False
-
-
-def _sicherung_fuer(name: str) -> Path | None:
-    """Nur eine nachweislich UNVERDRAHTETE Sicherung taugt zum Rueckbau.
-
-    apply-de.py legt .aiianer-orig einmalig an und ruehrt es nie wieder an.
-    .aiianer-bak wird bei jedem Lauf ueberschrieben und kann deshalb bereits
-    die Verdrahtung enthalten - wer daraus wiederherstellt und danach de.ts
-    loescht, hinterlaesst ein Hermes, das nicht mehr baut."""
-    for endung in (".aiianer-orig", ".aiianer-bak"):
-        kandidat = I18N_DIR / (name + endung)
-        if not kandidat.is_file():
-            continue
-        try:
-            if not _verdrahtet(name, kandidat.read_text()):
-                return kandidat
-        except Exception:
-            continue
-    return None
-
-
-def _uninstall_german(protokoll: list) -> None:
-    namen = ("types.ts", "catalog.ts", "languages.ts")
-
-    # ERST pruefen, DANN schreiben. Andersherum waere der Rueckbau nicht
-    # atomar: fehlt nur eine brauchbare Sicherung, waeren die anderen Dateien
-    # bereits ueberschrieben und die Meldung "nichts veraendert" gelogen.
-    quellen = {n: _sicherung_fuer(n) for n in namen}
-    fehlend = [n for n, q in quellen.items() if q is None]
-    if fehlend:
-        raise HTTPException(
-            status_code=409,
-            detail=(
-                "Rueckbau abgebrochen. Fuer diese Dateien gibt es keine "
-                "brauchbare Sicherung des Originalzustands: "
-                + ", ".join(fehlend)
-                + ". Entweder fehlt sie, oder sie enthaelt selbst schon die "
-                "deutsche Verdrahtung. Wuerde ich sie trotzdem einspielen und "
-                "de.ts loeschen, wuerde Hermes danach nicht mehr bauen. Es "
-                "wurde nichts veraendert."
-            ),
-        )
-
-    # Auch nach der Vorpruefung kann die Kopiersequenz mittendrin brechen
-    # (kein Platz, read-only, Rechte). Deshalb vorher den Ist-Zustand
-    # festhalten und im Fehlerfall alles zuruecknehmen - dieselbe
-    # Alles-oder-nichts-Zusage, die apply-de.py fuer die Gegenrichtung gibt.
-    vorher = {}
-    for name in namen:
-        ziel = I18N_DIR / name
-        if ziel.is_file():
-            vorher[name] = ziel.read_bytes()
-    try:
-        for name in namen:
-            _restore(quellen[name], I18N_DIR / name, protokoll)
-    except Exception as exc:
-        for name, inhalt in vorher.items():
-            try:
-                (I18N_DIR / name).write_bytes(inhalt)
-            except Exception:
-                pass
-        raise HTTPException(
-            status_code=500,
-            detail=(
-                f"Rueckbau abgebrochen beim Schreiben: {exc}. Der vorherige "
-                "Zustand wurde wiederhergestellt."
-            ),
-        )
-
-    # Gegenprobe am Ergebnis, nicht an der Absicht.
-    reste = [n for n in namen if _verdrahtet(n, (I18N_DIR / n).read_text())]
-    if reste:
-        raise HTTPException(
-            status_code=500,
-            detail=(
-                "Rueckbau unvollstaendig: nach dem Wiederherstellen tragen "
-                + ", ".join(reste)
-                + " immer noch die deutsche Verdrahtung. de.ts wurde deshalb "
-                "NICHT geloescht, damit Hermes weiter baut. Bitte in der "
-                "AIIANER Community melden."
-            ),
-        )
-
-    # de.ts erst jetzt, und vorher zur Sicherheit weglegen statt vernichten.
-    quelle_de = I18N_DIR / "de.ts"
-    if quelle_de.is_file():
-        try:
-            (EXT_STORE / "german-language").mkdir(parents=True, exist_ok=True)
-            shutil.copy2(quelle_de, EXT_STORE / "german-language" / "de.ts.entfernt")
-            protokoll.append("de.ts vor dem Entfernen weggelegt")
-        except Exception as exc:
-            protokoll.append(f"de.ts konnte nicht weggelegt werden: {exc}")
-    _drop(quelle_de, protokoll)
-
-    for name in namen:
-        _drop(I18N_DIR / (name + ".aiianer-bak"), protokoll)
-        _drop(I18N_DIR / (name + ".aiianer-orig"), protokoll)
-
-    # Quellen des Waechters mit entfernen, sonst spielt er beim naechsten
-    # Gateway-Start alles wieder ein. Schlaegt das fehl, ist das KEINE
-    # Nebensache - der Aufrufer muss es erfahren.
-    kritisch = []
-    for pfad in (STATE_DIR / "de.ts", STATE_DIR / "apply-de.py"):
-        _drop(pfad, protokoll)
-        if pfad.exists():
-            kritisch.append(str(pfad))
-    if kritisch:
-        raise HTTPException(
-            status_code=500,
-            detail=(
-                "Die Dateien wurden zurueckgesetzt, aber diese Quellen des "
-                "Waechters liessen sich nicht entfernen: "
-                + ", ".join(kritisch)
-                + ". Er wuerde Deutsch beim naechsten Start erneut einspielen. "
-                "Bitte die Dateien von Hand loeschen."
-            ),
-        )
-
-
-def _uninstall_bots(comp_id: str, sicherungsname: str, protokoll: list) -> None:
-    sicherung = EXT_STORE / comp_id / sicherungsname
-    if not sicherung.is_file():
-        raise HTTPException(
-            status_code=409,
-            detail=(
-                f"Rueckbau abgebrochen: die Sicherung {sicherungsname} fehlt unter "
-                f"{EXT_STORE / comp_id}. Es wurde nichts veraendert."
-            ),
-        )
-
-    ziel = BOTS_PLUGIN if BOTS_PLUGIN.is_file() else _bots_ziel()
-    if ziel is None:
-        raise HTTPException(
-            status_code=409,
-            detail=(
-                "Rueckbau abgebrochen: die Bot-Mode-Datei liegt nicht mehr an "
-                "ihrem Platz. Es wurde nichts veraendert."
-            ),
-        )
-
-    # Rueckgabewert AUSWERTEN. Pruefung und Kopie sind zwei Operationen - faellt
-    # die Sicherung dazwischen weg oder ist sie unlesbar, wuerde sonst gleich
-    # darauf der ganze Sicherungsordner geloescht. Danach laege die gepatchte
-    # Datei unveraendert da, ohne jede Moeglichkeit zum Rueckbau.
-    if not _restore(sicherung, ziel, protokoll):
-        raise HTTPException(
-            status_code=500,
-            detail=(
-                f"Die Sicherung {sicherungsname} liess sich nicht einspielen. "
-                "Der Sicherungsordner bleibt deshalb erhalten, damit der "
-                "Rueckbau spaeter erneut versucht werden kann."
-            ),
-        )
-    _drop(EXT_STORE / comp_id, protokoll)
-
-
-def _uninstall_bots_katalog(protokoll: list) -> None:
-    """Rueckbau des deutschen Bot-Modus-Buendels.
-
-    Bevorzugt die Erstsicherung. Fehlt sie, wird der de-Block chirurgisch aus
-    dem Katalog geschnitten und der Eintrag aus BOTS_LOCALES entfernt - das ist
-    hier vertretbar, weil beide Aenderungen exakt bekannt sind und der Rest der
-    Datei nie angefasst wurde."""
-    if not BOTS_KATALOG.is_file():
-        raise HTTPException(
-            status_code=409,
-            detail="Der Nachrichtenkatalog des Bot-Modus liegt nicht mehr da. Es wurde nichts veraendert.",
-        )
-
-    orig = BOTS_KATALOG.with_suffix(".ts.aiianer-orig")
-    if orig.is_file() and "const de: BotsMessages" not in orig.read_text():
-        _restore(orig, BOTS_KATALOG, protokoll)
-    else:
-        inhalt = BOTS_KATALOG.read_text()
-        ohne = re.sub(r"^const de: BotsMessages = \{.*?^\}\s*\n+", "", inhalt, count=1,
-                      flags=re.S | re.M)
-        ohne = re.sub(r"(BOTS_LOCALES: PluginLocaleBundles = \{ en,)\s*de,", r"\1", ohne, count=1)
-        if ohne == inhalt:
-            raise HTTPException(
-                status_code=409,
-                detail=(
-                    "Weder eine brauchbare Erstsicherung noch ein erkennbarer "
-                    "de-Block gefunden. Es wurde nichts veraendert."
-                ),
-            )
-        vorher = BOTS_KATALOG.read_bytes()
-        try:
-            BOTS_KATALOG.write_text(ohne)
-            gepr = BOTS_KATALOG.read_text()
-            if "const de: BotsMessages" in gepr or re.search(
-                r"BOTS_LOCALES[^}]*\bde\b", gepr
-            ):
-                raise RuntimeError("de-Eintrag nach dem Schreiben noch vorhanden")
-        except Exception as exc:
-            BOTS_KATALOG.write_bytes(vorher)
-            raise HTTPException(
-                status_code=500,
-                detail=f"Rueckbau fehlgeschlagen, Datei wiederhergestellt: {exc}",
-            )
-        protokoll.append("de-Block aus dem Katalog entfernt")
-
-    _drop(BOTS_KATALOG.with_suffix(".ts.aiianer-bak"), protokoll)
-    _drop(orig, protokoll)
-    kritisch = []
-    for pfad in (STATE_DIR / "de-bots.ts", STATE_DIR / "apply-bots-de.py"):
-        _drop(pfad, protokoll)
-        if pfad.exists():
-            kritisch.append(str(pfad))
-    _drop(EXT_STORE / "bot-mode-german", protokoll)
-    if kritisch:
-        raise HTTPException(
-            status_code=500,
-            detail=(
-                "Zurueckgesetzt, aber diese Quellen des Waechters blieben liegen: "
-                + ", ".join(kritisch)
-                + ". Er wuerde das Buendel beim naechsten Start erneut einspielen."
-            ),
-        )
 
 
 def _uninstall_group_limits(protokoll: list) -> None:
@@ -1550,11 +1132,7 @@ def _uninstall_backup(protokoll: list) -> None:
 
 
 def _run_uninstall(comp_id: str, protokoll: list) -> None:
-    if comp_id == "german-language":
-        _uninstall_german(protokoll)
-    elif comp_id == "bot-mode-german":
-        _uninstall_bots_katalog(protokoll)
-    elif comp_id == "group-chat-limits":
+    if comp_id == "group-chat-limits":
         _uninstall_group_limits(protokoll)
     elif comp_id == "eurouter-provider":
         _uninstall_eurouter(protokoll)

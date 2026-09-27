@@ -288,17 +288,17 @@
 ├── HOOK.yaml                <span class="c"># events: [gateway:startup]</span>
 └── handler.py               <span class="c"># prüft und repariert</span>
 
-<span class="c"># Was der Marktplatz installiert</span>
-~/.hermes/plugins/eurouter/            <span class="c"># EU-Router-Provider</span>
-~/.hermes/plugins/bot-mode-german/     <span class="c"># deutsche Bot-Mode-Texte</span>
-~/.hermes/plugins/group-chat-limits/   <span class="c"># Gruppenchat-Grenzen</span>
-~/.hermes/aiianer/de.ts                <span class="c"># die Sprachdatei, als Quelle abgelegt</span></pre>
+<span class="c"># Was der Marktplatz installiert (Stubs, zeigen auf eigenstaendige Repos)</span>
+~/.hermes/plugins/model-providers/eurouter/   <span class="c"># EU-Router-Provider</span>
+~/.hermes/plugins/hermes-backup/              <span class="c"># AIIANER Backup</span>
+~/.hermes/aiianer/aiianer-group-limits.ts     <span class="c"># Gruppenchat-Grenzen, als Quelle abgelegt</span></pre>
 
   <div class="col">
     <p>
-      Die Sprachdatei liegt bewusst <strong>nicht</strong> im Checkout, sondern als
-      Quelle unter <code>~/.hermes/aiianer/</code>. Von dort spielt der Wächter sie ein.
-      Damit ist die Quelle update-fest, auch wenn ihr Ziel es nicht ist.
+      Die Quelle von „Gruppenchat-Grenzen“ liegt bewusst <strong>nicht</strong> im
+      Checkout, sondern als Kopie unter <code>~/.hermes/aiianer/</code>. Von dort
+      spielt der Wächter sie ein. Damit ist die Quelle update-fest, auch wenn ihr
+      Ziel es nicht ist.
     </p>
   </div>
 </section>
@@ -311,8 +311,16 @@
   <div class="col">
     <p>
       Das ist der Teil, der den Unterschied zum bisherigen Weg macht. Bisher lief
-      <code>apply-de.py</code> einmal bei der Installation, und das nächste Hermes-Update
+      der Patcher einmal bei der Installation, und das nächste Hermes-Update
       hat die Arbeit gelöscht. Jetzt läuft die Prüfung bei jedem Start.
+    </p>
+    <p>
+      <em>Hinweis (2026-09-27): Die folgenden Diagramme und Beispiele erklären den
+      Selbstheilungs-Mechanismus am historischen Beispiel „Deutsche Sprache“.
+      Diese Komponente ist inzwischen entfernt (Hermes liefert Deutsch nativ),
+      der beschriebene Mechanismus selbst ist aber unverändert aktiv und gilt
+      heute für „Gruppenchat-Grenzen“, die einzige verbliebene Komponente,
+      die Hermes-Quellcode patcht.</em>
     </p>
   </div>
 
@@ -390,10 +398,9 @@
     <table>
       <thead><tr><th>Komponente</th><th>Was sie tut</th><th>Art</th></tr></thead>
       <tbody>
-        <tr><td><strong>Deutsche Sprache</strong></td><td>Die Oberfläche auf Deutsch, gepflegt gegen jedes Release</td><td>Patch mit Wächter</td></tr>
-        <tr><td><strong>EU-Router</strong></td><td>EU-Compliance-Routen statt roher Modelle im Picker</td><td>Sauberes Plugin</td></tr>
-        <tr><td><strong>Bot-Mode Deutsch</strong></td><td>Deutsche Texte im Bot-Modus</td><td>Sauberes Plugin</td></tr>
-        <tr><td><strong>Gruppenchat-Grenzen</strong></td><td>Budget- und Übergabe-Regeln in Gruppen</td><td>Sauberes Plugin</td></tr>
+        <tr><td><strong>EU-Router</strong></td><td>EU-Compliance-Routen statt roher Modelle im Picker</td><td>Eigenständiges Repo (Stub)</td></tr>
+        <tr><td><strong>Gruppenchat-Grenzen</strong></td><td>Budget- und Übergabe-Regeln in Gruppen</td><td>Eigenständiges Repo (Stub), patcht Hermes-Quellcode</td></tr>
+        <tr><td><strong>AIIANER Backup</strong></td><td>Lokale Hermes-Backups in einen externen Ordner</td><td>Eigenständiges Repo (Stub)</td></tr>
         <tr><td><em>künftige AIIANER-Erweiterungen</em></td><td>alles, was nur für die deutsche Community Sinn ergibt</td><td>Sauberes Plugin</td></tr>
       </tbody>
     </table>
@@ -424,7 +431,7 @@
   <ol class="steps">
     <li><strong>Einmalig:</strong> Ein Befehl in der Konsole, oder der fertige Satz für den Hermes-Chat, der den Agenten die Installation selbst machen lässt. Er legt <code>aiianer-hub</code> und den Wächter an.</li>
     <li><strong>Hermes neu starten.</strong> Der Reiter „AIIANER" erscheint.</li>
-    <li><strong>Im Reiter auswählen</strong>, was man haben will. Deutsche Sprache, EU-Router, was sonst im Regal steht.</li>
+    <li><strong>Im Reiter auswählen</strong>, was man haben will. EU-Router, Gruppenchat-Grenzen, was sonst im Regal steht.</li>
     <li><strong>Ab hier nichts mehr.</strong> Updates der Komponenten meldet der Marktplatz selbst. Nach einem Hermes-Update repariert der Wächter, ohne dass jemand etwas merkt.</li>
   </ol>
 

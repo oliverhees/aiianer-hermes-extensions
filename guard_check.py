@@ -12,7 +12,6 @@ Faellt der Patcher aus, wird das laut gemeldet statt still geschluckt.
 from __future__ import annotations
 
 import json
-import re
 import os
 import subprocess
 import sys
@@ -40,7 +39,6 @@ def hermes_home() -> Path:
 
 HERMES_HOME = hermes_home()
 AGENT = HERMES_HOME / "hermes-agent"
-I18N = AGENT / "apps" / "desktop" / "src" / "i18n"
 STATE_DIR = HERMES_HOME / "aiianer"
 LOG_FILE = STATE_DIR / "guard.log"
 
@@ -66,7 +64,7 @@ def _installed() -> dict:
 # von ihnen muss der Content-Hash-Stempel weg, sonst haelt Hermes Desktop die
 # eigene, noch unreparierte Fassung fuer aktuell und baut nicht neu - genau das
 # Muster hinter "Neustart bringt nichts, erst ein manueller Eingriff hilft".
-_DESKTOP_TOUCHING = {"german-language", "bot-mode-german", "group-chat-limits"}
+_DESKTOP_TOUCHING = {"group-chat-limits"}
 
 
 def _invalidate_desktop_build_stamp() -> None:
@@ -142,41 +140,11 @@ def _rebuild_desktop() -> dict:
 
 # ------------------------------------------------------------- Pruefungen
 
-def check_german() -> dict:
-    """Ist Deutsch noch im Checkout verdrahtet?"""
-    if "german-language" not in _installed():
-        return {"id": "german-language", "state": "not-installed"}
-    if not I18N.is_dir():
-        return {"id": "german-language", "state": "no-checkout",
-                "detail": f"{I18N} nicht gefunden"}
-    try:
-        types_s = (I18N / "types.ts").read_text()
-        catalog_s = (I18N / "catalog.ts").read_text()
-        langs_s = (I18N / "languages.ts").read_text()
-    except Exception as exc:
-        return {"id": "german-language", "state": "unreadable", "detail": str(exc)}
-
-    wired = (
-        "'de'" in types_s.split("export type Locale")[-1].split("\n")[0]
-        and "./de'" in catalog_s
-        and "id: 'de'" in langs_s
-        and (I18N / "de.ts").is_file()
-    )
-    return {"id": "german-language", "state": "ok" if wired else "missing"}
-
-
 # Jede Komponente hat ihren EIGENEN Nachweis. Eine gemeinsame Kandidatenliste
 # waere falsch: sie enthielt model-providers/eurouter fuer jede comp_id, und
-# sobald der EU-Router lag, meldete auch bot-mode-german "ok" - selbst wenn ein
-# Hermes-Update es laengst weggeraeumt hatte. /health sagte dann ok, obwohl
-# etwas fehlte, und der Waechter reparierte nichts.
-def _bots_katalog():
-    """Der plugin-eigene Nachrichtenkatalog des Bot-Modus."""
-    agent = Path(os.environ.get("HERMES_AGENT_DIR") or (HERMES_HOME / "hermes-agent"))
-    k = agent / "apps" / "desktop" / "src" / "plugins" / "hermes-bots" / "i18n.ts"
-    return k if k.is_file() else None
-
-
+# sobald der EU-Router lag, meldete auch eine ganz andere Komponente "ok" -
+# selbst wenn ein Hermes-Update sie laengst weggeraeumt hatte. /health sagte
+# dann ok, obwohl etwas fehlte, und der Waechter reparierte nichts.
 def _bots_plugin():
     """Upstream hat die Datei zwischenzeitlich von plugin.js auf plugin.tsx
     umbenannt. Fest auf einen Namen zu pruefen hiesse, nach dem naechsten
@@ -193,20 +161,6 @@ def _bots_plugin():
 def _liegt_noch(comp_id: str) -> bool:
     if comp_id == "eurouter-provider":
         return (HERMES_HOME / "plugins" / "model-providers" / "eurouter").exists()
-
-    if comp_id == "bot-mode-german":
-        # Seit dem Umbau ist der Nachweis ein Eintrag im plugin-eigenen
-        # Nachrichtenkatalog, nicht mehr eine ersetzte Datei.
-        katalog = _bots_katalog()
-        if katalog is None:
-            return False
-        try:
-            t = katalog.read_text(errors="ignore")
-        except Exception:
-            return False
-        return "const de: BotsMessages" in t and bool(
-            re.search(r"BOTS_LOCALES[^}]*\bde\b", t)
-        )
 
     if comp_id == "group-chat-limits":
         # Nachweis ist die Naht in der Rundenschleife, nicht mehr die alte
@@ -246,12 +200,11 @@ def check_plugin(comp_id: str) -> dict:
     return {"id": comp_id, "state": "ok" if _liegt_noch(comp_id) else "missing"}
 
 
-# Der Katalog entscheidet, was ueberhaupt noch aktiv gepflegt wird. Stand
-# 2026-09: group-chat-limits ist als "unfinished" aus catalog.json entfernt
-# (Oliver, 10.09.), aber Nutzer, die es davor installiert hatten, bekamen es
-# trotzdem fuer immer automatisch repariert - inklusive dem teuren
-# --build-only-Neubau aus v1.3.36+. Eine versteckte, nicht mehr gepflegte
-# Komponente soll den Waechter nicht mehr beschaeftigen.
+# Der Katalog entscheidet, was ueberhaupt noch aktiv gepflegt wird. Eine
+# Komponente, die aus catalog.json verschwindet (versteckt oder geloescht),
+# soll den Waechter nicht mehr beschaeftigen - inklusive dem teuren
+# --build-only-Neubau aus v1.3.36+, der sonst fuer immer weiterlaeuft, auch
+# fuer Nutzer, die die Komponente laengst nicht mehr aktiv gepflegt bekommen.
 _CATALOG_PFAD = HERMES_HOME / "plugins" / "aiianer-hub" / "catalog.json"
 
 
@@ -267,8 +220,8 @@ def _katalog_ids() -> set | None:
 
 
 def check_all() -> dict:
-    checks = [check_german()]
-    kandidaten = ("eurouter-provider", "bot-mode-german", "group-chat-limits")
+    checks = []
+    kandidaten = ("eurouter-provider", "group-chat-limits")
     sichtbar = _katalog_ids()
     if sichtbar is not None:
         kandidaten = tuple(c for c in kandidaten if c in sichtbar)
@@ -279,54 +232,6 @@ def check_all() -> dict:
 
 
 # ------------------------------------------------------------- Reparatur
-
-def repair_german() -> dict:
-    patcher = STATE_DIR / "apply-de.py"
-    source = STATE_DIR / "de.ts"
-    if not patcher.is_file() or not source.is_file():
-        msg = ("Deutsch fehlt, aber die Quelle unter ~/.hermes/aiianer/ ist "
-               "unvollstaendig. Bitte im AIIANER-Marktplatz neu installieren.")
-        _log(f"FEHLER german-language: {msg}")
-        return {"id": "german-language", "repaired": False, "detail": msg}
-
-    proc = subprocess.run(
-        [sys.executable, str(patcher), str(AGENT)],
-        capture_output=True, text=True, timeout=120, cwd=str(STATE_DIR),
-    )
-    if proc.returncode == 0:
-        _log("german-language nach Update erneut eingespielt")
-        return {"id": "german-language", "repaired": True}
-
-    detail = (proc.stderr or proc.stdout or "").strip()[-500:]
-    _log(f"FEHLER german-language: Anker passt nicht mehr. {detail}")
-    return {
-        "id": "german-language",
-        "repaired": False,
-        "detail": detail,
-        "hint": ("Hermes hat die i18n-Dateien umgebaut. Bitte in der AIIANER "
-                 "Community melden, der Patcher braucht eine Anpassung."),
-    }
-
-
-def repair_bots_german() -> dict:
-    """Spielt das deutsche Bot-Modus-Buendel erneut ein. Gleiche Quelle wie der
-    Marktplatz, damit es nur einen Weg gibt."""
-    patcher = STATE_DIR / "apply-bots-de.py"
-    quelle = STATE_DIR / "de-bots.ts"
-    if not patcher.is_file() or not quelle.is_file():
-        msg = f"Quellen fehlen unter {STATE_DIR} - im Marktplatz neu installieren."
-        _log(f"bot-mode-german: {msg}")
-        return {"id": "bot-mode-german", "repaired": False, "detail": msg}
-    agent = Path(os.environ.get("HERMES_AGENT_DIR") or (HERMES_HOME / "hermes-agent"))
-    proc = subprocess.run(
-        [sys.executable, str(patcher), str(agent)],
-        capture_output=True, text=True, timeout=120, cwd=str(STATE_DIR),
-    )
-    ok = proc.returncode == 0
-    _log(f"bot-mode-german repariert={ok}: {(proc.stdout or proc.stderr).strip()[:200]}")
-    return {"id": "bot-mode-german", "repaired": ok,
-            "detail": (proc.stdout or proc.stderr).strip()[-300:]}
-
 
 def repair_group_limits() -> dict:
     """Haengt die Gruppenchat-Grenzen erneut ein. Der Patcher erzeugt dabei
@@ -365,11 +270,7 @@ def repair_all(rebuild_desktop: bool = False) -> dict:
     for c in status["checks"]:
         if c["state"] != "missing":
             continue
-        if c["id"] == "german-language":
-            results.append(repair_german())
-        elif c["id"] == "bot-mode-german":
-            results.append(repair_bots_german())
-        elif c["id"] == "group-chat-limits":
+        if c["id"] == "group-chat-limits":
             results.append(repair_group_limits())
         else:
             results.append({
